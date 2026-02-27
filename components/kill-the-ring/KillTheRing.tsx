@@ -10,6 +10,7 @@ import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
 import { Mic, MicOff } from 'lucide-react'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -129,13 +130,74 @@ export function KillTheRing() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Issues Only */}
-        <aside className="w-64 flex-shrink-0 border-r border-border overflow-y-auto p-3 bg-card/50">
-          <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
-            <span>Active Issues</span>
-            <span className="text-primary font-mono">{advisories.length}</span>
-          </h2>
-          <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+        {/* Left Sidebar - Detection Controls + Issues */}
+        <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50">
+          {/* Detection Controls */}
+          <div className="p-3 border-b border-border space-y-3">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">Detection</h2>
+            
+            {/* Feedback Threshold */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Threshold</span>
+                <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
+              </div>
+              <Slider
+                value={[settings.feedbackThresholdDb]}
+                onValueChange={([v]) => updateSettings({ feedbackThresholdDb: v })}
+                min={6}
+                max={24}
+                step={1}
+              />
+              <p className="text-[9px] text-muted-foreground">Lower = more sensitive to faint feedback</p>
+            </div>
+
+            {/* Ring Threshold */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Ring Sensitivity</span>
+                <span className="font-mono">{settings.ringThresholdDb}dB</span>
+              </div>
+              <Slider
+                value={[settings.ringThresholdDb]}
+                onValueChange={([v]) => updateSettings({ ringThresholdDb: v })}
+                min={3}
+                max={15}
+                step={0.5}
+              />
+              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances</p>
+            </div>
+
+            {/* Growth Rate */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Growth Rate</span>
+                <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+              </div>
+              <Slider
+                value={[settings.growthRateThreshold]}
+                onValueChange={([v]) => updateSettings({ growthRateThreshold: v })}
+                min={1}
+                max={10}
+                step={0.5}
+              />
+              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster</p>
+            </div>
+
+            {/* Summary line */}
+            <div className="pt-1 text-[10px] text-muted-foreground">
+              {settings.mode === 'feedbackHunt' ? 'Aggressive feedback detection' : settings.mode === 'vocalRing' ? 'Subtle ring detection for vocals' : settings.mode === 'musicAware' ? 'Instrument-aware mode' : settings.mode === 'aggressive' ? 'Maximum sensitivity' : 'Calibration mode'}
+            </div>
+          </div>
+
+          {/* Issues List */}
+          <div className="p-3">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+              <span>Active Issues</span>
+              <span className="text-primary font-mono">{advisories.length}</span>
+            </h2>
+            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+          </div>
         </aside>
 
         {/* Main Visualization Area */}
