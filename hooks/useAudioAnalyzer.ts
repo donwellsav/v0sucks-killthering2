@@ -122,13 +122,33 @@ export function useAudioAnalyzer(
   useEffect(() => {
     const autoStart = async () => {
       if (analyzerRef.current) {
-        await start()
+        try {
+          setState(prev => ({ ...prev, advisories: [], tracks: [] }))
+          await analyzerRef.current.start()
+          const analyzerState = analyzerRef.current.getState()
+          setState(prev => ({
+            ...prev,
+            isRunning: true,
+            hasPermission: analyzerState.hasPermission,
+            error: null,
+            noiseFloorDb: analyzerState.noiseFloorDb,
+            sampleRate: analyzerState.sampleRate,
+            fftSize: analyzerState.fftSize,
+          }))
+        } catch (err) {
+          setState(prev => ({
+            ...prev,
+            error: err instanceof Error ? err.message : 'Failed to start',
+            isRunning: false,
+            hasPermission: false,
+          }))
+        }
       }
     }
     // Small delay to ensure analyzer is ready
     const timer = setTimeout(autoStart, 100)
     return () => clearTimeout(timer)
-  }, [start])
+  }, []) // Empty deps - only runs on mount
 
   // Update settings when they change
   useEffect(() => {
