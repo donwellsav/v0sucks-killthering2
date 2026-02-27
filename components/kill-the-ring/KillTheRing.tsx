@@ -134,7 +134,9 @@ export function KillTheRing() {
         <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50">
           {/* Detection Controls */}
           <div className="p-3 border-b border-border space-y-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">Detection</h2>
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              {settings.mode === 'feedbackHunt' ? 'Aggressive Feedback Detection' : settings.mode === 'vocalRing' ? 'Vocal Ring Detection' : settings.mode === 'musicAware' ? 'Music-Aware Mode' : settings.mode === 'aggressive' ? 'Maximum Sensitivity' : 'Calibration Mode'}
+            </h2>
             
             {/* Feedback Threshold */}
             <div className="space-y-1.5">
@@ -200,53 +202,53 @@ export function KillTheRing() {
           </div>
         </aside>
 
-        {/* Main Visualization Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          {/* RTA Spectrum */}
-          <div className="flex-1 min-h-0 p-3 pb-1.5">
-            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
-              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[10px] font-medium text-foreground">RTA Spectrum</span>
-                <span className="text-[10px] text-muted-foreground font-mono">
-                  {spectrum?.noiseFloorDb !== null ? `${spectrum?.noiseFloorDb?.toFixed(0)}dB floor` : ''}
-                </span>
-              </div>
-              <div className="h-[calc(100%-24px)]">
-                <SpectrumCanvas
-                  spectrum={spectrum}
-                  advisories={advisories}
-                  isRunning={isRunning}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Section - GEQ and Waterfall */}
-          <div className="flex gap-3 p-3 pt-1.5 h-56">
-            {/* GEQ Bar View */}
-            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
-              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[10px] font-medium text-foreground">31-Band GEQ</span>
-              </div>
-              <div className="h-[calc(100%-24px)]">
-                <GEQBarView advisories={advisories} />
+          {/* Main Visualization Area */}
+          <main className="flex-1 flex flex-col overflow-hidden">
+            {/* RTA Spectrum */}
+            <div className="flex-1 min-h-0 p-3 pb-1.5">
+              <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                  <span className="text-[10px] font-medium text-foreground">RTA Spectrum</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    {isRunning && spectrum?.noiseFloorDb !== null ? `${spectrum?.noiseFloorDb?.toFixed(0)}dB floor` : 'Ready'}
+                  </span>
+                </div>
+                <div className="h-[calc(100%-24px)]">
+                  <SpectrumCanvas
+                    spectrum={spectrum}
+                    advisories={advisories}
+                    isRunning={isRunning}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Waterfall Display */}
-            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
-              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[10px] font-medium text-foreground">Waterfall</span>
+            {/* Bottom Section - GEQ and Waterfall */}
+            <div className="flex gap-3 p-3 pt-1.5 h-56">
+              {/* GEQ Bar View */}
+              <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                  <span className="text-[10px] font-medium text-foreground">31-Band GEQ</span>
+                </div>
+                <div className="h-[calc(100%-24px)]">
+                  <GEQBarView advisories={advisories} />
+                </div>
               </div>
-              <div className="h-[calc(100%-24px)]">
-                <WaterfallCanvas 
-                  spectrum={spectrum}
-                  isRunning={isRunning}
-                />
+
+              {/* Waterfall Display */}
+              <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                  <span className="text-[10px] font-medium text-foreground">Waterfall</span>
+                </div>
+                <div className="h-[calc(100%-24px)]">
+                  <WaterfallCanvas 
+                    spectrum={spectrum}
+                    isRunning={isRunning}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
       </div>
     </div>
   )
