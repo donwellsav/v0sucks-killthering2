@@ -36,6 +36,8 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
+          // Render on first resize
+          setTimeout(() => render(), 0)
         }
       }
     })
@@ -162,11 +164,6 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
   }, [spectrum])
 
   useAnimationFrame(render, isRunning || historyRef.current.length > 0)
-
-  // Render on mount to show background
-  useEffect(() => {
-    render()
-  }, [render])
 
   return (
     <div ref={containerRef} className="w-full h-full">

@@ -38,6 +38,8 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
+          // Render grid after resize
+          setTimeout(() => render(), 0)
         }
       }
     })
@@ -240,11 +242,6 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
   }, [spectrum, advisories])
 
   useAnimationFrame(render, isRunning || spectrum !== null)
-
-  // Render grid on mount even without spectrum
-  useEffect(() => {
-    render()
-  }, [render])
 
   return (
     <div ref={containerRef} className="w-full h-full">
