@@ -95,7 +95,7 @@
   }
   body {
     @apply text-foreground;
-    background: linear-gradient(145deg, #1a1a1a 0%, #2d2d2d 50%, #1f1f1f 100%);
+    background: linear-gradient(160deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1f1f1f 75%, #141414 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }
