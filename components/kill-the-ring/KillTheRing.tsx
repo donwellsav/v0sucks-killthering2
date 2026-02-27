@@ -180,6 +180,11 @@ export function KillTheRing() {
                 step={0.5}
               />
             </div>
+
+            {/* Summary line */}
+            <div className="pt-1 text-[10px] text-muted-foreground">
+              {settings.mode === 'feedbackHunt' ? 'Aggressive feedback detection' : settings.mode === 'vocalRing' ? 'Subtle ring detection for vocals' : settings.mode === 'musicAware' ? 'Instrument-aware mode' : settings.mode === 'aggressive' ? 'Maximum sensitivity' : 'Calibration mode'}
+            </div>
           </div>
 
           {/* Issues List */}
