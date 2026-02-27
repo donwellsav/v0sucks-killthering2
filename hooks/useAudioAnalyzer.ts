@@ -91,11 +91,10 @@ export function useAudioAnalyzer(
           }
         })
       },
-      onAdvisoryCleared: (advisoryId) => {
-        setState(prev => ({
-          ...prev,
-          advisories: prev.advisories.filter(a => a.id !== advisoryId),
-        }))
+      onAdvisoryCleared: (_advisoryId) => {
+        // Do NOT remove advisories during analysis - keep them visible
+        // so the engineer can see and address the issues
+        // Advisories are only cleared on new analysis start
       },
       onTracksUpdate: (tracks) => {
         setState(prev => ({ ...prev, tracks }))
