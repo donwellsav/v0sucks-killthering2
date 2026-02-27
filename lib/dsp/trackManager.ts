@@ -3,7 +3,7 @@
 import { TRACK_SETTINGS } from './constants'
 import { hzToCents } from '@/lib/utils/pitchUtils'
 import { standardDeviation, autocorrelation, generateId } from '@/lib/utils/mathHelpers'
-import type { Track, TrackHistoryEntry, TrackFeatures, DetectedPeak } from '@/types/advisory'
+import type { Track, TrackHistoryEntry, TrackFeatures, DetectedPeak, TrackedPeak } from '@/types/advisory'
 
 export class TrackManager {
   private tracks: Map<string, Track> = new Map()
@@ -71,10 +71,49 @@ export class TrackManager {
   }
 
   /**
-   * Get all active tracks
+   * Get all active tracks as TrackedPeak objects for UI consumption
    */
-  getActiveTracks(): Track[] {
+  getActiveTracks(): TrackedPeak[] {
+    return Array.from(this.tracks.values())
+      .filter(t => t.isActive)
+      .map(track => this.trackToTrackedPeak(track))
+  }
+
+  /**
+   * Get raw Track objects (for internal use)
+   */
+  getRawTracks(): Track[] {
     return Array.from(this.tracks.values()).filter(t => t.isActive)
+  }
+
+  /**
+   * Convert internal Track to TrackedPeak for UI
+   */
+  private trackToTrackedPeak(track: Track): TrackedPeak {
+    return {
+      id: track.id,
+      frequency: track.trueFrequencyHz,
+      amplitude: track.trueAmplitudeDb,
+      prominenceDb: track.prominenceDb,
+      qEstimate: track.qEstimate,
+      bandwidthHz: track.bandwidthHz,
+      classification: 'unknown', // Will be set by classifier
+      severity: 'unknown',
+      onsetTime: track.onsetTime,
+      lastUpdateTime: track.lastUpdateTime,
+      active: track.isActive,
+      history: track.history.map(h => ({
+        time: h.time,
+        frequency: h.freqHz,
+        amplitude: h.ampDb,
+      })),
+      features: {
+        stabilityCentsStd: track.features.stabilityCentsStd,
+        harmonicityScore: track.features.harmonicityScore,
+        modulationScore: track.features.modulationScore,
+        velocityDbPerSec: track.velocityDbPerSec,
+      },
+    }
   }
 
   /**

@@ -1,14 +1,45 @@
 // KillTheRing2 Classifier - Distinguishes feedback vs whistle vs instrument
 
 import { CLASSIFIER_WEIGHTS, SEVERITY_THRESHOLDS } from './constants'
-import type { Track, ClassificationResult, SeverityLevel, IssueLabel } from '@/types/advisory'
+import type { Track, ClassificationResult, SeverityLevel, IssueLabel, TrackedPeak, DetectorSettings } from '@/types/advisory'
+
+// Type union for track input
+type TrackInput = Track | TrackedPeak
+
+// Helper to normalize input to common interface
+function normalizeTrackInput(input: TrackInput) {
+  // Check if it's a TrackedPeak (has 'frequency' field) or Track (has 'trueFrequencyHz')
+  if ('trueFrequencyHz' in input) {
+    return {
+      velocityDbPerSec: input.velocityDbPerSec,
+      stabilityCentsStd: input.features.stabilityCentsStd,
+      harmonicityScore: input.features.harmonicityScore,
+      modulationScore: input.features.modulationScore,
+      noiseSidebandScore: input.features.noiseSidebandScore,
+      maxVelocityDbPerSec: input.features.maxVelocityDbPerSec,
+      minQ: input.features.minQ,
+      persistenceMs: input.features.persistenceMs,
+    }
+  }
+  // TrackedPeak
+  return {
+    velocityDbPerSec: input.features.velocityDbPerSec,
+    stabilityCentsStd: input.features.stabilityCentsStd,
+    harmonicityScore: input.features.harmonicityScore,
+    modulationScore: input.features.modulationScore,
+    noiseSidebandScore: 0, // TrackedPeak doesn't have this
+    maxVelocityDbPerSec: Math.abs(input.features.velocityDbPerSec),
+    minQ: input.qEstimate,
+    persistenceMs: input.lastUpdateTime - input.onsetTime,
+  }
+}
 
 /**
  * Classify a track as feedback, whistle, or instrument
  * Uses weighted scoring model based on extracted features
  */
-export function classifyTrack(track: Track): ClassificationResult {
-  const features = track.features
+export function classifyTrack(track: TrackInput, settings?: DetectorSettings): ClassificationResult {
+  const features = normalizeTrackInput(track)
   const reasons: string[] = []
 
   // Initialize probabilities
@@ -133,9 +164,10 @@ export function classifyTrack(track: Track): ClassificationResult {
  */
 export function shouldReportIssue(
   classification: ClassificationResult,
-  mode: string,
-  ignoreWhistle: boolean
+  settings: DetectorSettings
 ): boolean {
+  const mode = settings.mode
+  const ignoreWhistle = !settings.musicAware // If music aware, don't filter whistles
   const { label, severity } = classification
 
   // Always report runaway regardless of mode
@@ -155,6 +187,7 @@ export function shouldReportIssue(
       return label !== 'INSTRUMENT'
 
     case 'vocalRingAssist':
+    case 'vocalRing':
       // Report all issues including possible rings
       return true
 

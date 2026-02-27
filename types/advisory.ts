@@ -2,8 +2,11 @@
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
 export type OperatingMode = 'feedbackHunt' | 'vocalRingAssist' | 'musicAware' | 'aggressive' | 'calibration'
+export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
 export type Preset = 'surgical' | 'heavy'
 export type SeverityLevel = 'RUNAWAY' | 'GROWING' | 'RESONANCE' | 'POSSIBLE_RING' | 'WHISTLE' | 'INSTRUMENT'
+export type Severity = 'runaway' | 'growing' | 'resonance' | 'ring' | 'whistle' | 'instrument' | 'unknown'
+export type Classification = 'runaway' | 'growing' | 'resonance' | 'ring' | 'whistle' | 'instrument' | 'unknown'
 export type IssueLabel = 'ACOUSTIC_FEEDBACK' | 'WHISTLE' | 'INSTRUMENT' | 'POSSIBLE_RING'
 export type PEQType = 'bell' | 'notch' | 'highShelf' | 'lowShelf' | 'HPF' | 'LPF'
 export type ShelfType = 'highShelf' | 'lowShelf' | 'HPF' | 'LPF'
@@ -193,6 +196,50 @@ export interface WorkerOutgoingMessage {
   type: 'analysis' | 'error' | 'ready'
   data?: unknown
   error?: string
+}
+
+// TrackedPeak - represents a tracked frequency peak
+export interface TrackedPeak {
+  id: string
+  frequency: number
+  amplitude: number
+  prominenceDb: number
+  qEstimate: number
+  bandwidthHz: number
+  classification: Classification
+  severity: Severity
+  onsetTime: number
+  lastUpdateTime: number
+  active: boolean
+  history: Array<{
+    time: number
+    frequency: number
+    amplitude: number
+  }>
+  features: {
+    stabilityCentsStd: number
+    harmonicityScore: number
+    modulationScore: number
+    velocityDbPerSec: number
+  }
+}
+
+// DetectorSettings - primary settings interface for the analyzer
+export interface DetectorSettings {
+  mode: OperationMode
+  fftSize: 4096 | 8192 | 16384
+  smoothingTimeConstant: number
+  minFrequency: number
+  maxFrequency: number
+  feedbackThresholdDb: number
+  ringThresholdDb: number
+  growthRateThreshold: number
+  holdTimeMs: number
+  noiseFloorDecay: number
+  peakMergeCents: number
+  maxDisplayedIssues: number
+  eqPreset: 'surgical' | 'heavy'
+  musicAware: boolean
 }
 
 // Default configuration

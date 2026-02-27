@@ -6,21 +6,19 @@ import { classifyTrack, shouldReportIssue } from '@/lib/dsp/classifier'
 import { generateEQAdvisory } from '@/lib/dsp/eqAdvisor'
 import { generateId } from '@/lib/utils/mathHelpers'
 import type { 
-  AnalysisConfig, 
-  Track, 
   Advisory, 
   DetectedPeak,
   SpectrumData,
-  OperatingMode,
-  Preset
+  TrackedPeak,
+  DetectorSettings,
 } from '@/types/advisory'
-import { DEFAULT_CONFIG } from '@/types/advisory'
+import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export interface AudioAnalyzerCallbacks {
   onSpectrum?: (data: SpectrumData) => void
   onAdvisory?: (advisory: Advisory) => void
   onAdvisoryCleared?: (advisoryId: string) => void
-  onTracksUpdate?: (tracks: Track[]) => void
+  onTracksUpdate?: (tracks: TrackedPeak[]) => void
   onError?: (error: Error) => void
   onStateChange?: (isRunning: boolean) => void
 }
@@ -32,10 +30,11 @@ export interface AudioAnalyzerState {
   noiseFloorDb: number | null
   sampleRate: number
   fftSize: number
+  effectiveThresholdDb: number
 }
 
 export class AudioAnalyzer {
-  private config: AnalysisConfig
+  private settings: DetectorSettings
   private callbacks: AudioAnalyzerCallbacks
   private detector: FeedbackDetector
   private trackManager: TrackManager
@@ -52,15 +51,15 @@ export class AudioAnalyzer {
   private _error: string | null = null
 
   constructor(
-    config: Partial<AnalysisConfig> = {},
+    settings: Partial<DetectorSettings> = {},
     callbacks: AudioAnalyzerCallbacks = {}
   ) {
-    this.config = { ...DEFAULT_CONFIG, ...config }
+    this.settings = { ...DEFAULT_SETTINGS, ...settings }
     this.callbacks = callbacks
 
     this.trackManager = new TrackManager()
 
-    this.detector = new FeedbackDetector(this.config, {
+    this.detector = new FeedbackDetector(this.settings, {
       onPeakDetected: this.handlePeakDetected.bind(this),
       onPeakCleared: this.handlePeakCleared.bind(this),
     })
@@ -108,21 +107,9 @@ export class AudioAnalyzer {
     this.callbacks.onStateChange?.(false)
   }
 
-  updateConfig(config: Partial<AnalysisConfig>): void {
-    Object.assign(this.config, config)
-    this.detector.updateConfig(config)
-  }
-
-  setMode(mode: OperatingMode): void {
-    this.config.mode = mode
-  }
-
-  setPreset(preset: Preset): void {
-    this.config.preset = preset
-  }
-
-  setIgnoreWhistle(ignore: boolean): void {
-    this.config.ignoreWhistle = ignore
+  updateSettings(settings: Partial<DetectorSettings>): void {
+    Object.assign(this.settings, settings)
+    this.detector.updateSettings(settings)
   }
 
   getState(): AudioAnalyzerState {
@@ -134,10 +121,11 @@ export class AudioAnalyzer {
       noiseFloorDb: detectorState.noiseFloorDb,
       sampleRate: detectorState.sampleRate,
       fftSize: detectorState.fftSize,
+      effectiveThresholdDb: detectorState.effectiveThresholdDb,
     }
   }
 
-  getActiveTracks(): Track[] {
+  getActiveTracks(): TrackedPeak[] {
     return this.trackManager.getActiveTracks()
   }
 
@@ -150,7 +138,7 @@ export class AudioAnalyzer {
         if (urgencyA !== urgencyB) return urgencyB - urgencyA
         return b.trueAmplitudeDb - a.trueAmplitudeDb
       })
-      .slice(0, this.config.maxIssues)
+      .slice(0, this.settings.maxDisplayedIssues)
   }
 
   getSpectrum(): Float32Array | null {
@@ -161,13 +149,13 @@ export class AudioAnalyzer {
 
   private handlePeakDetected(peak: DetectedPeak): void {
     // Process peak through track manager
-    const track = this.trackManager.processPeak(peak as DetectedPeak & { qEstimate?: number; bandwidthHz?: number })
+    const track = this.trackManager.processPeak(peak)
 
     // Classify the track
-    const classification = classifyTrack(track)
+    const classification = classifyTrack(track, this.settings)
 
     // Check if we should report this issue
-    if (!shouldReportIssue(classification, this.config.mode, this.config.ignoreWhistle)) {
+    if (!shouldReportIssue(classification, this.settings)) {
       // Remove existing advisory if it exists
       const existingAdvisoryId = this.trackToAdvisoryId.get(track.id)
       if (existingAdvisoryId) {
@@ -184,7 +172,7 @@ export class AudioAnalyzer {
     const eqAdvisory = generateEQAdvisory(
       track,
       classification.severity,
-      this.config.preset,
+      this.settings.eqPreset,
       spectrum ?? undefined,
       state.sampleRate,
       state.fftSize
@@ -202,12 +190,12 @@ export class AudioAnalyzer {
       severity: classification.severity,
       confidence: classification.confidence,
       why: classification.reasons,
-      trueFrequencyHz: track.trueFrequencyHz,
-      trueAmplitudeDb: track.trueAmplitudeDb,
+      trueFrequencyHz: track.frequency,
+      trueAmplitudeDb: track.amplitude,
       prominenceDb: track.prominenceDb,
       qEstimate: track.qEstimate,
       bandwidthHz: track.bandwidthHz,
-      velocityDbPerSec: track.velocityDbPerSec,
+      velocityDbPerSec: track.features.velocityDbPerSec,
       stabilityCentsStd: track.features.stabilityCentsStd,
       harmonicityScore: track.features.harmonicityScore,
       modulationScore: track.features.modulationScore,
@@ -296,8 +284,8 @@ export class AudioAnalyzer {
  * Factory function for creating an audio analyzer
  */
 export function createAudioAnalyzer(
-  config?: Partial<AnalysisConfig>,
+  settings?: Partial<DetectorSettings>,
   callbacks?: AudioAnalyzerCallbacks
 ): AudioAnalyzer {
-  return new AudioAnalyzer(config, callbacks)
+  return new AudioAnalyzer(settings, callbacks)
 }

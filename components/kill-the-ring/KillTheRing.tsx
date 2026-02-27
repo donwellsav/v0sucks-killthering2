@@ -6,6 +6,9 @@ import { IssuesList } from './IssuesList'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
+import { SettingsPanel } from './SettingsPanel'
+import { TrackTimeline } from './TrackTimeline'
+import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export function KillTheRing() {
   const {
@@ -17,12 +20,12 @@ export function KillTheRing() {
     fftSize,
     spectrum,
     advisories,
-    config,
+    tracks,
+    settings,
     start,
     stop,
-    setMode,
-    setPreset,
-    setIgnoreWhistle,
+    updateSettings,
+    resetSettings,
   } = useAudioAnalyzer()
 
   return (
@@ -43,6 +46,11 @@ export function KillTheRing() {
             </div>
           )}
           <span className="font-mono">{fftSize} pt FFT @ {(sampleRate / 1000).toFixed(1)}kHz</span>
+          <SettingsPanel
+            settings={settings}
+            onSettingsChange={updateSettings}
+            onReset={resetSettings}
+          />
         </div>
       </header>
 
@@ -59,12 +67,10 @@ export function KillTheRing() {
         <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto p-4">
           <ControlPanel
             isRunning={isRunning}
-            config={config}
+            settings={settings}
             onStart={start}
             onStop={stop}
-            onModeChange={setMode}
-            onPresetChange={setPreset}
-            onIgnoreWhistleChange={setIgnoreWhistle}
+            onSettingsChange={updateSettings}
             noiseFloorDb={noiseFloorDb}
             sampleRate={sampleRate}
           />
@@ -74,7 +80,7 @@ export function KillTheRing() {
             <h2 className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
               Active Issues ({advisories.length})
             </h2>
-            <IssuesList advisories={advisories} maxIssues={config.maxIssues} />
+            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
           </div>
         </aside>
 

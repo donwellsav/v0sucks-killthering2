@@ -10,7 +10,7 @@ import {
   isValidFftSize,
   generateId 
 } from '@/lib/utils/mathHelpers'
-import type { DetectedPeak, AnalysisConfig } from '@/types/advisory'
+import type { DetectedPeak, AnalysisConfig, DetectorSettings } from '@/types/advisory'
 import { DEFAULT_CONFIG } from '@/types/advisory'
 
 export interface FeedbackDetectorCallbacks {
@@ -209,6 +209,48 @@ export class FeedbackDetector {
       this.recomputeAnalysisDbBounds()
       this.noiseFloorDb = null
       this.resetHistory()
+    }
+  }
+
+  /**
+   * Updates settings from the UI DetectorSettings interface
+   * Maps DetectorSettings to the internal AnalysisConfig
+   */
+  updateSettings(settings: Partial<DetectorSettings>): void {
+    const mappedConfig: Partial<AnalysisConfig> = {}
+
+    if (settings.fftSize !== undefined) {
+      mappedConfig.fftSize = settings.fftSize
+    }
+    if (settings.minFrequency !== undefined) {
+      mappedConfig.minHz = settings.minFrequency
+    }
+    if (settings.maxFrequency !== undefined) {
+      mappedConfig.maxHz = settings.maxFrequency
+    }
+    if (settings.feedbackThresholdDb !== undefined) {
+      mappedConfig.relativeThresholdDb = settings.feedbackThresholdDb
+    }
+    if (settings.holdTimeMs !== undefined) {
+      mappedConfig.clearMs = settings.holdTimeMs
+    }
+    if (settings.eqPreset !== undefined) {
+      mappedConfig.preset = settings.eqPreset
+    }
+    if (settings.mode !== undefined) {
+      // Map OperationMode to OperatingMode
+      const modeMap: Record<string, AnalysisConfig['mode']> = {
+        feedbackHunt: 'feedbackHunt',
+        vocalRing: 'vocalRingAssist',
+        musicAware: 'musicAware',
+        aggressive: 'aggressive',
+        calibration: 'calibration',
+      }
+      mappedConfig.mode = modeMap[settings.mode] ?? 'feedbackHunt'
+    }
+
+    if (Object.keys(mappedConfig).length > 0) {
+      this.updateConfig(mappedConfig)
     }
   }
 

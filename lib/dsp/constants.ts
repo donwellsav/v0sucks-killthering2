@@ -133,6 +133,58 @@ export const CANVAS_SETTINGS = {
   GEQ_BAR_WIDTH_RATIO: 0.8, // Bar width as ratio of band spacing
 } as const
 
+// Operation mode presets
+export const OPERATION_MODES = {
+  feedbackHunt: {
+    feedbackThreshold: 15,
+    ringThreshold: 8,
+    growthRateThreshold: 3,
+    musicAware: false,
+  },
+  vocalRing: {
+    feedbackThreshold: 10,
+    ringThreshold: 5,
+    growthRateThreshold: 2,
+    musicAware: false,
+  },
+  musicAware: {
+    feedbackThreshold: 18,
+    ringThreshold: 10,
+    growthRateThreshold: 4,
+    musicAware: true,
+  },
+  aggressive: {
+    feedbackThreshold: 8,
+    ringThreshold: 4,
+    growthRateThreshold: 2,
+    musicAware: false,
+  },
+  calibration: {
+    feedbackThreshold: 6,
+    ringThreshold: 3,
+    growthRateThreshold: 1,
+    musicAware: false,
+  },
+} as const
+
+// Default settings for the analyzer
+export const DEFAULT_SETTINGS = {
+  mode: 'feedbackHunt' as const,
+  fftSize: 8192 as const,
+  smoothingTimeConstant: 0.8,
+  minFrequency: 60,
+  maxFrequency: 16000,
+  feedbackThresholdDb: 15,
+  ringThresholdDb: 8,
+  growthRateThreshold: 3,
+  holdTimeMs: 2000,
+  noiseFloorDecay: 0.995,
+  peakMergeCents: 50,
+  maxDisplayedIssues: 8,
+  eqPreset: 'surgical' as const,
+  musicAware: false,
+}
+
 // Color palette for visualizations
 export const VIZ_COLORS = {
   RUNAWAY: '#ef4444', // red-500

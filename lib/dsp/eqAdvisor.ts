@@ -5,6 +5,7 @@ import { hzToPitch, formatPitch } from '@/lib/utils/pitchUtils'
 import { clamp } from '@/lib/utils/mathHelpers'
 import type { 
   Track, 
+  TrackedPeak,
   SeverityLevel, 
   Preset,
   GEQRecommendation, 
@@ -13,6 +14,18 @@ import type {
   EQAdvisory,
   PitchInfo 
 } from '@/types/advisory'
+
+// Track input type that works with both Track and TrackedPeak
+type TrackInput = Track | TrackedPeak
+
+// Helper to get frequency from either type
+function getTrackFrequency(track: TrackInput): number {
+  return 'trueFrequencyHz' in track ? track.trueFrequencyHz : track.frequency
+}
+
+function getTrackQ(track: TrackInput): number {
+  return track.qEstimate
+}
 
 /**
  * Find nearest ISO 31-band to a given frequency
@@ -91,11 +104,11 @@ export function calculateQ(severity: SeverityLevel, preset: Preset, trackQ: numb
  * Generate GEQ recommendation for a track
  */
 export function generateGEQRecommendation(
-  track: Track,
+  track: TrackInput,
   severity: SeverityLevel,
   preset: Preset
 ): GEQRecommendation {
-  const { bandHz, bandIndex } = findNearestGEQBand(track.trueFrequencyHz)
+  const { bandHz, bandIndex } = findNearestGEQBand(getTrackFrequency(track))
   const suggestedDb = calculateCutDepth(severity, preset)
 
   return {
@@ -109,12 +122,13 @@ export function generateGEQRecommendation(
  * Generate PEQ recommendation for a track
  */
 export function generatePEQRecommendation(
-  track: Track,
+  track: TrackInput,
   severity: SeverityLevel,
   preset: Preset
 ): PEQRecommendation {
+  const freqHz = getTrackFrequency(track)
   const suggestedDb = calculateCutDepth(severity, preset)
-  const q = calculateQ(severity, preset, track.qEstimate)
+  const q = calculateQ(severity, preset, getTrackQ(track))
 
   // Determine filter type
   let type: PEQRecommendation['type'] = 'bell'
@@ -122,17 +136,17 @@ export function generatePEQRecommendation(
   if (severity === 'RUNAWAY') {
     // Use notch for runaway (very narrow, deep cut)
     type = 'notch'
-  } else if (track.trueFrequencyHz < 80) {
+  } else if (freqHz < 80) {
     // Suggest HPF for very low frequencies
     type = 'HPF'
-  } else if (track.trueFrequencyHz > 12000) {
+  } else if (freqHz > 12000) {
     // Suggest LPF for very high frequencies
     type = 'LPF'
   }
 
   return {
     type,
-    hz: track.trueFrequencyHz,
+    hz: freqHz,
     q,
     gainDb: suggestedDb,
   }
@@ -217,16 +231,17 @@ export function analyzeSpectralTrends(
  * Generate complete EQ advisory for a track
  */
 export function generateEQAdvisory(
-  track: Track,
+  track: TrackInput,
   severity: SeverityLevel,
   preset: Preset,
   spectrum?: Float32Array,
   sampleRate?: number,
   fftSize?: number
 ): EQAdvisory {
+  const freqHz = getTrackFrequency(track)
   const geq = generateGEQRecommendation(track, severity, preset)
   const peq = generatePEQRecommendation(track, severity, preset)
-  const pitch = hzToPitch(track.trueFrequencyHz)
+  const pitch = hzToPitch(freqHz)
 
   // Generate shelf recommendations if spectrum provided
   let shelves: ShelfRecommendation[] = []

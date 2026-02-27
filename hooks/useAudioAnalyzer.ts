@@ -3,14 +3,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AudioAnalyzer, createAudioAnalyzer } from '@/lib/audio/createAudioAnalyzer'
 import type { 
-  AnalysisConfig, 
   Advisory, 
-  Track, 
   SpectrumData,
-  OperatingMode,
-  Preset 
+  TrackedPeak,
+  DetectorSettings,
 } from '@/types/advisory'
-import { DEFAULT_CONFIG } from '@/types/advisory'
+import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export interface UseAudioAnalyzerState {
   isRunning: boolean
@@ -20,26 +18,24 @@ export interface UseAudioAnalyzerState {
   sampleRate: number
   fftSize: number
   spectrum: SpectrumData | null
-  tracks: Track[]
+  tracks: TrackedPeak[]
   advisories: Advisory[]
 }
 
 export interface UseAudioAnalyzerReturn extends UseAudioAnalyzerState {
   start: () => Promise<void>
   stop: () => void
-  updateConfig: (config: Partial<AnalysisConfig>) => void
-  setMode: (mode: OperatingMode) => void
-  setPreset: (preset: Preset) => void
-  setIgnoreWhistle: (ignore: boolean) => void
-  config: AnalysisConfig
+  updateSettings: (settings: Partial<DetectorSettings>) => void
+  resetSettings: () => void
+  settings: DetectorSettings
 }
 
 export function useAudioAnalyzer(
-  initialConfig: Partial<AnalysisConfig> = {}
+  initialSettings: Partial<DetectorSettings> = {}
 ): UseAudioAnalyzerReturn {
-  const [config, setConfig] = useState<AnalysisConfig>(() => ({
-    ...DEFAULT_CONFIG,
-    ...initialConfig,
+  const [settings, setSettings] = useState<DetectorSettings>(() => ({
+    ...DEFAULT_SETTINGS,
+    ...initialSettings,
   }))
 
   const [state, setState] = useState<UseAudioAnalyzerState>({
@@ -48,19 +44,29 @@ export function useAudioAnalyzer(
     error: null,
     noiseFloorDb: null,
     sampleRate: 48000,
-    fftSize: config.fftSize,
+    fftSize: settings.fftSize,
     spectrum: null,
     tracks: [],
     advisories: [],
   })
 
   const analyzerRef = useRef<AudioAnalyzer | null>(null)
+  const settingsRef = useRef(settings)
+  
+  // Keep settings ref in sync
+  useEffect(() => {
+    settingsRef.current = settings
+  }, [settings])
 
   // Initialize analyzer
   useEffect(() => {
-    const analyzer = createAudioAnalyzer(config, {
+    const analyzer = createAudioAnalyzer(settings, {
       onSpectrum: (data) => {
-        setState(prev => ({ ...prev, spectrum: data }))
+        setState(prev => ({ 
+          ...prev, 
+          spectrum: data,
+          noiseFloorDb: data.noiseFloorDb,
+        }))
       },
       onAdvisory: (advisory) => {
         setState(prev => {
@@ -81,7 +87,7 @@ export function useAudioAnalyzer(
                 if (urgencyA !== urgencyB) return urgencyB - urgencyA
                 return b.trueAmplitudeDb - a.trueAmplitudeDb
               })
-              .slice(0, config.maxIssues),
+              .slice(0, settingsRef.current.maxDisplayedIssues),
           }
         })
       },
@@ -113,12 +119,13 @@ export function useAudioAnalyzer(
     }
   }, []) // Only create once
 
-  // Update config when it changes
+  // Update settings when they change
   useEffect(() => {
     if (analyzerRef.current) {
-      analyzerRef.current.updateConfig(config)
+      analyzerRef.current.updateSettings(settings)
+      setState(prev => ({ ...prev, fftSize: settings.fftSize }))
     }
-  }, [config])
+  }, [settings])
 
   const start = useCallback(async () => {
     if (!analyzerRef.current) return
@@ -156,51 +163,32 @@ export function useAudioAnalyzer(
     }))
   }, [])
 
-  const updateConfig = useCallback((newConfig: Partial<AnalysisConfig>) => {
-    setConfig(prev => ({ ...prev, ...newConfig }))
+  const updateSettings = useCallback((newSettings: Partial<DetectorSettings>) => {
+    setSettings(prev => ({ ...prev, ...newSettings }))
   }, [])
 
-  const setMode = useCallback((mode: OperatingMode) => {
-    setConfig(prev => ({ ...prev, mode }))
-    if (analyzerRef.current) {
-      analyzerRef.current.setMode(mode)
-    }
-  }, [])
-
-  const setPreset = useCallback((preset: Preset) => {
-    setConfig(prev => ({ ...prev, preset }))
-    if (analyzerRef.current) {
-      analyzerRef.current.setPreset(preset)
-    }
-  }, [])
-
-  const setIgnoreWhistle = useCallback((ignore: boolean) => {
-    setConfig(prev => ({ ...prev, ignoreWhistle: ignore }))
-    if (analyzerRef.current) {
-      analyzerRef.current.setIgnoreWhistle(ignore)
-    }
+  const resetSettings = useCallback(() => {
+    setSettings(DEFAULT_SETTINGS)
   }, [])
 
   return {
     ...state,
-    config,
+    settings,
     start,
     stop,
-    updateConfig,
-    setMode,
-    setPreset,
-    setIgnoreWhistle,
+    updateSettings,
+    resetSettings,
   }
 }
 
 function getSeverityUrgency(severity: string): number {
   switch (severity) {
-    case 'RUNAWAY': return 5
-    case 'GROWING': return 4
-    case 'RESONANCE': return 3
-    case 'POSSIBLE_RING': return 2
-    case 'WHISTLE': return 1
-    case 'INSTRUMENT': return 1
+    case 'runaway': return 5
+    case 'growing': return 4
+    case 'resonance': return 3
+    case 'ring': return 2
+    case 'whistle': return 1
+    case 'instrument': return 1
     default: return 0
   }
 }
