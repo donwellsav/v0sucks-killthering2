@@ -64,7 +64,7 @@ export function KillTheRing() {
               <div className="flex items-baseline gap-1">
                 <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
                 <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
-                <span className="text-sm font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">RING</span>
+                <span className="text-sm font-black tracking-tighter text-magenta-400">RING</span>
               </div>
               <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
             </div>
