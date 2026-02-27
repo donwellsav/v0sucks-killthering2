@@ -50,22 +50,7 @@ export function KillTheRing() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo + Start/Stop */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0">
-              <circle cx="12" cy="12" r="10" stroke="url(#ringGrad)" strokeWidth="2" fill="none" />
-              <circle cx="12" cy="12" r="6" stroke="url(#ringGrad)" strokeWidth="1.5" fill="none" opacity="0.6" />
-              <line x1="4" y1="4" x2="20" y2="20" stroke="#ff4444" strokeWidth="2.5" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="ringGrad" x1="0" y1="0" x2="24" y2="24">
-                  <stop offset="0%" stopColor="#00d4aa" />
-                  <stop offset="100%" stopColor="#e040fb" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="text-sm font-semibold tracking-tight text-foreground">
-              KTR<span className="text-primary">2</span>
-            </span>
-          </div>
+          <span className="text-base font-bold text-foreground">KillTheRing</span>
           
           <Button
             onClick={isRunning ? stop : start}
