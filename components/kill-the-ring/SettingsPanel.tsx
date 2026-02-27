@@ -36,7 +36,7 @@ export function SettingsPanel({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10">
           <Settings className="w-4 h-4" />
           <span className="text-xs">Settings</span>
         </Button>

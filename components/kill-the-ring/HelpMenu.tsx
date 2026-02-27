@@ -18,14 +18,14 @@ export function HelpMenu() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10">
           <HelpCircle className="w-4 h-4" />
           <span className="text-xs">Help</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg">KillTheRing2 Help</DialogTitle>
+          <DialogTitle className="text-lg">Kill The Ring Help</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="mt-4">
@@ -37,9 +37,9 @@ export function HelpMenu() {
           </TabsList>
 
           <TabsContent value="overview" className="mt-4 space-y-4">
-            <Section title="What is KillTheRing2?">
+            <Section title="What is Kill The Ring?">
               <p>
-                KillTheRing2 is a real-time acoustic feedback detection tool for live sound engineers. 
+                Kill The Ring is a real-time acoustic feedback detection tool for live sound engineers. 
                 It analyzes audio input to identify feedback frequencies, resonant rings, and other 
                 problematic tones, then provides specific EQ recommendations to address them.
               </p>
