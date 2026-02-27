@@ -6,3 +6,4 @@ export { TrackTimeline } from "./TrackTimeline";
 export { IssuesList } from "./IssuesList";
 export { ControlPanel } from "./ControlPanel";
 export { SettingsPanel } from "./SettingsPanel";
+export { HelpMenu } from "./HelpMenu";

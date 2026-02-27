@@ -8,6 +8,7 @@ import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { TrackTimeline } from './TrackTimeline'
+import { HelpMenu } from './HelpMenu'
 import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export function KillTheRing() {
@@ -46,6 +47,7 @@ export function KillTheRing() {
             </div>
           )}
           <span className="font-mono">{fftSize} pt FFT @ {(sampleRate / 1000).toFixed(1)}kHz</span>
+          <HelpMenu />
           <SettingsPanel
             settings={settings}
             onSettingsChange={updateSettings}

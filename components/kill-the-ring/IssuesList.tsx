@@ -10,7 +10,11 @@ interface IssuesListProps {
 }
 
 export function IssuesList({ advisories, maxIssues = 10 }: IssuesListProps) {
-  const displayedAdvisories = advisories.slice(0, maxIssues)
+  // Sort by frequency (low to high) for easier GEQ/PEQ navigation
+  const sortedAdvisories = [...advisories].sort((a, b) => 
+    (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0)
+  )
+  const displayedAdvisories = sortedAdvisories.slice(0, maxIssues)
 
   if (displayedAdvisories.length === 0) {
     return (
