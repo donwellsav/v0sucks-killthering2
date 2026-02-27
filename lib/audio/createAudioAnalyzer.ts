@@ -10,6 +10,7 @@ import type {
   DetectedPeak,
   SpectrumData,
   TrackedPeak,
+  Track,
   DetectorSettings,
 } from '@/types/advisory'
 import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
@@ -182,6 +183,7 @@ export class AudioAnalyzer {
     const existingAdvisoryId = this.trackToAdvisoryId.get(track.id)
     const advisoryId = existingAdvisoryId ?? generateId()
 
+    // track is a raw Track object with trueFrequencyHz, not TrackedPeak with frequency
     const advisory: Advisory = {
       id: advisoryId,
       trackId: track.id,
@@ -190,12 +192,12 @@ export class AudioAnalyzer {
       severity: classification.severity,
       confidence: classification.confidence,
       why: classification.reasons,
-      trueFrequencyHz: track.frequency,
-      trueAmplitudeDb: track.amplitude,
+      trueFrequencyHz: track.trueFrequencyHz,
+      trueAmplitudeDb: track.trueAmplitudeDb,
       prominenceDb: track.prominenceDb,
       qEstimate: track.qEstimate,
       bandwidthHz: track.bandwidthHz,
-      velocityDbPerSec: track.features.velocityDbPerSec,
+      velocityDbPerSec: track.velocityDbPerSec,
       stabilityCentsStd: track.features.stabilityCentsStd,
       harmonicityScore: track.features.harmonicityScore,
       modulationScore: track.features.modulationScore,
