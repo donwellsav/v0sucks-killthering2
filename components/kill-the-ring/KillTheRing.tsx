@@ -49,7 +49,7 @@ export function KillTheRing() {
     <div className="flex flex-col h-screen">
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
-        {/* Left: Logo only */}
+        {/* Left: Logo + Start/Stop */}
         <div className="flex items-center gap-4">
           {/* Logo and branding */}
           <div className="flex items-center gap-3 pl-2 border-l border-border">
@@ -69,6 +69,31 @@ export function KillTheRing() {
               <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
             </div>
           </div>
+          
+          <Button
+            onClick={isRunning ? stop : start}
+            size="sm"
+            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
+          >
+            {isRunning ? (
+              <>
+                <MicOff className="w-3.5 h-3.5 mr-1.5" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Mic className="w-3.5 h-3.5 mr-1.5" />
+                Start
+              </>
+            )}
+          </Button>
+
+          {isRunning && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">LIVE</span>
+            </div>
+          )}
         </div>
 
         {/* Center: Mode + Gain Meter */}
@@ -93,7 +118,7 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Start/Stop + Info + Settings */}
+        {/* Right: Info + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -103,32 +128,6 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
-
-          {isRunning && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium">LIVE</span>
-            </div>
-          )}
-
-          <Button
-            onClick={isRunning ? stop : start}
-            size="sm"
-            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
-          >
-            {isRunning ? (
-              <>
-                <MicOff className="w-3.5 h-3.5 mr-1.5" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-3.5 h-3.5 mr-1.5" />
-                Start
-              </>
-            )}
-          </Button>
-
           <HelpMenu />
           <SettingsPanel
             settings={settings}
