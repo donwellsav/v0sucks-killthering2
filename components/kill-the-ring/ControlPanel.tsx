@@ -3,7 +3,6 @@
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
@@ -75,30 +74,6 @@ export function ControlPanel({
             <SelectItem value="calibration">Calibration</SelectItem>
           </SelectContent>
         </Select>
-        <p className="text-[10px] text-muted-foreground leading-tight">
-          {settings.mode === 'feedbackHunt' && 'Standard mode for detecting runaway feedback during soundcheck.'}
-          {settings.mode === 'vocalRing' && 'Sensitive mode for subtle vocal resonances and rings.'}
-          {settings.mode === 'musicAware' && 'Instrument-friendly mode that respects musical content.'}
-          {settings.mode === 'aggressive' && 'Maximum sensitivity for problematic rooms.'}
-          {settings.mode === 'calibration' && 'Shows all detected peaks for system tuning.'}
-        </p>
-      </div>
-
-      {/* Preset Selection */}
-      <div className="flex flex-col gap-2">
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">EQ Preset</Label>
-        <Select 
-          value={settings.eqPreset} 
-          onValueChange={(v) => onSettingsChange({ eqPreset: v as 'surgical' | 'heavy' })}
-        >
-          <SelectTrigger className="bg-input">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="surgical">Surgical (High Q, Deep Cut)</SelectItem>
-            <SelectItem value="heavy">Heavy (Low Q, Moderate Cut)</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Input Gain Slider */}
@@ -120,53 +95,10 @@ export function ControlPanel({
           step={1}
           className="w-full"
         />
-        <p className="text-[10px] text-muted-foreground leading-tight">
-          Boost weak signals or reduce hot inputs. Try +6 to +12 dB if feedback is not being detected.
-        </p>
-      </div>
-
-      {/* Sensitivity / Threshold Slider */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-            Detection Threshold
-          </Label>
-          <span className="text-xs font-mono text-foreground">
-            {settings.feedbackThresholdDb} dB
-          </span>
-        </div>
-        <Slider
-          value={[settings.feedbackThresholdDb]}
-          onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
-          min={3}
-          max={24}
-          step={1}
-          className="w-full"
-        />
-        <p className="text-[10px] text-muted-foreground leading-tight">
-          Lower = more sensitive.
-        </p>
-      </div>
-
-      {/* Music Aware Toggle */}
-      <div className="flex items-center justify-between">
-        <Label className="text-sm text-foreground">Music-Aware</Label>
-        <Switch
-          checked={settings.musicAware}
-          onCheckedChange={(v) => onSettingsChange({ musicAware: v })}
-        />
       </div>
 
       {/* Status Info */}
       <div className="flex flex-col gap-1 text-xs text-muted-foreground border-t border-border pt-3">
-        <div className="flex justify-between">
-          <span>Sample Rate</span>
-          <span className="font-mono text-foreground">{(sampleRate / 1000).toFixed(1)} kHz</span>
-        </div>
-        <div className="flex justify-between">
-          <span>FFT Size</span>
-          <span className="font-mono text-foreground">{settings.fftSize}</span>
-        </div>
         <div className="flex justify-between">
           <span>Noise Floor</span>
           <span className="font-mono text-foreground">
@@ -178,10 +110,6 @@ export function ControlPanel({
           <span className="font-mono text-foreground">
             {(sampleRate / settings.fftSize).toFixed(1)} Hz/bin
           </span>
-        </div>
-        <div className="flex justify-between">
-          <span>Threshold</span>
-          <span className="font-mono text-foreground">{settings.feedbackThresholdDb} dB</span>
         </div>
       </div>
     </div>
