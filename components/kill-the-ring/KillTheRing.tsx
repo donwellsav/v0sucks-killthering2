@@ -50,10 +50,24 @@ export function KillTheRing() {
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo + Start/Stop */}
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-base font-bold text-foreground">Kill The Ring</span>
-            <span className="text-[10px] text-muted-foreground font-medium tracking-wide">Don Wells AV</span>
+        <div className="flex items-center gap-4">
+          {/* Logo and branding */}
+          <div className="flex items-center gap-3 pl-2 border-l border-border">
+            {/* Stylized icon */}
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-500/20 to-magenta-500/20" />
+              <div className="text-base font-bold bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">◎</div>
+            </div>
+            
+            {/* Brand text */}
+            <div className="flex flex-col gap-0">
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
+                <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
+                <span className="text-sm font-black tracking-tighter bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">RING</span>
+              </div>
+              <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
+            </div>
           </div>
           
           <Button
