@@ -72,9 +72,8 @@ export function KillTheRing() {
           
           <Button
             onClick={isRunning ? stop : start}
-            variant={isRunning ? 'destructive' : 'default'}
             size="sm"
-            className="h-7 px-3 text-xs font-medium"
+            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-cyan-500 to-magenta-500 hover:from-cyan-600 hover:to-magenta-600 text-white border-0"
           >
             {isRunning ? (
               <>
