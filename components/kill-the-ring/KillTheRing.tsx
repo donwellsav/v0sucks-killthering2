@@ -49,55 +49,27 @@ export function KillTheRing() {
     <div className="flex flex-col h-screen">
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
-        {/* Left: Logo + Start/Stop */}
-        <div className="flex items-center gap-4">
-          {/* Logo and branding */}
-          <div className="flex items-center gap-3 pl-2 border-l border-border">
-            {/* Stylized icon */}
-            <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20" />
-              <div className="text-base font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">◎</div>
-            </div>
-            
-            {/* Brand text */}
-            <div className="flex flex-col gap-0">
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
-                <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
-                <span className="text-sm font-black tracking-tighter text-blue-400">RING</span>
-              </div>
-              <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
-            </div>
+        {/* Left: Logo only */}
+        <div className="flex items-center gap-3 pl-2 border-l border-border">
+          {/* Stylized icon */}
+          <div className="relative w-8 h-8 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20" />
+            <div className="text-base font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">◎</div>
           </div>
           
-          <Button
-            onClick={isRunning ? stop : start}
-            size="sm"
-            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
-          >
-            {isRunning ? (
-              <>
-                <MicOff className="w-3.5 h-3.5 mr-1.5" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-3.5 h-3.5 mr-1.5" />
-                Start
-              </>
-            )}
-          </Button>
-
-          {isRunning && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium">LIVE</span>
+          {/* Brand text */}
+          <div className="flex flex-col gap-0">
+            <div className="flex items-baseline gap-1">
+              <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
+              <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
+              <span className="text-sm font-black tracking-tighter text-blue-400">RING</span>
             </div>
-          )}
+            <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
+          </div>
         </div>
 
-        {/* Center: Mode + Gain Meter */}
-        <div className="flex items-center gap-4">
+        {/* Center: Mode + Meter + Start */}
+        <div className="flex items-center gap-3">
           <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
             <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
               <SelectValue />
@@ -116,9 +88,27 @@ export function KillTheRing() {
             onChange={(v) => updateSettings({ inputGainDb: v })}
             level={inputLevel}
           />
+
+          <Button
+            onClick={isRunning ? stop : start}
+            size="sm"
+            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
+          >
+            {isRunning ? (
+              <>
+                <MicOff className="w-3.5 h-3.5 mr-1.5" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Mic className="w-3.5 h-3.5 mr-1.5" />
+                Start
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Right: Info + Settings */}
+        {/* Right: Info + LIVE indicator + Help + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -128,6 +118,14 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+          
+          {isRunning && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">LIVE</span>
+            </div>
+          )}
+
           <HelpMenu />
           <SettingsPanel
             settings={settings}
