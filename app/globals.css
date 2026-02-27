@@ -3,46 +3,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* KillTheRing2 - Dark Grey Theme */
 :root {
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
+  --background: #1a1a1a;
+  --foreground: #f0f0f0;
+  --card: #242424;
+  --card-foreground: #f0f0f0;
+  --popover: #2a2a2a;
+  --popover-foreground: #f0f0f0;
+  --primary: #00d4aa;
   --primary-foreground: #0a0a0a;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a1a1aa;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
-  --destructive: #dc2626;
-  --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
-  --ring: #d4d4d8;
-  --severity-runaway: #ef4444;
-  --severity-growing: #f97316;
-  --severity-resonance: #eab308;
-  --severity-ring: #a855f7;
-  --severity-whistle: #06b6d4;
-  --severity-instrument: #22c55e;
-  --chart-1: #3b82f6;
-  --chart-2: #22c55e;
-  --chart-3: #f97316;
-  --chart-4: #a855f7;
-  --chart-5: #06b6d4;
+  --secondary: #383838;
+  --secondary-foreground: #e8e8e8;
+  --muted: #333333;
+  --muted-foreground: #a0a0a0;
+  --accent: #e040fb;
+  --accent-foreground: #ffffff;
+  --destructive: #ff4444;
+  --destructive-foreground: #ffffff;
+  --border: #444444;
+  --input: #2a2a2a;
+  --ring: #00d4aa;
+  /* Vibrant severity colors */
+  --severity-runaway: #ff4444;
+  --severity-growing: #ffaa00;
+  --severity-resonance: #ffdd00;
+  --severity-ring: #e040fb;
+  --severity-whistle: #00bcd4;
+  --severity-instrument: #4caf50;
+  /* Colorful chart palette */
+  --chart-1: #00d4aa;
+  --chart-2: #e040fb;
+  --chart-3: #ffaa00;
+  --chart-4: #ff4444;
+  --chart-5: #00bcd4;
   --radius: 0.5rem;
-  --sidebar: #0a0a0a;
-  --sidebar-foreground: #fafafa;
-  --sidebar-primary: #3b82f6;
-  --sidebar-primary-foreground: #fafafa;
-  --sidebar-accent: #262626;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #27272a;
-  --sidebar-ring: #d4d4d8;
+  --sidebar: #1e1e1e;
+  --sidebar-foreground: #e0e0e0;
+  --sidebar-primary: #00d4aa;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #2a2a2a;
+  --sidebar-accent-foreground: #e0e0e0;
+  --sidebar-border: #3a3a3a;
+  --sidebar-ring: #00d4aa;
 }
 
 @theme inline {
@@ -92,7 +95,7 @@
   }
   body {
     @apply text-foreground;
-    background: linear-gradient(160deg, #0a0a0a 0%, #1a1a1a 30%, #252525 50%, #1a1a1a 70%, #0a0a0a 100%);
+    background: linear-gradient(160deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1f1f1f 75%, #141414 100%);
     background-attachment: fixed;
     min-height: 100vh;
   }

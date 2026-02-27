@@ -45,44 +45,44 @@ export function KillTheRing() {
   const inputLevel = spectrum?.peak ?? -60
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <header className="h-12 flex items-center justify-between px-4 border-b border-border">
+    <div className="flex flex-col h-screen">
+      {/* Header with Controls */}
+      <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo + Start/Stop */}
-        <div className="flex items-center gap-4">
-          <h1 className="text-sm font-semibold text-foreground tracking-tight">KillTheRing</h1>
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold text-foreground">KillTheRing</span>
           
           <Button
             onClick={isRunning ? stop : start}
-            variant={isRunning ? 'secondary' : 'default'}
+            variant={isRunning ? 'destructive' : 'default'}
             size="sm"
-            className="h-8 px-3 text-xs"
+            className="h-7 px-3 text-xs font-medium"
           >
             {isRunning ? (
               <>
-                <MicOff className="w-4 h-4 mr-1.5" />
+                <MicOff className="w-3.5 h-3.5 mr-1.5" />
                 Stop
               </>
             ) : (
               <>
-                <Mic className="w-4 h-4 mr-1.5" />
+                <Mic className="w-3.5 h-3.5 mr-1.5" />
                 Start
               </>
             )}
           </Button>
 
           {isRunning && (
-            <span className="flex items-center gap-1.5 text-xs text-green-500">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Live
-            </span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">LIVE</span>
+            </div>
           )}
         </div>
 
-        {/* Center: Mode + Gain */}
-        <div className="flex items-center gap-6">
+        {/* Center: Mode + Gain Meter */}
+        <div className="flex items-center gap-4">
           <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
-            <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -102,10 +102,15 @@ export function KillTheRing() {
         </div>
 
         {/* Right: Info + Settings */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="font-mono">
-            {fftSize}pt FFT
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="font-mono text-[10px]">
+            {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
           </span>
+          {noiseFloorDb !== null && (
+            <span className="font-mono text-[10px]">
+              Floor: {noiseFloorDb.toFixed(0)}dB
+            </span>
+          )}
           <HelpMenu />
           <SettingsPanel
             settings={settings}
@@ -124,52 +129,54 @@ export function KillTheRing() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Issues */}
-        <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto">
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-medium text-foreground">Active Issues</h2>
-              <span className="text-xs font-mono text-muted-foreground">{advisories.length}</span>
-            </div>
-            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
-          </div>
+        {/* Left Sidebar - Issues Only */}
+        <aside className="w-64 flex-shrink-0 border-r border-border overflow-y-auto p-3 bg-card/50">
+          <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+            <span>Active Issues</span>
+            <span className="text-primary font-mono">{advisories.length}</span>
+          </h2>
+          <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
         </aside>
 
-        {/* Visualization Area */}
-        <main className="flex-1 flex flex-col overflow-hidden p-3 gap-3">
+        {/* Main Visualization Area */}
+        <main className="flex-1 flex flex-col overflow-hidden">
           {/* RTA Spectrum */}
-          <div className="flex-1 min-h-0 rounded-lg border border-border bg-card overflow-hidden">
-            <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-              <span className="text-xs font-medium text-foreground">RTA Spectrum</span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {noiseFloorDb !== null ? `Floor ${noiseFloorDb.toFixed(0)}dB` : ''}
-              </span>
-            </div>
-            <div className="h-[calc(100%-36px)]">
-              <SpectrumCanvas
-                spectrum={spectrum}
-                advisories={advisories}
-                isRunning={isRunning}
-              />
+          <div className="flex-1 min-h-0 p-3 pb-1.5">
+            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
+              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[10px] font-medium text-foreground">RTA Spectrum</span>
+                <span className="text-[10px] text-muted-foreground font-mono">
+                  {spectrum?.noiseFloorDb !== null ? `${spectrum?.noiseFloorDb?.toFixed(0)}dB floor` : ''}
+                </span>
+              </div>
+              <div className="h-[calc(100%-24px)]">
+                <SpectrumCanvas
+                  spectrum={spectrum}
+                  advisories={advisories}
+                  isRunning={isRunning}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Bottom Row - GEQ and Waterfall */}
-          <div className="flex gap-3 h-48">
-            <div className="flex-1 rounded-lg border border-border bg-card overflow-hidden">
-              <div className="flex items-center px-3 py-2 border-b border-border">
-                <span className="text-xs font-medium text-foreground">31-Band GEQ</span>
+          {/* Bottom Section - GEQ and Waterfall */}
+          <div className="flex gap-3 p-3 pt-1.5 h-56">
+            {/* GEQ Bar View */}
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
+              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[10px] font-medium text-foreground">31-Band GEQ</span>
               </div>
-              <div className="h-[calc(100%-36px)]">
+              <div className="h-[calc(100%-24px)]">
                 <GEQBarView advisories={advisories} />
               </div>
             </div>
 
-            <div className="flex-1 rounded-lg border border-border bg-card overflow-hidden">
-              <div className="flex items-center px-3 py-2 border-b border-border">
-                <span className="text-xs font-medium text-foreground">Waterfall</span>
+            {/* Waterfall Display */}
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden">
+              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[10px] font-medium text-foreground">Waterfall</span>
               </div>
-              <div className="h-[calc(100%-36px)]">
+              <div className="h-[calc(100%-24px)]">
                 <WaterfallCanvas 
                   spectrum={spectrum}
                   isRunning={isRunning}
