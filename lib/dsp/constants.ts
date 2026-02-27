@@ -183,7 +183,7 @@ export const DEFAULT_SETTINGS = {
   maxDisplayedIssues: 8,
   eqPreset: 'surgical' as const,
   musicAware: false,
-  inputGainDb: 0,
+  inputGainDb: 12,
 }
 
 // Color palette for visualizations

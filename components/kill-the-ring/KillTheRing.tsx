@@ -50,7 +50,18 @@ export function KillTheRing() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo + Start/Stop */}
         <div className="flex items-center gap-3">
-          <h1 className="text-base font-semibold text-foreground">KillTheRing2</h1>
+          <h1 className="text-base font-bold">
+            <span className="bg-gradient-to-r from-cyan-400 via-emerald-400 to-teal-500 bg-clip-text text-transparent">
+              Kill
+            </span>
+            <span className="bg-gradient-to-r from-fuchsia-400 via-pink-500 to-rose-500 bg-clip-text text-transparent">
+              The
+            </span>
+            <span className="bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+              Ring
+            </span>
+            <span className="text-muted-foreground font-normal text-sm ml-0.5">2</span>
+          </h1>
           
           <Button
             onClick={isRunning ? stop : start}
