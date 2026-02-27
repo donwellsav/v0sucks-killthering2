@@ -37,8 +37,15 @@ interface IssueCardProps {
 
 function IssueCard({ advisory, rank }: IssueCardProps) {
   const severityColor = getSeverityColor(advisory.severity)
-  const pitchStr = formatPitch(advisory.advisory.pitch)
-  const freqStr = formatFrequency(advisory.trueFrequencyHz)
+  const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
+  const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
+  
+  // Safe accessors for numeric values
+  const amplitudeDb = advisory.trueAmplitudeDb ?? 0
+  const qEstimate = advisory.qEstimate ?? 1
+  const velocity = advisory.velocityDbPerSec ?? 0
+  const geq = advisory.advisory?.geq
+  const peq = advisory.advisory?.peq
 
   return (
     <div 
@@ -74,32 +81,34 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
       {/* Details row */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span>
-          Level: <span className="font-mono text-foreground">{advisory.trueAmplitudeDb.toFixed(1)}dB</span>
+          Level: <span className="font-mono text-foreground">{amplitudeDb.toFixed(1)}dB</span>
         </span>
         <span>
-          Q: <span className="font-mono text-foreground">{advisory.qEstimate.toFixed(1)}</span>
+          Q: <span className="font-mono text-foreground">{qEstimate.toFixed(1)}</span>
         </span>
-        {advisory.velocityDbPerSec !== 0 && (
+        {velocity !== 0 && (
           <span>
-            Growth: <span className="font-mono text-foreground">{advisory.velocityDbPerSec > 0 ? '+' : ''}{advisory.velocityDbPerSec.toFixed(1)}dB/s</span>
+            Growth: <span className="font-mono text-foreground">{velocity > 0 ? '+' : ''}{velocity.toFixed(1)}dB/s</span>
           </span>
         )}
       </div>
 
       {/* EQ Recommendation */}
-      <div className="flex items-center gap-4 text-xs mt-1">
-        <span className="text-muted-foreground">GEQ:</span>
-        <span className="font-mono text-foreground">
-          {advisory.advisory.geq.bandHz}Hz {advisory.advisory.geq.suggestedDb < 0 ? '' : '+'}{advisory.advisory.geq.suggestedDb}dB
-        </span>
-        <span className="text-muted-foreground">PEQ:</span>
-        <span className="font-mono text-foreground">
-          {advisory.advisory.peq.type} @ Q={advisory.advisory.peq.q.toFixed(1)} {advisory.advisory.peq.gainDb < 0 ? '' : '+'}{advisory.advisory.peq.gainDb}dB
-        </span>
-      </div>
+      {geq && peq && (
+        <div className="flex items-center gap-4 text-xs mt-1">
+          <span className="text-muted-foreground">GEQ:</span>
+          <span className="font-mono text-foreground">
+            {geq.bandHz}Hz {geq.suggestedDb < 0 ? '' : '+'}{geq.suggestedDb}dB
+          </span>
+          <span className="text-muted-foreground">PEQ:</span>
+          <span className="font-mono text-foreground">
+            {peq.type} @ Q={(peq.q ?? 1).toFixed(1)} {(peq.gainDb ?? 0) < 0 ? '' : '+'}{peq.gainDb ?? 0}dB
+          </span>
+        </div>
+      )}
 
       {/* Confidence and reasons */}
-      {advisory.why.length > 0 && (
+      {advisory.why && advisory.why.length > 0 && (
         <div className="text-xs text-muted-foreground mt-1 truncate">
           {advisory.why.slice(0, 2).join(' | ')}
         </div>
