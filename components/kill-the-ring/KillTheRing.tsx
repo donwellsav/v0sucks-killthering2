@@ -55,8 +55,8 @@ export function KillTheRing() {
           <div className="flex items-center gap-3 pl-2 border-l border-border">
             {/* Stylized icon */}
             <div className="relative w-8 h-8 flex items-center justify-center">
-              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-cyan-500/20 to-magenta-500/20" />
-              <div className="text-base font-bold bg-gradient-to-r from-cyan-400 to-magenta-400 bg-clip-text text-transparent">◎</div>
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20" />
+              <div className="text-base font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">◎</div>
             </div>
             
             {/* Brand text */}
@@ -64,7 +64,7 @@ export function KillTheRing() {
               <div className="flex items-baseline gap-1">
                 <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
                 <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
-                <span className="text-sm font-black tracking-tighter text-cyan-400">RING</span>
+                <span className="text-sm font-black tracking-tighter text-blue-400">RING</span>
               </div>
               <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
             </div>
@@ -72,9 +72,8 @@ export function KillTheRing() {
           
           <Button
             onClick={isRunning ? stop : start}
-            variant={isRunning ? 'destructive' : 'default'}
             size="sm"
-            className="h-7 px-3 text-xs font-medium"
+            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
           >
             {isRunning ? (
               <>

@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* KillTheRing2 - Cyan Theme */
+/* KillTheRing2 - Light Blue Theme */
 :root {
   --background: #1a1a1a;
   --foreground: #f0f0f0;
@@ -11,41 +11,41 @@
   --card-foreground: #f0f0f0;
   --popover: #2a2a2a;
   --popover-foreground: #f0f0f0;
-  --primary: #00d4aa;
+  --primary: #3B82F6;
   --primary-foreground: #0a0a0a;
-  --secondary: #1a3d3a;
+  --secondary: #1a2a3a;
   --secondary-foreground: #e8e8e8;
   --muted: #333333;
   --muted-foreground: #a0a0a0;
-  --accent: #00d4aa;
+  --accent: #3B82F6;
   --accent-foreground: #0a0a0a;
   --destructive: #ff4444;
   --destructive-foreground: #ffffff;
-  --border: #2a4a48;
+  --border: #2a3a4a;
   --input: #2a2a2a;
-  --ring: #00d4aa;
+  --ring: #3B82F6;
   /* Vibrant severity colors */
   --severity-runaway: #ff4444;
   --severity-growing: #ffaa00;
   --severity-resonance: #ffdd00;
-  --severity-ring: #00d4aa;
+  --severity-ring: #3B82F6;
   --severity-whistle: #00bcd4;
   --severity-instrument: #4caf50;
   /* Colorful chart palette */
-  --chart-1: #00d4aa;
-  --chart-2: #00e6cc;
+  --chart-1: #3B82F6;
+  --chart-2: #60A5FA;
   --chart-3: #ffaa00;
   --chart-4: #ff4444;
   --chart-5: #00bcd4;
   --radius: 0.5rem;
   --sidebar: #1e1e1e;
   --sidebar-foreground: #e0e0e0;
-  --sidebar-primary: #00d4aa;
+  --sidebar-primary: #3B82F6;
   --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a3d3a;
-  --sidebar-accent-foreground: #00d4aa;
-  --sidebar-border: #2a4a48;
-  --sidebar-ring: #00d4aa;
+  --sidebar-accent: #1a2a3a;
+  --sidebar-accent-foreground: #3B82F6;
+  --sidebar-border: #2a3a4a;
+  --sidebar-ring: #3B82F6;
 }
 
 @theme inline {
