@@ -18,7 +18,7 @@ export function HelpMenu() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-magenta-400 hover:text-magenta-300 hover:bg-magenta-500/10">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
           <HelpCircle className="w-4 h-4" />
           <span className="text-xs">Help</span>
         </Button>
@@ -29,11 +29,11 @@ export function HelpMenu() {
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4 bg-muted border border-border">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-magenta-300">Overview</TabsTrigger>
-            <TabsTrigger value="controls" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-magenta-300">Controls</TabsTrigger>
-            <TabsTrigger value="modes" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-magenta-300">Modes</TabsTrigger>
-            <TabsTrigger value="readings" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-magenta-300">Readings</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="controls">Controls</TabsTrigger>
+            <TabsTrigger value="modes">Modes</TabsTrigger>
+            <TabsTrigger value="readings">Readings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4 space-y-4">
