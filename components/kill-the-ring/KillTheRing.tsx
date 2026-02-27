@@ -149,6 +149,7 @@ export function KillTheRing() {
                 max={24}
                 step={1}
               />
+              <p className="text-[9px] text-muted-foreground">Lower = more sensitive to faint feedback</p>
             </div>
 
             {/* Ring Threshold */}
@@ -164,6 +165,7 @@ export function KillTheRing() {
                 max={15}
                 step={0.5}
               />
+              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances</p>
             </div>
 
             {/* Growth Rate */}
@@ -179,6 +181,7 @@ export function KillTheRing() {
                 max={10}
                 step={0.5}
               />
+              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster</p>
             </div>
 
             {/* Summary line */}
