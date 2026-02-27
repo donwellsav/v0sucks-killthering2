@@ -1,4 +1,4 @@
-// KillTheRing2 React Hook - Manages audio analyzer lifecycle
+// Kill The Ring - React Hook for audio analyzer lifecycle v2
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AudioAnalyzer, createAudioAnalyzer } from '@/lib/audio/createAudioAnalyzer'
@@ -116,7 +116,7 @@ export function useAudioAnalyzer(
     return () => {
       analyzer.stop({ releaseMic: true })
     }
-  }, []) // Only create once
+  }, []) // Only run once on mount
 
   // Update settings when they change
   useEffect(() => {

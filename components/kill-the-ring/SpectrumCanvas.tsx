@@ -200,7 +200,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
       // Label
       ctx.fillStyle = color
-      ctx.font = '10px system-ui, sans-serif'
+      ctx.font = '12px system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -209,7 +209,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = '10px system-ui, sans-serif'
+    ctx.font = '12px system-ui, sans-serif'
 
     // Y-axis (dB)
     ctx.textAlign = 'right'
