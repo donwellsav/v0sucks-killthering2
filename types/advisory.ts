@@ -33,6 +33,8 @@ export interface AnalysisConfig {
   noiseFloorSampleCount: number
   noiseFloorAttackMs: number
   noiseFloorReleaseMs: number
+  // Input gain (software boost/cut applied to spectrum)
+  inputGainDb: number
 }
 
 export interface DetectedPeak {
@@ -240,6 +242,7 @@ export interface DetectorSettings {
   maxDisplayedIssues: number
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
+  inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
 }
 
 // Default configuration
@@ -264,4 +267,5 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   noiseFloorSampleCount: 192,
   noiseFloorAttackMs: 250,
   noiseFloorReleaseMs: 1200,
+  inputGainDb: 0,
 }

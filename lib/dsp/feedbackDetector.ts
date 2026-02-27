@@ -248,6 +248,9 @@ export class FeedbackDetector {
       }
       mappedConfig.mode = modeMap[settings.mode] ?? 'feedbackHunt'
     }
+    if (settings.inputGainDb !== undefined) {
+      mappedConfig.inputGainDb = settings.inputGainDb
+    }
 
     if (Object.keys(mappedConfig).length > 0) {
       this.updateConfig(mappedConfig)
@@ -469,6 +472,7 @@ export class FeedbackDetector {
 
     const useAWeighting = this.config.aWeightingEnabled && !!this.aWeightingTable
     const aTable = this.aWeightingTable
+    const inputGain = this.config.inputGainDb ?? 0
 
     // Build power + prefix sums
     prefix[0] = 0
@@ -476,6 +480,10 @@ export class FeedbackDetector {
       let db = freqDb[i]
 
       if (!Number.isFinite(db)) db = -100
+      
+      // Apply software input gain
+      db += inputGain
+      
       db = clamp(db, -100, 0)
 
       // Apply A-weighting if enabled

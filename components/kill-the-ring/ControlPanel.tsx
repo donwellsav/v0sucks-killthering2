@@ -2,9 +2,10 @@
 
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
-import { Mic, MicOff } from 'lucide-react'
+import { Mic, MicOff, Volume2 } from 'lucide-react'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 
@@ -98,6 +99,53 @@ export function ControlPanel({
             <SelectItem value="heavy">Heavy (Low Q, Moderate Cut)</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {/* Input Gain Slider */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+            <Volume2 className="w-3.5 h-3.5" />
+            Input Gain
+          </Label>
+          <span className="text-xs font-mono text-foreground">
+            {settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb} dB
+          </span>
+        </div>
+        <Slider
+          value={[settings.inputGainDb]}
+          onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
+          min={-12}
+          max={24}
+          step={1}
+          className="w-full"
+        />
+        <p className="text-[10px] text-muted-foreground leading-tight">
+          Boost weak signals or reduce hot inputs. Try +6 to +12 dB if feedback is not being detected.
+        </p>
+      </div>
+
+      {/* Sensitivity / Threshold Slider */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+            Detection Threshold
+          </Label>
+          <span className="text-xs font-mono text-foreground">
+            {settings.feedbackThresholdDb} dB
+          </span>
+        </div>
+        <Slider
+          value={[settings.feedbackThresholdDb]}
+          onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
+          min={3}
+          max={24}
+          step={1}
+          className="w-full"
+        />
+        <p className="text-[10px] text-muted-foreground leading-tight">
+          Lower = more sensitive. Try 8-10 dB for subtle feedback around 280Hz.
+        </p>
       </div>
 
       {/* Music Aware Toggle */}
