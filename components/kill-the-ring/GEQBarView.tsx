@@ -133,6 +133,13 @@ export function GEQBarView({ advisories }: GEQBarViewProps) {
         ctx.font = 'bold 9px system-ui, sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + 12)
+
+        // Frequency label for active issue
+        ctx.fillStyle = recommendation.color
+        ctx.font = '8px system-ui, sans-serif'
+        ctx.textAlign = 'center'
+        const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
+        ctx.fillText(freqLabel, x + barWidth / 2, y - 5)
       } else {
         // Inactive - draw empty bar slot
         ctx.strokeStyle = '#222'

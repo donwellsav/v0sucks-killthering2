@@ -36,6 +36,8 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
+          // Render on first resize
+          setTimeout(() => render(), 0)
         }
       }
     })
