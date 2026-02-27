@@ -241,6 +241,11 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
   useAnimationFrame(render, isRunning || spectrum !== null)
 
+  // Render grid on mount even without spectrum
+  useEffect(() => {
+    render()
+  }, [render])
+
   return (
     <div ref={containerRef} className="w-full h-full">
       <canvas ref={canvasRef} className="w-full h-full" />

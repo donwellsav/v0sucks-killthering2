@@ -163,6 +163,11 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
 
   useAnimationFrame(render, isRunning || historyRef.current.length > 0)
 
+  // Render on mount to show background
+  useEffect(() => {
+    render()
+  }, [render])
+
   return (
     <div ref={containerRef} className="w-full h-full">
       <canvas ref={canvasRef} className="w-full h-full" />
