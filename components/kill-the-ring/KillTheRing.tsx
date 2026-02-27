@@ -213,6 +213,7 @@ export function KillTheRing() {
                     spectrum={spectrum}
                     advisories={advisories}
                     isRunning={isRunning}
+                    thresholdDb={settings.feedbackThresholdDb}
                   />
                 </div>
               </div>

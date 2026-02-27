@@ -12,11 +12,12 @@ interface SpectrumCanvasProps {
   spectrum: SpectrumData | null
   advisories: Advisory[]
   isRunning: boolean
+  thresholdDb?: number
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanvasProps) {
+export function SpectrumCanvas({ spectrum, advisories, isRunning, thresholdDb = -40 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -113,17 +114,15 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
     }
 
     // Draw threshold
-    if (spectrum?.effectiveThresholdDb !== undefined) {
-      const threshY = ((RTA_DB_MAX - spectrum.effectiveThresholdDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
-      ctx.strokeStyle = VIZ_COLORS.THRESHOLD
-      ctx.lineWidth = 1
-      ctx.setLineDash([2, 2])
-      ctx.beginPath()
-      ctx.moveTo(0, threshY)
-      ctx.lineTo(plotWidth, threshY)
-      ctx.stroke()
-      ctx.setLineDash([])
-    }
+    const threshY = ((RTA_DB_MAX - thresholdDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
+    ctx.strokeStyle = VIZ_COLORS.THRESHOLD
+    ctx.lineWidth = 1
+    ctx.setLineDash([2, 2])
+    ctx.beginPath()
+    ctx.moveTo(0, threshY)
+    ctx.lineTo(plotWidth, threshY)
+    ctx.stroke()
+    ctx.setLineDash([])
 
     // Draw spectrum
     if (spectrum?.freqDb && spectrum.sampleRate && spectrum.fftSize) {
