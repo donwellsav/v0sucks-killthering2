@@ -131,6 +131,9 @@ export function useAudioAnalyzer(
     if (!analyzerRef.current) return
     
     try {
+      // Clear previous advisories when starting fresh analysis
+      setState(prev => ({ ...prev, advisories: [], tracks: [] }))
+      
       await analyzerRef.current.start()
       const analyzerState = analyzerRef.current.getState()
       setState(prev => ({
@@ -155,10 +158,10 @@ export function useAudioAnalyzer(
   const stop = useCallback(() => {
     if (!analyzerRef.current) return
     analyzerRef.current.stop({ releaseMic: false })
+    // Keep advisories visible until next start - only clear running state
     setState(prev => ({
       ...prev,
       isRunning: false,
-      advisories: [],
       tracks: [],
     }))
   }, [])

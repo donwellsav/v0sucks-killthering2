@@ -144,7 +144,7 @@ export function ControlPanel({
           className="w-full"
         />
         <p className="text-[10px] text-muted-foreground leading-tight">
-          Lower = more sensitive. Try 8-10 dB for subtle feedback around 280Hz.
+          Lower = more sensitive.
         </p>
       </div>
 
