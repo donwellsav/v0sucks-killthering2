@@ -36,7 +36,7 @@ export function SettingsPanel({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10">
           <Settings className="w-4 h-4" />
           <span className="text-xs">Settings</span>
         </Button>
@@ -47,9 +47,9 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="display">Display</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-muted border border-border">
+            <TabsTrigger value="analysis" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-cyan-300">Analysis</TabsTrigger>
+            <TabsTrigger value="display" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500/20 data-[state=active]:to-magenta-500/20 data-[state=active]:text-cyan-300">Display</TabsTrigger>
           </TabsList>
 
           <TabsContent value="analysis" className="mt-4 space-y-6">
@@ -138,7 +138,7 @@ export function SettingsPanel({
               <p className="text-[11px] text-muted-foreground mt-1.5">Affects PEQ Q factor and gain recommendations</p>
             </Section>
 
-            <Button variant="outline" size="sm" onClick={onReset} className="w-full">
+            <Button variant="outline" size="sm" onClick={onReset} className="w-full border-border text-foreground hover:bg-muted hover:text-cyan-300">
               <RotateCcw className="h-3.5 w-3.5 mr-2" />
               Reset to Defaults
             </Button>
