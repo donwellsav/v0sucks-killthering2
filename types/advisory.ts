@@ -160,6 +160,7 @@ export interface SpectrumData {
   sampleRate: number
   fftSize: number
   timestamp: number
+  peak: number // Peak level in dB for metering
 }
 
 export interface AnalyzerState {

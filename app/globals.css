@@ -3,50 +3,50 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* KillTheRing2 - Professional Audio Engineering Dark Theme */
+/* KillTheRing2 - Colorful Audio Engineering Theme */
 :root {
-  /* Dark theme optimized for live sound venues */
-  --background: oklch(0.10 0 0);
-  --foreground: oklch(0.92 0 0);
-  --card: oklch(0.14 0 0);
-  --card-foreground: oklch(0.92 0 0);
-  --popover: oklch(0.14 0 0);
-  --popover-foreground: oklch(0.92 0 0);
-  --primary: oklch(0.65 0.18 145);
+  /* Gradient grey background with colorful accents */
+  --background: oklch(0.12 0.01 260);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.16 0.015 260);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.18 0.02 260);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.70 0.22 180);
   --primary-foreground: oklch(0.10 0 0);
-  --secondary: oklch(0.20 0 0);
-  --secondary-foreground: oklch(0.85 0 0);
-  --muted: oklch(0.18 0 0);
-  --muted-foreground: oklch(0.60 0 0);
-  --accent: oklch(0.55 0.20 260);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.22 0 0);
-  --input: oklch(0.18 0 0);
-  --ring: oklch(0.65 0.18 145);
-  /* Severity colors for audio feedback */
-  --severity-runaway: oklch(0.60 0.24 25);
-  --severity-growing: oklch(0.70 0.18 55);
-  --severity-resonance: oklch(0.75 0.17 85);
-  --severity-ring: oklch(0.65 0.22 300);
-  --severity-whistle: oklch(0.70 0.14 200);
-  --severity-instrument: oklch(0.70 0.18 145);
-  /* Chart colors for spectrum display */
-  --chart-1: oklch(0.65 0.18 145);
-  --chart-2: oklch(0.60 0.20 260);
-  --chart-3: oklch(0.70 0.18 55);
-  --chart-4: oklch(0.55 0.22 25);
-  --chart-5: oklch(0.70 0.14 200);
+  --secondary: oklch(0.22 0.02 260);
+  --secondary-foreground: oklch(0.90 0 0);
+  --muted: oklch(0.20 0.015 260);
+  --muted-foreground: oklch(0.65 0.02 260);
+  --accent: oklch(0.65 0.25 300);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.60 0.25 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.28 0.03 260);
+  --input: oklch(0.18 0.02 260);
+  --ring: oklch(0.70 0.22 180);
+  /* Vibrant severity colors */
+  --severity-runaway: oklch(0.65 0.28 25);
+  --severity-growing: oklch(0.75 0.22 55);
+  --severity-resonance: oklch(0.80 0.20 85);
+  --severity-ring: oklch(0.70 0.28 300);
+  --severity-whistle: oklch(0.75 0.18 200);
+  --severity-instrument: oklch(0.75 0.22 145);
+  /* Colorful chart palette */
+  --chart-1: oklch(0.70 0.22 180);
+  --chart-2: oklch(0.65 0.25 300);
+  --chart-3: oklch(0.75 0.22 55);
+  --chart-4: oklch(0.65 0.28 25);
+  --chart-5: oklch(0.75 0.18 200);
   --radius: 0.5rem;
-  --sidebar: oklch(0.12 0 0);
-  --sidebar-foreground: oklch(0.85 0 0);
-  --sidebar-primary: oklch(0.65 0.18 145);
+  --sidebar: oklch(0.14 0.015 260);
+  --sidebar-foreground: oklch(0.90 0 0);
+  --sidebar-primary: oklch(0.70 0.22 180);
   --sidebar-primary-foreground: oklch(0.10 0 0);
-  --sidebar-accent: oklch(0.18 0 0);
-  --sidebar-accent-foreground: oklch(0.85 0 0);
-  --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: oklch(0.65 0.18 145);
+  --sidebar-accent: oklch(0.20 0.02 260);
+  --sidebar-accent-foreground: oklch(0.90 0 0);
+  --sidebar-border: oklch(0.26 0.025 260);
+  --sidebar-ring: oklch(0.70 0.22 180);
 }
 
 @theme inline {
@@ -95,6 +95,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background: linear-gradient(135deg, oklch(0.10 0.015 280) 0%, oklch(0.14 0.01 240) 50%, oklch(0.12 0.02 260) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 }

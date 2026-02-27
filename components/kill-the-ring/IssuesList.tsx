@@ -44,77 +44,41 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
   const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
   const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
   
-  // Safe accessors for numeric values
-  const amplitudeDb = advisory.trueAmplitudeDb ?? 0
-  const qEstimate = advisory.qEstimate ?? 1
-  const velocity = advisory.velocityDbPerSec ?? 0
   const geq = advisory.advisory?.geq
   const peq = advisory.advisory?.peq
 
   return (
     <div 
-      className="flex flex-col gap-1 p-3 rounded-lg border border-border bg-card"
-      style={{ borderLeftColor: severityColor, borderLeftWidth: '3px' }}
+      className="flex flex-col gap-0.5 px-2 py-1.5 rounded border border-border bg-card/80"
+      style={{ borderLeftColor: severityColor, borderLeftWidth: '2px' }}
     >
-      {/* Header row */}
+      {/* Main row: freq + severity */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span 
-            className="text-xs font-mono px-1.5 py-0.5 rounded"
-            style={{ backgroundColor: severityColor, color: '#000' }}
-          >
-            #{rank}
-          </span>
-          <span className="font-mono text-sm font-medium text-foreground">
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-xs font-medium text-foreground">
             {freqStr}Hz
           </span>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono">
             {pitchStr}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span 
-            className="text-xs font-semibold uppercase"
-            style={{ color: severityColor }}
-          >
-            {advisory.severity}
-          </span>
-        </div>
+        <span 
+          className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
+          style={{ backgroundColor: severityColor, color: '#000' }}
+        >
+          {advisory.severity}
+        </span>
       </div>
 
-      {/* Details row */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span>
-          Level: <span className="font-mono text-foreground">{amplitudeDb.toFixed(1)}dB</span>
-        </span>
-        <span>
-          Q: <span className="font-mono text-foreground">{qEstimate.toFixed(1)}</span>
-        </span>
-        {velocity !== 0 && (
-          <span>
-            Growth: <span className="font-mono text-foreground">{velocity > 0 ? '+' : ''}{velocity.toFixed(1)}dB/s</span>
-          </span>
-        )}
-      </div>
-
-      {/* EQ Recommendation */}
+      {/* EQ line */}
       {geq && peq && (
-        <div className="flex items-center gap-4 text-xs mt-1">
-          <span className="text-muted-foreground">GEQ:</span>
-          <span className="font-mono text-foreground">
-            {geq.bandHz}Hz {geq.suggestedDb < 0 ? '' : '+'}{geq.suggestedDb}dB
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+          <span className="font-mono">
+            GEQ {geq.bandHz} <span className="text-foreground">{geq.suggestedDb}dB</span>
           </span>
-          <span className="text-muted-foreground">PEQ:</span>
-          <span className="font-mono text-foreground">
-            {peq.type} @ Q={(peq.q ?? 1).toFixed(1)} {(peq.gainDb ?? 0) < 0 ? '' : '+'}{peq.gainDb ?? 0}dB
+          <span className="font-mono">
+            PEQ Q{(peq.q ?? 1).toFixed(0)} <span className="text-foreground">{peq.gainDb ?? 0}dB</span>
           </span>
-        </div>
-      )}
-
-      {/* Confidence and reasons */}
-      {advisory.why && advisory.why.length > 0 && (
-        <div className="text-xs text-muted-foreground mt-1 truncate">
-          {advisory.why.slice(0, 2).join(' | ')}
         </div>
       )}
     </div>

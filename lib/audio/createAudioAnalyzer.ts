@@ -256,6 +256,12 @@ export class AudioAnalyzer {
       const state = this.detector.getState()
 
       if (spectrum) {
+        // Calculate peak level for metering
+        let peak = -100
+        for (let i = 0; i < spectrum.length; i++) {
+          if (spectrum[i] > peak) peak = spectrum[i]
+        }
+
         const spectrumData: SpectrumData = {
           freqDb: spectrum,
           power: new Float32Array(0), // Not needed for display
@@ -264,6 +270,7 @@ export class AudioAnalyzer {
           sampleRate: state.sampleRate,
           fftSize: state.fftSize,
           timestamp,
+          peak,
         }
 
         this.callbacks.onSpectrum?.(spectrumData)
