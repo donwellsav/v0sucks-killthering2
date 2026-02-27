@@ -51,7 +51,7 @@ export function KillTheRing() {
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo + Start/Stop */}
         <div className="flex items-center gap-3">
-          <span className="text-base font-bold text-foreground">KILLTHERING</span>
+          <span className="text-base font-bold text-foreground">Kill The Ring</span>
           
           <Button
             onClick={isRunning ? stop : start}
