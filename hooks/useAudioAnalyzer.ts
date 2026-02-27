@@ -116,7 +116,7 @@ export function useAudioAnalyzer(
     return () => {
       analyzer.stop({ releaseMic: true })
     }
-  }, []) // Only create once
+  }, []) // Only run once on mount
 
   // Update settings when they change
   useEffect(() => {
