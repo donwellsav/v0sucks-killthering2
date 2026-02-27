@@ -58,8 +58,13 @@ export function useAudioAnalyzer(
     settingsRef.current = settings
   }, [settings])
 
-  // Initialize analyzer
+  // Auto-start on mount
   useEffect(() => {
+    const autoStart = async () => {
+      await start()
+    }
+    autoStart()
+  }, [start])
     const analyzer = createAudioAnalyzer(settings, {
       onSpectrum: (data) => {
         setState(prev => ({ 
