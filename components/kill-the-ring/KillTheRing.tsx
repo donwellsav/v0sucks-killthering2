@@ -50,7 +50,6 @@ export function KillTheRing() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false) // Default: show controls+issues
-  const [isDesktop, setIsDesktop] = useState(false) // Track viewport size
 
   // Stable ref — never changes reference across renders
   const loggerRef = useRef(getEventLogger())
@@ -89,15 +88,7 @@ export function KillTheRing() {
     }
   }, [mobileMenuOpen])
 
-  // Detect desktop viewport
-  useEffect(() => {
-    const checkDesktop = () => {
-      setIsDesktop(window.innerWidth >= 1024)
-    }
-    checkDesktop()
-    window.addEventListener('resize', checkDesktop)
-    return () => window.removeEventListener('resize', checkDesktop)
-  }, [])
+
 
   // Log when analysis starts; create/end DB session
   useEffect(() => {
@@ -465,8 +456,7 @@ export function KillTheRing() {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Mobile: Controls + Issues panel (default view) — show when not viewing graph */}
-        {!mobileShowGraph && (
-          <div className="lg:hidden flex-1 flex flex-col overflow-hidden bg-background">
+        <div className={`lg:hidden flex-1 flex flex-col overflow-hidden bg-background ${mobileShowGraph ? 'hidden' : ''}`}>
             {/* Compact input gain section */}
             <div className="border-b border-border p-2 flex-shrink-0 bg-card/50">
               <InputMeterSlider
@@ -491,11 +481,9 @@ export function KillTheRing() {
               <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
             </div>
           </div>
-        )}
 
-        {/* Graph view — shown when mobileShowGraph is true on mobile, always shown on desktop */}
-        {(mobileShowGraph || isDesktop) && (
-          <>
+        {/* Graph view — always shown on desktop (lg:flex), conditionally on mobile */}
+        <div className={`flex-1 flex flex-col lg:contents ${mobileShowGraph ? 'flex' : 'hidden lg:flex'}`}>
             {/* Left Sidebar — desktop only, collapsible */}
             {sidebarOpen && (
               <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
@@ -600,8 +588,7 @@ export function KillTheRing() {
                 ))}
               </div>
             </main>
-          </>
-        )}
+        </div>
       </div>
     </div>
   )
