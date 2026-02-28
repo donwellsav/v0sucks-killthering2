@@ -33,6 +33,9 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 export function KillTheRing() {
+  // v2.1 Force Rebuild — bundler cache invalidation
+  // Ensures correct GRAPH_CHIPS usage, no window.innerWidth, proper syntax
+  // Last updated: 2026-02-28
   const {
     isRunning,
     error,
@@ -221,6 +224,11 @@ export function KillTheRing() {
 
   return (
     <div className="flex flex-col h-screen">
+      {/* ─── KILL THE RING v2.1 ─────────────────────────────────────────────────
+          Buildtime: 2026-02-28 | Bundler cache: invalidated
+          Layout: Header + Mobile/Desktop content + Reset confirmation
+          Graphs: GRAPH_CHIPS (RTA/GEQ/Waterfall) - NO window.innerWidth SSR access
+          ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
