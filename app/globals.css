@@ -3,49 +3,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Kill The Ring - Light Blue Theme */
+/* Kill The Ring - "i like this" Vibrant Purple Design System */
 :root {
-  --background: #1a1a1a;
+  --background: #1a1b1e;
   --foreground: #f0f0f0;
-  --card: #242424;
+  --card: #222327;
   --card-foreground: #f0f0f0;
-  --popover: #2a2a2a;
+  --popover: #222327;
   --popover-foreground: #f0f0f0;
-  --primary: #3B82F6;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1a2a3a;
-  --secondary-foreground: #e8e8e8;
-  --muted: #333333;
+  --primary: #8c5cff;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2c33;
+  --secondary-foreground: #f0f0f0;
+  --muted: #2a2c33;
   --muted-foreground: #a0a0a0;
-  --accent: #3B82F6;
-  --accent-foreground: #ffffff;
-  --destructive: #ff4444;
+  --accent: #1e293b;
+  --accent-foreground: #79c0ff;
+  --destructive: #f87171;
   --destructive-foreground: #ffffff;
-  --border: #2a3a4a;
-  --input: #2a2a2a;
-  --ring: #3B82F6;
-  /* Vibrant severity colors */
-  --severity-runaway: #ff4444;
-  --severity-growing: #ffaa00;
-  --severity-resonance: #ffdd00;
-  --severity-ring: #3B82F6;
-  --severity-whistle: #00bcd4;
-  --severity-instrument: #4caf50;
-  /* Colorful chart palette */
-  --chart-1: #3B82F6;
-  --chart-2: #60A5FA;
-  --chart-3: #ffaa00;
-  --chart-4: #ff4444;
-  --chart-5: #00bcd4;
+  --border: #33353a;
+  --input: #33353a;
+  --ring: #8c5cff;
+  /* Vibrant severity colors with enhanced chart palette */
+  --severity-runaway: #f87171;
+  --severity-growing: #fca5a5;
+  --severity-resonance: #8c5cff;
+  --severity-ring: #79c0ff;
+  --severity-whistle: #4ade80;
+  --severity-instrument: #a0a0a0;
+  /* Vibrant chart palette */
+  --chart-1: #4ade80;
+  --chart-2: #8c5cff;
+  --chart-3: #fca5a5;
+  --chart-4: #5993f4;
+  --chart-5: #a0a0a0;
   --radius: 0.5rem;
-  --sidebar: #1e1e1e;
-  --sidebar-foreground: #e0e0e0;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1a2a3a;
-  --sidebar-accent-foreground: #3B82F6;
-  --sidebar-border: #2a3a4a;
-  --sidebar-ring: #3B82F6;
+  --sidebar: #161618;
+  --sidebar-foreground: #f0f0f0;
+  --sidebar-primary: #8c5cff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a2c33;
+  --sidebar-accent-foreground: #8c5cff;
+  --sidebar-border: #33353a;
+  --sidebar-ring: #8c5cff;
 }
 
 @theme inline {
