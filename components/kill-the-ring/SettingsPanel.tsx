@@ -19,7 +19,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Settings, RotateCcw } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Settings, RotateCcw, HelpCircle } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
 
 interface SettingsPanelProps {
@@ -41,19 +42,85 @@ export function SettingsPanel({
           <span className="text-xs">Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle className="text-lg">Settings</DialogTitle>
+          <DialogTitle className="text-lg">Detection Settings</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="detection" className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="detection">Detection</TabsTrigger>
             <TabsTrigger value="analysis">Analysis</TabsTrigger>
             <TabsTrigger value="display">Display</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="detection" className="mt-4 space-y-6">
+            <Section 
+              title="Feedback Threshold"
+              tooltip="Primary detection sensitivity. Lower = more sensitive to faint feedback. Typical range: 10-18dB for live sound."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Sensitivity Level</span>
+                  <span className="text-xs font-mono">{settings.feedbackThresholdDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.feedbackThresholdDb]}
+                  onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
+                  min={6}
+                  max={24}
+                  step={1}
+                />
+                <p className="text-[10px] text-muted-foreground">Low (6-12) = Aggressive | High (18-24) = Conservative</p>
+              </div>
+            </Section>
+
+            <Section 
+              title="Ring Sensitivity"
+              tooltip="Threshold for detecting resonant peaks. Lower values catch subtle room resonances. Default: 5-8dB."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Resonance Detection</span>
+                  <span className="text-xs font-mono">{settings.ringThresholdDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.ringThresholdDb]}
+                  onValueChange={([v]) => onSettingsChange({ ringThresholdDb: v })}
+                  min={3}
+                  max={15}
+                  step={0.5}
+                />
+                <p className="text-[10px] text-muted-foreground">Higher = fewer false positives in musical content</p>
+              </div>
+            </Section>
+
+            <Section 
+              title="Growth Rate Threshold"
+              tooltip="How fast a frequency must grow to be classified as runaway feedback. Measured in dB/second."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Growth Velocity</span>
+                  <span className="text-xs font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+                </div>
+                <Slider
+                  value={[settings.growthRateThreshold]}
+                  onValueChange={([v]) => onSettingsChange({ growthRateThreshold: v })}
+                  min={1}
+                  max={10}
+                  step={0.5}
+                />
+                <p className="text-[10px] text-muted-foreground">Low (1-2) = Fast detection | High (6-10) = Only severe feedback</p>
+              </div>
+            </Section>
+          </TabsContent>
+
           <TabsContent value="analysis" className="mt-4 space-y-6">
-            <Section title="FFT Resolution">
+            <Section 
+              title="FFT Size"
+              tooltip="Higher FFT size provides better frequency resolution but slower response time. Choose based on lowest feedback frequency."
+            >
               <Select
                 value={settings.fftSize.toString()}
                 onValueChange={(v) =>
@@ -64,18 +131,21 @@ export function SettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="4096">4096 (Fast response)</SelectItem>
-                  <SelectItem value="8192">8192 (Balanced)</SelectItem>
-                  <SelectItem value="16384">16384 (High resolution)</SelectItem>
+                  <SelectItem value="4096">4096 - Fast Response (11.7 Hz resolution @ 48kHz)</SelectItem>
+                  <SelectItem value="8192">8192 - Balanced (5.9 Hz resolution @ 48kHz)</SelectItem>
+                  <SelectItem value="16384">16384 - High Resolution (2.9 Hz resolution @ 48kHz)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Higher = better frequency accuracy, slower response</p>
             </Section>
 
-            <Section title="Spectrum Smoothing">
+            <Section 
+              title="Spectrum Smoothing"
+              tooltip="Reduces display noise by averaging spectral frames. Higher = smoother but may hide fast-changing peaks."
+            >
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-xs">{(settings.smoothingTimeConstant * 100).toFixed(0)}%</span>
+                  <span className="text-xs text-muted-foreground">Smoothing Amount</span>
+                  <span className="text-xs font-mono">{(settings.smoothingTimeConstant * 100).toFixed(0)}%</span>
                 </div>
                 <Slider
                   value={[settings.smoothingTimeConstant]}
@@ -85,12 +155,15 @@ export function SettingsPanel({
                   step={0.05}
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Reduces display noise for cleaner visualization</p>
             </Section>
 
-            <Section title="Hold Time">
+            <Section 
+              title="Hold Time"
+              tooltip="How long detected issues remain visible after they disappear from the spectrum. Useful for reference while making EQ changes."
+            >
               <div className="space-y-2">
                 <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Display Duration</span>
                   <span className="text-xs font-mono">{settings.holdTimeMs}ms</span>
                 </div>
                 <Slider
@@ -100,15 +173,19 @@ export function SettingsPanel({
                   max={5000}
                   step={250}
                 />
+                <p className="text-[10px] text-muted-foreground">Increase to 3000-5000ms when making reference adjustments</p>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">How long issues persist after detection stops</p>
             </Section>
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-6">
-            <Section title="Max Issues Displayed">
+            <Section 
+              title="Max Issues Displayed"
+              tooltip="Limit how many issues are shown in the active list. Lower values reduce visual clutter."
+            >
               <div className="space-y-2">
                 <div className="flex justify-between">
+                  <span className="text-xs text-muted-foreground">Issues to Show</span>
                   <span className="text-xs font-mono">{settings.maxDisplayedIssues}</span>
                 </div>
                 <Slider
@@ -119,10 +196,12 @@ export function SettingsPanel({
                   step={1}
                 />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Limits the active issues list size</p>
             </Section>
 
-            <Section title="EQ Recommendation Style">
+            <Section 
+              title="EQ Recommendation Style"
+              tooltip="Surgical uses narrow, deep cuts. Heavy uses wider, moderate cuts. Choose based on your preference and system capabilities."
+            >
               <Select
                 value={settings.eqPreset}
                 onValueChange={(v) => onSettingsChange({ eqPreset: v as 'surgical' | 'heavy' })}
@@ -131,11 +210,10 @@ export function SettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="surgical">Surgical (Narrow, deep)</SelectItem>
-                  <SelectItem value="heavy">Heavy (Wide, moderate)</SelectItem>
+                  <SelectItem value="surgical">Surgical - Narrow Q, Deep Cuts (High precision)</SelectItem>
+                  <SelectItem value="heavy">Heavy - Wide Q, Moderate Cuts (Broader control)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Affects PEQ Q factor and gain recommendations</p>
             </Section>
 
             <Button variant="outline" size="sm" onClick={onReset} className="w-full">
@@ -149,13 +227,33 @@ export function SettingsPanel({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+interface SectionProps {
+  title: string
+  tooltip?: string
+  children: React.ReactNode
+}
+
+function Section({ title, tooltip, children }: SectionProps) {
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
-      <div className="text-sm text-muted-foreground space-y-2">
-        {children}
+    <TooltipProvider>
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help transition-colors" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <div className="text-sm text-muted-foreground space-y-2">
+          {children}
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   )
 }

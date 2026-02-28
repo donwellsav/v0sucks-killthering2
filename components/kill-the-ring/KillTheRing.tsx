@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -11,6 +11,9 @@ import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { LogsViewer } from './LogsViewer'
+import { CompactControlStrip } from './CompactControlStrip'
+import { ThresholdPreview } from './ThresholdPreview'
+import { PresetManagerDialog } from './PresetManagerDialog'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
@@ -18,6 +21,7 @@ import { Mic, MicOff } from 'lucide-react'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
+import { PresetManager, type DetectionPreset } from '@/lib/dsp/presets'
 
 export function KillTheRing() {
   const {
@@ -35,7 +39,30 @@ export function KillTheRing() {
     resetSettings,
   } = useAudioAnalyzer()
 
+  const [currentPresetId, setCurrentPresetId] = useState<string | undefined>()
+  const [showThresholdPreview, setShowThresholdPreview] = useState(true)
+
   const logger = getEventLogger()
+
+  // Calculate frequencies above threshold for live preview
+  const detectedFrequenciesAboveThreshold = useMemo(() => {
+    if (!spectrum || !spectrum.data || spectrum.data.length === 0) return 0
+
+    const freqPerBin = sampleRate / fftSize
+    const nyquist = sampleRate / 2
+    let count = 0
+
+    for (let i = 0; i < spectrum.data.length; i++) {
+      const db = spectrum.data[i]
+      const freq = i * freqPerBin
+
+      if (freq > 20 && freq <= nyquist && db >= settings.feedbackThresholdDb) {
+        count++
+      }
+    }
+
+    return count
+  }, [spectrum, settings.feedbackThresholdDb, sampleRate, fftSize])
 
   // Log when analysis starts
   useEffect(() => {
@@ -76,6 +103,24 @@ export function KillTheRing() {
     resetSettings()
     logger.logSettingsChanged({
       action: 'reset_to_defaults',
+    })
+  }
+
+  const handlePresetChange = (preset: DetectionPreset) => {
+    // Apply all preset settings
+    updateSettings({
+      feedbackThresholdDb: preset.feedbackThresholdDb ?? settings.feedbackThresholdDb,
+      ringThresholdDb: preset.ringThresholdDb ?? settings.ringThresholdDb,
+      growthRateThreshold: preset.growthRateThreshold ?? settings.growthRateThreshold,
+      mode: preset.mode ?? settings.mode,
+      fftSize: preset.fftSize ?? settings.fftSize,
+      musicAware: preset.musicAware ?? settings.musicAware,
+    })
+
+    setCurrentPresetId(preset.id)
+    logger.logSettingsChanged({
+      preset: preset.name,
+      reason: 'preset_applied',
     })
   }
 
@@ -170,6 +215,10 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+          <PresetManagerDialog
+            currentSettings={settings}
+            onPresetSelected={handlePresetChange}
+          />
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
@@ -258,6 +307,21 @@ export function KillTheRing() {
 
           {/* Main Visualization Area */}
           <main className="flex-1 flex flex-col overflow-hidden">
+            {/* Compact Control Strip */}
+            <div className="px-3 pt-3 pb-1.5">
+              <CompactControlStrip
+                settings={settings}
+                detectedFrequenciesAboveThreshold={detectedFrequenciesAboveThreshold}
+                onSettingsChange={handleSettingsChange}
+                onOpenSettings={() => {
+                  // Trigger settings panel - this would normally be handled by a ref
+                  // For now, settings can be accessed via the button
+                }}
+                onPresetChange={handlePresetChange}
+                currentPresetId={currentPresetId}
+              />
+            </div>
+
             {/* RTA Spectrum */}
             <div className="flex-1 min-h-0 p-3 pb-1.5">
               <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
@@ -276,6 +340,18 @@ export function KillTheRing() {
                 </div>
               </div>
             </div>
+
+            {/* Threshold Preview */}
+            {showThresholdPreview && (
+              <div className="px-3 pb-1.5">
+                <ThresholdPreview
+                  spectrum={spectrum?.data ?? null}
+                  threshold={settings.feedbackThresholdDb}
+                  sampleRate={sampleRate}
+                  fftSize={fftSize}
+                />
+              </div>
+            )}
 
             {/* Bottom Section - GEQ and Waterfall */}
             <div className="flex gap-3 p-3 pt-1.5 h-56">
