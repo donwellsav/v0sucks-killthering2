@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -25,8 +25,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2 } from 'lucide-react'
+import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
 interface SettingsPanelProps {
@@ -35,28 +37,43 @@ interface SettingsPanelProps {
   onReset: () => void
 }
 
-export interface AgentSettings {
-  model: string
-  temperature: number
-  systemPrompt: string
-}
-
-const DEFAULT_AGENT_SETTINGS: AgentSettings = {
-  model: 'openai/gpt-4o-mini',
-  temperature: 0.3,
-  systemPrompt:
-    'You are a live sound engineer assistant embedded in Kill The Ring, a real-time acoustic feedback detection tool. Interpret detected issues, explain EQ recommendations in plain language, and suggest workflow steps for the engineer.',
-}
-
 export function SettingsPanel({
   settings,
   onSettingsChange,
   onReset,
 }: SettingsPanelProps) {
-  const [agentSettings, setAgentSettings] = useState<AgentSettings>(DEFAULT_AGENT_SETTINGS)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const logger = getEventLogger()
 
-  const updateAgent = (patch: Partial<AgentSettings>) =>
-    setAgentSettings((prev) => ({ ...prev, ...patch }))
+  useEffect(() => {
+    setLogs(logger.getLogs())
+    const unsubscribe = logger.subscribe((updated) => setLogs(updated))
+    return unsubscribe
+  }, [logger])
+
+  const handleExport = (format: 'csv' | 'json' | 'text') => {
+    let content = ''
+    let filename = `kill-the-ring-logs_${new Date().toISOString().split('T')[0]}`
+    let mimeType = 'text/plain'
+    switch (format) {
+      case 'csv':  content = logger.exportAsCSV();  filename += '.csv';  mimeType = 'text/csv'; break
+      case 'json': content = logger.exportAsJSON(); filename += '.json'; mimeType = 'application/json'; break
+      case 'text': content = logger.exportAsText(); filename += '.txt';  mimeType = 'text/plain'; break
+    }
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename
+    document.body.appendChild(a); a.click()
+    document.body.removeChild(a); URL.revokeObjectURL(url)
+    logger.logExport(format, logs.length)
+  }
+
+  const handleClearLogs = () => {
+    if (confirm('Clear all logs? This cannot be undone.')) logger.clearLogs()
+  }
+
+  const issueLogs = logs.filter(l => l.type === 'issue_detected')
 
   return (
     <Dialog>
@@ -73,7 +90,7 @@ export function SettingsPanel({
             Advanced Settings
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Analysis engine and display preferences. Detection controls are in the sidebar.
+            Analysis engine, display preferences, and log export.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,9 +104,14 @@ export function SettingsPanel({
               <Monitor className="w-3.5 h-3.5" />
               Display
             </TabsTrigger>
-            <TabsTrigger value="agent" className="gap-1.5 text-xs">
-              <Bot className="w-3.5 h-3.5" />
-              Agent
+            <TabsTrigger value="export" className="gap-1.5 text-xs">
+              <Download className="w-3.5 h-3.5" />
+              Export
+              {issueLogs.length > 0 && (
+                <span className="ml-1 px-1 py-px bg-primary/20 text-primary text-[9px] rounded-full font-medium leading-none">
+                  {issueLogs.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -157,6 +179,29 @@ export function SettingsPanel({
                 <div className="flex justify-between text-[9px] text-muted-foreground">
                   <span>Quick</span>
                   <span>Long Hold</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="Harmonic Tolerance"
+              tooltip="Cents window used when matching overtones and sub-harmonics. Tighten for calibration in controlled rooms (25–35¢). Widen for live performance with reverb or temperature drift (65–100¢). Default 50¢ = half a semitone."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Window</span>
+                  <span className="text-xs font-mono">{settings.harmonicToleranceCents}¢</span>
+                </div>
+                <Slider
+                  value={[settings.harmonicToleranceCents]}
+                  onValueChange={([v]) => onSettingsChange({ harmonicToleranceCents: v })}
+                  min={25}
+                  max={100}
+                  step={5}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Tight (calibration)</span>
+                  <span>Wide (live)</span>
                 </div>
               </div>
             </Section>
@@ -267,75 +312,51 @@ export function SettingsPanel({
             </div>
           </TabsContent>
 
-          <TabsContent value="agent" className="mt-4 space-y-5">
-            <Section
-              title="Model"
-              tooltip="The AI model used by the assistant. GPT-4o Mini is fast and cost-efficient. GPT-4o offers higher reasoning for complex explanations. Claude Haiku is an Anthropic alternative."
-            >
-              <Select value={agentSettings.model} onValueChange={(v) => updateAgent({ model: v })}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="openai/gpt-4o-mini">GPT-4o Mini (fast, efficient)</SelectItem>
-                  <SelectItem value="openai/gpt-4o">GPT-4o (high reasoning)</SelectItem>
-                  <SelectItem value="anthropic/claude-haiku-4-5">Claude Haiku (Anthropic)</SelectItem>
-                  <SelectItem value="anthropic/claude-sonnet-4-5">Claude Sonnet (Anthropic)</SelectItem>
-                </SelectContent>
-              </Select>
-            </Section>
-
-            <Section
-              title="Temperature"
-              tooltip="Controls response creativity. 0.0-0.3 for precise, factual EQ advice. 0.5-0.7 for conversational explanations. Higher values may produce less reliable technical recommendations."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Value</span>
-                  <span className="text-xs font-mono">{agentSettings.temperature.toFixed(1)}</span>
-                </div>
-                <Slider
-                  value={[agentSettings.temperature]}
-                  onValueChange={([v]) => updateAgent({ temperature: v })}
-                  min={0}
-                  max={1}
-                  step={0.1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Precise</span>
-                  <span>Creative</span>
-                </div>
-              </div>
-            </Section>
-
-            <Section
-              title="System Prompt"
-              tooltip="Instructions given to the AI before every conversation. Defines its role, tone, and context. Changes take effect on the next message sent."
-            >
-              <textarea
-                value={agentSettings.systemPrompt}
-                onChange={(e) => updateAgent({ systemPrompt: e.target.value })}
-                rows={5}
-                className="w-full rounded-md border border-border bg-input px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none leading-relaxed"
-                placeholder="Describe the assistant's role and behavior..."
-              />
-              <p className="text-[9px] text-muted-foreground">
-                {agentSettings.systemPrompt.length} characters
+          <TabsContent value="export" className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
               </p>
-            </Section>
-
-            <div className="pt-3 border-t border-border">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => setAgentSettings(DEFAULT_AGENT_SETTINGS)}
-                className="w-full"
+                onClick={handleClearLogs}
+                className="text-destructive hover:text-destructive h-7 text-xs gap-1"
               >
-                <RotateCcw className="h-3.5 w-3.5 mr-2" />
-                Reset Agent Defaults
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear
               </Button>
             </div>
+
+            <div className="space-y-2">
+              {(
+                [
+                  { format: 'csv'  as const, label: 'CSV',        desc: 'Open in Excel or Sheets for analysis',           icon: <Sheet    className="w-4 h-4" /> },
+                  { format: 'json' as const, label: 'JSON',       desc: 'Complete data structure for programmatic use',   icon: <FileJson className="w-4 h-4" /> },
+                  { format: 'text' as const, label: 'Plain Text', desc: 'Human-readable formatted report',                icon: <FileText className="w-4 h-4" /> },
+                ] as const
+              ).map(({ format, label, desc, icon }) => (
+                <button
+                  key={format}
+                  onClick={() => handleExport(format)}
+                  disabled={logs.length === 0}
+                  className="w-full flex items-start gap-3 p-3 border border-border rounded-md hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-left"
+                >
+                  <div className="mt-0.5 text-muted-foreground">{icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">{label}</div>
+                    <div className="text-xs text-muted-foreground">{desc}</div>
+                  </div>
+                  <Download className="w-3.5 h-3.5 text-muted-foreground mt-1 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
+              Logs are stored in memory for this session. Export before closing the tab.
+            </p>
           </TabsContent>
+
         </Tabs>
       </DialogContent>
     </Dialog>

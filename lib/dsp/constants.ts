@@ -123,6 +123,14 @@ export const TRACK_SETTINGS = {
   TRACK_TIMEOUT_MS: 1000, // Remove track after this inactive time
 } as const
 
+// Harmonic detection settings
+export const HARMONIC_SETTINGS = {
+  MAX_HARMONIC: 8, // Check overtones up to this partial (2nd–8th)
+  TOLERANCE_CENTS: 50, // ±50 cents = half a semitone; matches track association tolerance
+  // Sub-harmonic check: if new peak F and an active track is near F*k, new peak may be the fundamental
+  CHECK_SUB_HARMONICS: true,
+} as const
+
 // Canvas rendering settings
 export const CANVAS_SETTINGS = {
   RTA_DB_MIN: -100,
@@ -195,6 +203,7 @@ export const DEFAULT_SETTINGS = {
   autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
   inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
+  harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
 }
 
 // Frequency range presets — quick switching for different use cases

@@ -17,7 +17,6 @@ import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
@@ -411,7 +410,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </span>
           )}
 
-          <LogsViewer />
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Session History">
             <Link href="/sessions">
               <History className="w-4 h-4" />
