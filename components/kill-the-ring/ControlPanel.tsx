@@ -1,20 +1,12 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
-import { Mic, MicOff, Volume2, Target, Music, Zap, Settings2, Radio } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Mic, MicOff, Volume2 } from 'lucide-react'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
-
-const MODE_CHIPS: { value: OperationMode; label: string; shortLabel: string; icon: React.ReactNode; description: string }[] = [
-  { value: 'feedbackHunt', label: 'Feedback Hunt', shortLabel: 'Hunt', icon: <Target className="w-3.5 h-3.5" />, description: 'Balanced PA detection' },
-  { value: 'vocalRing', label: 'Vocal Ring', shortLabel: 'Vocal', icon: <Radio className="w-3.5 h-3.5" />, description: 'Speech frequencies' },
-  { value: 'musicAware', label: 'Music-Aware', shortLabel: 'Music', icon: <Music className="w-3.5 h-3.5" />, description: 'Reduces false positives' },
-  { value: 'aggressive', label: 'Aggressive', shortLabel: 'Aggro', icon: <Zap className="w-3.5 h-3.5" />, description: 'Maximum sensitivity' },
-  { value: 'calibration', label: 'Calibration', shortLabel: 'Cal', icon: <Settings2 className="w-3.5 h-3.5" />, description: 'System ring-out' },
-]
 
 interface ControlPanelProps {
   isRunning: boolean
@@ -67,29 +59,21 @@ export function ControlPanel({
         )}
       </Button>
 
-      {/* Mode Selection - Chip Style */}
+      {/* Mode Selection */}
       <div className="flex flex-col gap-2">
         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Mode</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {MODE_CHIPS.map((chip) => (
-            <button
-              key={chip.value}
-              onClick={() => handleModeChange(chip.value)}
-              title={chip.description}
-              className={cn(
-                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all',
-                'border focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 focus:ring-offset-background',
-                settings.mode === chip.value
-                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                  : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground hover:border-muted-foreground/30'
-              )}
-            >
-              {chip.icon}
-              <span className="hidden sm:inline">{chip.label}</span>
-              <span className="sm:hidden">{chip.shortLabel}</span>
-            </button>
-          ))}
-        </div>
+        <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+          <SelectTrigger className="bg-input">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing">Vocal Ring Assist</SelectItem>
+            <SelectItem value="musicAware">Music-Aware</SelectItem>
+            <SelectItem value="aggressive">Aggressive</SelectItem>
+            <SelectItem value="calibration">Calibration</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Input Gain Slider */}

@@ -2,7 +2,6 @@
 
 // Kill The Ring main component
 import { useEffect, useState, useCallback } from 'react'
-import Link from 'next/link'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -13,17 +12,12 @@ import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { LogsViewer } from './LogsViewer'
-import { AIChatPanel } from './AIChatPanel'
 import { Button } from '@/components/ui/button'
-import { Slider } from '@/components/ui/slider'
-import { HelpCircle, Menu, X, History } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import { Slider } from '@/components/ui/slider'
+import { HelpCircle, Menu, X } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { OperationMode } from '@/types/advisory'
-import type { AgentSettings } from '@/types/agent'
-import { DEFAULT_AGENT_SETTINGS } from '@/types/agent'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
@@ -33,21 +27,6 @@ const GRAPH_LABELS: Record<GraphView, string> = {
   rta: 'RTA Spectrum',
   geq: '31-Band GEQ',
   waterfall: 'Waterfall',
-}
-
-const GRAPH_LABELS: Record<GraphView, string> = {
-  rta: 'RTA Spectrum',
-  geq: '31-Band GEQ',
-  waterfall: 'Waterfall',
-}
-
-
-const MODE_LABELS: Record<OperationMode, string> = {
-  feedbackHunt: 'Feedback Hunt',
-  vocalRing:    'Vocal Ring',
-  musicAware:   'Music-Aware',
-  aggressive:   'Aggressive',
-  calibration:  'Calibration',
 }
 
 export function KillTheRing() {
@@ -69,7 +48,6 @@ export function KillTheRing() {
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [agentSettings, setAgentSettings] = useState<AgentSettings>(DEFAULT_AGENT_SETTINGS)
 
   const logger = getEventLogger()
 
@@ -121,10 +99,6 @@ export function KillTheRing() {
     logger.logSettingsChanged({ action: 'reset_to_defaults' })
   }
 
-  const handleAgentSettingsChange = useCallback((newSettings: Partial<AgentSettings>) => {
-    setAgentSettings(prev => ({ ...prev, ...newSettings }))
-  }, [])
-
   const inputLevel = spectrum?.peak ?? -60
 
   // The two graphs that appear in the small bottom row (everything except active)
@@ -140,11 +114,11 @@ export function KillTheRing() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(MODE_LABELS) as OperationMode[]).map((mode) => (
-              <SelectItem key={mode} value={mode} className="text-xs">
-                {MODE_LABELS[mode]}
-              </SelectItem>
-            ))}
+            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+            <SelectItem value="musicAware">Music-Aware</SelectItem>
+            <SelectItem value="aggressive">Aggressive</SelectItem>
+            <SelectItem value="calibration">Calibration</SelectItem>
           </SelectContent>
         </Select>
 
@@ -284,27 +258,13 @@ export function KillTheRing() {
             </span>
           )}
 
-          {/* These are icon-only on mobile */}
-          <AIChatPanel
-            advisories={advisories}
-            settings={settings}
-            isRunning={isRunning}
-            agentSettings={agentSettings}
-          />
-          <Link href="/history">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Session history">
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">History</span>
-            </Button>
-          </Link>
+          {/* These three are icon-only on mobile */}
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
             onSettingsChange={handleSettingsChange}
             onReset={handleResetSettings}
-            agentSettings={agentSettings}
-            onAgentSettingsChange={handleAgentSettingsChange}
           />
 
           {/* Desktop sidebar toggle */}
@@ -437,24 +397,17 @@ export function KillTheRing() {
           <div className="flex-1 min-h-0 p-1.5 sm:p-2 md:p-3 pb-1 sm:pb-1.5">
             <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
               {/* Panel header with graph switcher */}
-              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
-                <div className="flex items-center gap-1">
-                  {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
-                    <button
-                      key={graph}
-                      onClick={() => setActiveGraph(graph)}
-                      className={cn(
-                        'px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all',
-                        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background',
-                        activeGraph === graph
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                          : 'bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground hover:border-border'
-                      )}
-                    >
-                      {GRAPH_LABELS[graph]}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-1">
+                <Select value={activeGraph} onValueChange={(v) => setActiveGraph(v as GraphView)}>
+                  <SelectTrigger className="h-6 w-auto sm:w-32 md:w-44 text-[9px] sm:text-[10px] border-0 bg-transparent p-0 gap-1 font-medium text-foreground focus:ring-0 shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rta" className="text-xs">RTA Spectrum</SelectItem>
+                    <SelectItem value="geq" className="text-xs">31-Band GEQ</SelectItem>
+                    <SelectItem value="waterfall" className="text-xs">Waterfall</SelectItem>
+                  </SelectContent>
+                </Select>
                 <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap">
                   {isRunning && spectrum?.noiseFloorDb != null
                     ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
