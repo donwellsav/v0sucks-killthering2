@@ -29,11 +29,16 @@ export function HelpMenu() {
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3 mb-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="controls">Controls</TabsTrigger>
             <TabsTrigger value="modes">Modes</TabsTrigger>
+          </TabsList>
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="readings">Readings</TabsTrigger>
+            <TabsTrigger value="tips">Tips</TabsTrigger>
+            <TabsTrigger value="troubleshoot">Troubleshoot</TabsTrigger>
+            <TabsTrigger value="technical">Technical</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4 space-y-4">
@@ -170,6 +175,150 @@ export function HelpMenu() {
               <ul className="space-y-2">
                 <li><strong>Noise Floor:</strong> Current ambient noise level. Issues must exceed this to be detected.</li>
                 <li><strong>Resolution:</strong> Frequency resolution in Hz per FFT bin. Lower = more precise.</li>
+              </ul>
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="tips" className="mt-4 space-y-4">
+            <Section title="Workflow Best Practices">
+              <ol className="list-decimal list-inside space-y-2">
+                <li>Start with <strong>Calibration</strong> mode during initial system setup</li>
+                <li>Ring out monitors one at a time, addressing the worst frequencies first</li>
+                <li>Apply cuts conservatively - start with 3dB and increase only if needed</li>
+                <li>Switch to <strong>Music-Aware</strong> during performance to reduce false positives</li>
+                <li>Use <strong>PEQ</strong> recommendations for surgical cuts on critical feedback</li>
+                <li>Use <strong>GEQ</strong> recommendations for broader room resonance issues</li>
+              </ol>
+            </Section>
+
+            <Section title="Getting Better Results">
+              <ul className="space-y-2">
+                <li><strong>Position matters:</strong> Place your analysis mic where feedback occurs (at the monitor, near the PA)</li>
+                <li><strong>Gain staging:</strong> Ensure your input signal is strong but not clipping. Use Input Gain if needed.</li>
+                <li><strong>Start quiet:</strong> Begin with lower system gain and slowly increase while monitoring</li>
+                <li><strong>One change at a time:</strong> Apply one EQ cut, then observe before making more changes</li>
+                <li><strong>Trust the trends:</strong> Watch the Growth indicator - positive values mean action needed</li>
+              </ul>
+            </Section>
+
+            <Section title="Common Frequency Ranges">
+              <ul className="space-y-2">
+                <li><strong>80-250 Hz:</strong> Stage rumble, proximity effect, floor monitors</li>
+                <li><strong>250-500 Hz:</strong> Muddy buildup, boxy vocals, room modes</li>
+                <li><strong>500-1000 Hz:</strong> Nasal/honky tones, vocal feedback zone</li>
+                <li><strong>1-3 kHz:</strong> Presence/intelligibility range, harsh feedback</li>
+                <li><strong>3-6 kHz:</strong> Sibilance, cymbal harshness, piercing feedback</li>
+                <li><strong>6-10 kHz:</strong> Air/brightness, high-frequency ringing</li>
+              </ul>
+            </Section>
+
+            <Section title="EQ Cut Guidelines">
+              <ul className="space-y-2">
+                <li><strong>Narrow Q (8-16):</strong> For isolated feedback frequencies - surgical removal</li>
+                <li><strong>Medium Q (2-4):</strong> For resonant room modes - broader control</li>
+                <li><strong>Wide Q (0.5-1):</strong> For tonal shaping - affects overall character</li>
+                <li><strong>Rule of thumb:</strong> Start with half the recommended cut, then adjust</li>
+              </ul>
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="troubleshoot" className="mt-4 space-y-4">
+            <Section title="No Audio Input">
+              <ul className="space-y-2">
+                <li>Check browser microphone permissions (look for camera/mic icon in address bar)</li>
+                <li>Ensure the correct input device is selected in your system audio settings</li>
+                <li>Try refreshing the page and granting permissions again</li>
+                <li>Some browsers require HTTPS for microphone access</li>
+              </ul>
+            </Section>
+
+            <Section title="Too Many False Positives">
+              <ul className="space-y-2">
+                <li>Switch to <strong>Music-Aware</strong> mode during performance</li>
+                <li>Increase the <strong>Feedback Threshold</strong> in Settings</li>
+                <li>Increase the <strong>Ring Threshold</strong> to reduce sensitivity to subtle resonances</li>
+                <li>Check that the noise floor reading is accurate for your environment</li>
+              </ul>
+            </Section>
+
+            <Section title="Missing Feedback Detection">
+              <ul className="space-y-2">
+                <li>Lower the <strong>Feedback Threshold</strong> in Settings</li>
+                <li>Increase <strong>Input Gain</strong> if the signal level is low</li>
+                <li>Try <strong>Aggressive</strong> or <strong>Calibration</strong> mode</li>
+                <li>Check that the frequency range includes your problem frequencies</li>
+                <li>Increase <strong>FFT Size</strong> for better low-frequency resolution</li>
+              </ul>
+            </Section>
+
+            <Section title="Slow or Laggy Display">
+              <ul className="space-y-2">
+                <li>Reduce <strong>FFT Size</strong> to 4096 for faster processing</li>
+                <li>Close other browser tabs to free up CPU resources</li>
+                <li>Disable the Waterfall display if not needed</li>
+                <li>Use a wired connection instead of Bluetooth for your audio interface</li>
+              </ul>
+            </Section>
+
+            <Section title="Issues Disappearing Too Quickly">
+              <ul className="space-y-2">
+                <li>Increase <strong>Hold Time</strong> in Settings to keep issues visible longer</li>
+                <li>The default hold time is 2000ms (2 seconds)</li>
+                <li>For reference during cuts, set hold time to 5000ms or higher</li>
+              </ul>
+            </Section>
+          </TabsContent>
+
+          <TabsContent value="technical" className="mt-4 space-y-4">
+            <Section title="Analysis Engine">
+              <ul className="space-y-2">
+                <li><strong>FFT Analysis:</strong> Uses Fast Fourier Transform via Web Audio API for real-time spectral analysis</li>
+                <li><strong>Peak Detection:</strong> Identifies local maxima in the frequency spectrum that exceed dynamic thresholds</li>
+                <li><strong>Track Persistence:</strong> Peaks are tracked across frames to distinguish sustained feedback from transient sounds</li>
+                <li><strong>Harmonic Filtering:</strong> Automatically suppresses harmonics of detected fundamentals to reduce clutter</li>
+                <li><strong>Duplicate Merging:</strong> Peaks within 50 cents are merged to prevent redundant advisories</li>
+              </ul>
+            </Section>
+
+            <Section title="Detection Algorithm">
+              <ul className="space-y-2">
+                <li><strong>Growth Rate:</strong> Calculated from amplitude change over time (dB/second)</li>
+                <li><strong>Q Estimation:</strong> Derived from the peak width at -3dB points</li>
+                <li><strong>Noise Floor:</strong> Adaptive measurement using the lower percentile of spectral energy</li>
+                <li><strong>Classification:</strong> Issues are categorized based on growth rate, Q factor, and absolute level</li>
+              </ul>
+            </Section>
+
+            <Section title="GEQ Band Mapping">
+              <p className="mb-2">Detected frequencies are mapped to the nearest ISO 31-band center frequency:</p>
+              <p className="text-xs font-mono bg-muted p-2 rounded">
+                20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1k, 1.25k, 1.6k, 2k, 2.5k, 3.15k, 4k, 5k, 6.3k, 8k, 10k, 12.5k, 16k, 20k Hz
+              </p>
+            </Section>
+
+            <Section title="PEQ Calculations">
+              <ul className="space-y-2">
+                <li><strong>Center Frequency:</strong> True peak frequency from interpolated FFT bins</li>
+                <li><strong>Q Factor:</strong> Estimated from peak sharpness, typically 4-16 for feedback</li>
+                <li><strong>Gain:</strong> Negative value (cut) based on peak amplitude above threshold</li>
+                <li><strong>Filter Type:</strong> Bell for standard feedback, notch for very narrow peaks</li>
+              </ul>
+            </Section>
+
+            <Section title="Browser Requirements">
+              <ul className="space-y-2">
+                <li><strong>Web Audio API:</strong> Required for real-time audio processing</li>
+                <li><strong>getUserMedia:</strong> Required for microphone access</li>
+                <li><strong>Supported Browsers:</strong> Chrome 74+, Firefox 76+, Safari 14.1+, Edge 79+</li>
+                <li><strong>Sample Rate:</strong> Uses system default (typically 44.1kHz or 48kHz)</li>
+              </ul>
+            </Section>
+
+            <Section title="Keyboard Shortcuts">
+              <ul className="space-y-2">
+                <li><strong>Space:</strong> Start/Stop analysis</li>
+                <li><strong>Escape:</strong> Close dialogs and menus</li>
+                <li><strong>?:</strong> Open this help menu</li>
               </ul>
             </Section>
           </TabsContent>
