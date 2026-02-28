@@ -175,16 +175,16 @@ export const OPERATION_MODES = {
 } as const
 
 // Default settings for the analyzer - optimized for Corporate/Conference PA feedback detection
-// with Aggressive mode default and Vocal-Focused frequency range (200Hz-8kHz)
+// with Feedback Hunt mode default and Vocal-Focused frequency range (200Hz-8kHz)
 export const DEFAULT_SETTINGS = {
-  mode: 'aggressive' as const, // Aggressive mode for maximum sensitivity during setup
+  mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
   fftSize: 8192 as const, // Good balance of resolution and response time
   smoothingTimeConstant: 0.6, // Less smoothing for faster transient response
   minFrequency: 200, // Vocal-focused lower bound
   maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 6, // Aggressive threshold for catching feedback early
-  ringThresholdDb: 3, // Very sensitive to resonances
-  growthRateThreshold: 1, // Fast detection of any growing feedback
+  feedbackThresholdDb: 8, // Feedback Hunt threshold for balanced PA detection
+  ringThresholdDb: 5, // Resonance detection balanced for general use
+  growthRateThreshold: 2, // Responsive detection without excessive false positives
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
   noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
   peakMergeCents: 50,
@@ -192,6 +192,7 @@ export const DEFAULT_SETTINGS = {
   eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
   musicAware: false, // Disabled by default for maximum detection
   inputGainDb: 18, // Higher default gain for better signal capture in speech systems
+  graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
 }
 
 // Color palette for visualizations
