@@ -95,8 +95,17 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Start Button + Info + Settings */}
+        {/* Right: Info + Start Button + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="font-mono text-[10px]">
+            {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
+          </span>
+          {noiseFloorDb !== null && (
+            <span className="font-mono text-[10px]">
+              Floor: {noiseFloorDb.toFixed(0)}dB
+            </span>
+          )}
+
           <Button
             onClick={isRunning ? stop : start}
             variant={isRunning ? 'destructive' : 'default'}
@@ -123,14 +132,6 @@ export function KillTheRing() {
             </div>
           )}
 
-          <span className="font-mono text-[10px]">
-            {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
-          </span>
-          {noiseFloorDb !== null && (
-            <span className="font-mono text-[10px]">
-              Floor: {noiseFloorDb.toFixed(0)}dB
-            </span>
-          )}
           <HelpMenu />
           <SettingsPanel
             settings={settings}
