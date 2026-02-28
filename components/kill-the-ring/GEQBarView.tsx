@@ -8,10 +8,9 @@ import type { Advisory } from '@/types/advisory'
 
 interface GEQBarViewProps {
   advisories: Advisory[]
-  graphTextSize?: number
 }
 
-export function GEQBarView({ advisories, graphTextSize = 12 }: GEQBarViewProps) {
+export function GEQBarView({ advisories }: GEQBarViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -131,13 +130,13 @@ export function GEQBarView({ advisories, graphTextSize = 12 }: GEQBarViewProps) 
 
         // Cut value label
         ctx.fillStyle = recommendation.color
-        ctx.font = `bold ${graphTextSize}px system-ui, sans-serif`
+        ctx.font = 'bold 12px system-ui, sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + 12)
 
         // Frequency label for active issue
         ctx.fillStyle = recommendation.color
-        ctx.font = `${graphTextSize - 1}px system-ui, sans-serif`
+        ctx.font = '11px system-ui, sans-serif'
         ctx.textAlign = 'center'
         const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
         ctx.fillText(freqLabel, x + barWidth / 2, y - 5)
@@ -153,7 +152,7 @@ export function GEQBarView({ advisories, graphTextSize = 12 }: GEQBarViewProps) 
 
     // Draw band labels (every 4th band to avoid clutter)
     ctx.fillStyle = '#555'
-    ctx.font = `${graphTextSize - 1}px system-ui, sans-serif`
+    ctx.font = '11px system-ui, sans-serif'
     ctx.textAlign = 'center'
 
     for (let i = 0; i < numBands; i += 4) {

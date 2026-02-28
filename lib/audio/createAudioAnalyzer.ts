@@ -179,12 +179,6 @@ export class AudioAnalyzer {
       state.fftSize
     )
 
-    // Check if this frequency is in an existing issue's range
-    // Avoid multiple issues in the same frequency band
-    if (this.isInFrequencyRange(track.trueFrequencyHz)) {
-      return
-    }
-
     // Check if this frequency is a harmonic of an existing lower frequency issue
     // If so, skip it - the fundamental is the real problem
     if (this.isHarmonicOfExisting(track.trueFrequencyHz)) {
@@ -305,26 +299,24 @@ export class AudioAnalyzer {
    * Uses 3% tolerance for harmonic matching
    */
   private isHarmonicOfExisting(freqHz: number): boolean {
-    // Check if frequency is a harmonic of an existing issue
-    for (const advisory of this.advisories.values()) {
-      const ratio = freqHz / advisory.trueFrequencyHz
-      // Check if it's a harmonic (within 2% tolerance)
-      if (Math.abs(ratio - Math.round(ratio)) < 0.02 && ratio > 1) {
-        return true
-      }
-    }
-    return false
-  }
+    const HARMONIC_TOLERANCE = 0.03 // 3% tolerance (~50 cents)
+    const MAX_HARMONIC = 8 // Check up to 8th harmonic
 
-  private isInFrequencyRange(freqHz: number, rangeHz: number = 100): boolean {
-    // Check if frequency is within existing issue's bandwidth + margin
     for (const advisory of this.advisories.values()) {
-      const freqDiff = Math.abs(freqHz - advisory.trueFrequencyHz)
-      const bandwidth = Math.max(advisory.bandwidthHz * 1.5, rangeHz)
-      if (freqDiff < bandwidth) {
-        return true
+      const fundamental = advisory.trueFrequencyHz
+      if (fundamental >= freqHz) continue // Only check lower frequencies as fundamentals
+
+      // Check if freqHz is a harmonic of the fundamental
+      for (let n = 2; n <= MAX_HARMONIC; n++) {
+        const harmonic = fundamental * n
+        const ratio = freqHz / harmonic
+        if (Math.abs(ratio - 1) < HARMONIC_TOLERANCE) {
+          // This frequency is the nth harmonic of an existing issue
+          return true
+        }
       }
     }
+
     return false
   }
 }

@@ -9,12 +9,11 @@ import type { SpectrumData } from '@/types/advisory'
 interface WaterfallCanvasProps {
   spectrum: SpectrumData | null
   isRunning: boolean
-  graphTextSize?: number
 }
 
 const HISTORY_SIZE = 128
 
-export function WaterfallCanvas({ spectrum, isRunning, graphTextSize = 12 }: WaterfallCanvasProps) {
+export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -146,7 +145,7 @@ export function WaterfallCanvas({ spectrum, isRunning, graphTextSize = 12 }: Wat
 
     // Time axis (right side)
     ctx.fillStyle = '#555'
-    ctx.font = `${graphTextSize}px system-ui, sans-serif`
+    ctx.font = '12px system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('Now', width - padding.right + 3, padding.top + 8)
     ctx.fillText('~5s', width - padding.right + 3, height - padding.bottom - 5)
@@ -160,7 +159,7 @@ export function WaterfallCanvas({ spectrum, isRunning, graphTextSize = 12 }: Wat
       ctx.fillText(label, x, height - 4)
     }
 
-  }, [spectrum, graphTextSize])
+  }, [spectrum])
 
   useAnimationFrame(render, isRunning || historyRef.current.length > 0)
 

@@ -12,12 +12,11 @@ interface SpectrumCanvasProps {
   spectrum: SpectrumData | null
   advisories: Advisory[]
   isRunning: boolean
-  graphTextSize?: number
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export function SpectrumCanvas({ spectrum, advisories, isRunning, graphTextSize = 12 }: SpectrumCanvasProps) {
+export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -199,7 +198,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphTextSize 
 
       // Label
       ctx.fillStyle = color
-      ctx.font = `${graphTextSize + 2}px system-ui, sans-serif`
+      ctx.font = '14px system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -208,7 +207,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphTextSize 
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = `${graphTextSize + 1}px system-ui, sans-serif`
+    ctx.font = '13px system-ui, sans-serif'
 
     // Y-axis (dB)
     ctx.textAlign = 'right'
