@@ -1,5 +1,7 @@
 'use client'
 
+// Kill The Ring — v2.0 Full Rebuild (cache invalidation v1)
+
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
