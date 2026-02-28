@@ -2,8 +2,9 @@
 
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
-import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Advisory } from '@/types/advisory'
 
 // Velocity thresholds for runaway prediction
@@ -116,29 +117,39 @@ function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
           </span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {!isApplied && (
-            <span
-              className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
-              style={{ backgroundColor: severityColor, color: '#000' }}
-            >
-              {advisory.severity}
-            </span>
-          )}
+          <span
+            className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
+            style={{ backgroundColor: severityColor, color: '#000' }}
+          >
+            {advisory.severity}
+          </span>
           {hasEq && onApply && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => !isApplied && onApply(advisory)}
-              disabled={isApplied}
-              aria-label={isApplied ? 'Cut already applied' : `Apply cut at ${freqStr}Hz`}
-              className={`h-5 w-5 p-0 transition-colors ${
-                isApplied
-                  ? 'text-primary cursor-default'
-                  : 'text-muted-foreground hover:text-primary'
-              }`}
-            >
-              <CheckCircle2 className="w-3 h-3" />
-            </Button>
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => !isApplied && onApply(advisory)}
+                    disabled={isApplied}
+                    aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
+                    className={`h-5 w-5 p-0 transition-colors ${
+                      isApplied
+                        ? 'text-primary cursor-default'
+                        : 'text-muted-foreground hover:text-primary'
+                    }`}
+                  >
+                    {isApplied
+                      ? <CheckCircle2 className="w-3 h-3" />
+                      : <Circle className="w-3 h-3" />
+                    }
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-xs">
+                  {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>
