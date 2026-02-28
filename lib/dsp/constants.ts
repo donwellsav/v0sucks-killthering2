@@ -133,50 +133,57 @@ export const CANVAS_SETTINGS = {
   GEQ_BAR_WIDTH_RATIO: 0.8, // Bar width as ratio of band spacing
 } as const
 
-// Operation mode presets
+// Operation mode presets - optimized for real-world feedback detection
+// Growth rates: Feedback typically grows at 6-20 dB/s, music at 1-4 dB/s
+// Thresholds: Referenced to dynamic noise floor, not absolute dB
 export const OPERATION_MODES = {
   feedbackHunt: {
-    feedbackThreshold: 15,
-    ringThreshold: 8,
-    growthRateThreshold: 3,
+    // Standard ring-out mode: balanced sensitivity for finding problem frequencies
+    feedbackThreshold: 12, // dB above noise floor for peak detection
+    ringThreshold: 6,      // dB for sustained resonance detection
+    growthRateThreshold: 4, // dB/s - catches feedback while ignoring most transients
     musicAware: false,
   },
   vocalRing: {
-    feedbackThreshold: 10,
-    ringThreshold: 5,
-    growthRateThreshold: 2,
+    // Vocal mic tuning: sensitive to subtle ringing before it becomes feedback
+    feedbackThreshold: 9,  // Lower threshold for early detection
+    ringThreshold: 4,      // Very sensitive to sustained tones
+    growthRateThreshold: 3, // Catch slower-building feedback
     musicAware: false,
   },
   musicAware: {
-    feedbackThreshold: 18,
-    ringThreshold: 10,
-    growthRateThreshold: 4,
+    // Live performance: higher thresholds to avoid false positives from music
+    feedbackThreshold: 15, // Higher to avoid music peaks triggering
+    ringThreshold: 8,      // Less sensitive during performance
+    growthRateThreshold: 6, // Only catch rapidly growing feedback (>6 dB/s is definitely feedback)
     musicAware: true,
   },
   aggressive: {
-    feedbackThreshold: 8,
-    ringThreshold: 4,
-    growthRateThreshold: 2,
+    // Maximum sensitivity: catches everything, expect false positives
+    feedbackThreshold: 6,  // Very sensitive
+    ringThreshold: 3,      // Catches subtle resonances
+    growthRateThreshold: 2, // Very early warning
     musicAware: false,
   },
   calibration: {
-    feedbackThreshold: 6,
-    ringThreshold: 3,
-    growthRateThreshold: 1,
+    // System setup: maximum sensitivity for initial ring-out
+    feedbackThreshold: 8,
+    ringThreshold: 4,
+    growthRateThreshold: 2.5,
     musicAware: false,
   },
 } as const
 
-// Default settings for the analyzer
+// Default settings for the analyzer - optimized for typical feedback hunting
 export const DEFAULT_SETTINGS = {
   mode: 'feedbackHunt' as const,
   fftSize: 8192 as const,
   smoothingTimeConstant: 0.8,
   minFrequency: 60,
   maxFrequency: 16000,
-  feedbackThresholdDb: 15,
-  ringThresholdDb: 8,
-  growthRateThreshold: 3,
+  feedbackThresholdDb: 12,   // Optimal: 12dB above noise floor catches feedback without excess false positives
+  ringThresholdDb: 6,        // Optimal: 6dB detects sustained resonances before they become full feedback
+  growthRateThreshold: 4,    // Optimal: 4dB/s - feedback grows faster, music transients are slower
   holdTimeMs: 2000,
   noiseFloorDecay: 0.995,
   peakMergeCents: 50,
