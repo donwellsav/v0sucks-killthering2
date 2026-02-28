@@ -145,7 +145,7 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
 
     // Time axis (right side)
     ctx.fillStyle = '#555'
-    ctx.font = '9px system-ui, sans-serif'
+    ctx.font = '12px system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('Now', width - padding.right + 3, padding.top + 8)
     ctx.fillText('~5s', width - padding.right + 3, height - padding.bottom - 5)
