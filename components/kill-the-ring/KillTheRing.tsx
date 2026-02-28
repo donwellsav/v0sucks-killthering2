@@ -392,7 +392,20 @@ export function KillTheRing() {
             </section>
           </div>
 
-          <div className="flex-shrink-0 border-t border-border p-4">
+          <div className="flex-shrink-0 border-t border-border p-4 space-y-2">
+            <ResetConfirmDialog
+              onConfirm={() => {
+                resetSettings()
+                logger.logSettingsChanged({ action: 'reset_to_defaults' })
+                setMobileMenuOpen(false)
+              }}
+              trigger={
+                <Button variant="outline" className="w-full h-10 text-sm font-medium">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset to Defaults
+                </Button>
+              }
+            />
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium"
