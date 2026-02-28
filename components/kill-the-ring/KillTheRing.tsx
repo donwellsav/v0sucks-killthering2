@@ -16,8 +16,10 @@ import { LogsViewer } from './LogsViewer'
 import { AIChatPanel } from './AIChatPanel'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { HelpCircle, Menu, X, Target, Music, Zap, Settings2, Radio, History } from 'lucide-react'
+import { HelpCircle, Menu, X, History } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import type { OperationMode } from '@/types/advisory'
 import type { AgentSettings } from '@/types/agent'
@@ -33,13 +35,19 @@ const GRAPH_LABELS: Record<GraphView, string> = {
   waterfall: 'Waterfall',
 }
 
-const MODE_CHIPS = [
-  { value: 'feedbackHunt' as OperationMode, label: 'Feedback Hunt', shortLabel: 'Hunt', subtitle: 'Balanced PA', icon: <Target className="w-3 h-3" /> },
-  { value: 'vocalRing'    as OperationMode, label: 'Vocal Ring',    shortLabel: 'Vocal', subtitle: 'Speech freqs', icon: <Radio className="w-3 h-3" /> },
-  { value: 'musicAware'   as OperationMode, label: 'Music-Aware',   shortLabel: 'Music', subtitle: 'Less false+', icon: <Music className="w-3 h-3" /> },
-  { value: 'aggressive'   as OperationMode, label: 'Aggressive',    shortLabel: 'Aggro', subtitle: 'Max sensitivity', icon: <Zap className="w-3 h-3" /> },
-  { value: 'calibration'  as OperationMode, label: 'Calibration',   shortLabel: 'Cal',   subtitle: 'Ring-out', icon: <Settings2 className="w-3 h-3" /> },
-]
+const GRAPH_LABELS: Record<GraphView, string> = {
+  rta: 'RTA Spectrum',
+  geq: '31-Band GEQ',
+  waterfall: 'Waterfall',
+}
+
+
+  feedbackHunt: 'Feedback Hunt',
+  vocalRing:    'Vocal Ring',
+  musicAware:   'Music-Aware',
+  aggressive:   'Aggressive',
+  calibration:  'Calibration',
+}
 
 export function KillTheRing() {
   const {
@@ -125,35 +133,19 @@ export function KillTheRing() {
   const DetectionControls = () => (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-3">
-        {/* Mode chips */}
-        <div className="flex flex-wrap gap-1">
-          {MODE_CHIPS.map((chip) => (
-            <button
-              key={chip.value}
-              onClick={() => handleModeChange(chip.value)}
-              title={chip.label}
-              className={cn(
-                'inline-flex flex-col items-start gap-0 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all border',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background',
-                settings.mode === chip.value
-                  ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                  : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
-              )}
-            >
-              <span className="flex items-center gap-1">
-                {chip.icon}
-                <span className="hidden xl:inline">{chip.label}</span>
-                <span className="xl:hidden">{chip.shortLabel}</span>
-              </span>
-              <span className={cn(
-                'text-[9px] leading-none pl-4',
-                settings.mode === chip.value ? 'text-primary-foreground/70' : 'text-muted-foreground/70'
-              )}>
-                {chip.subtitle}
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* Mode selector */}
+        <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+          <SelectTrigger className="h-7 w-full text-xs bg-input border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(MODE_LABELS) as OperationMode[]).map((mode) => (
+              <SelectItem key={mode} value={mode} className="text-xs">
+                {MODE_LABELS[mode]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
