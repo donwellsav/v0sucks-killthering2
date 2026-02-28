@@ -138,43 +138,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   const inputLevel = spectrum?.peak ?? -60
 
-  // State for manual input editing with live preview
-  const [thresholdInput, setThresholdInput] = useState('')
-  const [ringInput, setRingInput] = useState('')
-  const [growthInput, setGrowthInput] = useState('')
-
-  const DetectionControls = () => {
-    const handleThresholdInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        const val = parseFloat((e.target as HTMLInputElement).value)
-        if (!isNaN(val) && val >= 2 && val <= 20) {
-          handleSettingsChange({ feedbackThresholdDb: val })
-          setThresholdInput('')
-        }
-      }
-    }
-
-    const handleRingInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        const val = parseFloat((e.target as HTMLInputElement).value)
-        if (!isNaN(val) && val >= 1 && val <= 12) {
-          handleSettingsChange({ ringThresholdDb: val })
-          setRingInput('')
-        }
-      }
-    }
-
-    const handleGrowthInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        const val = parseFloat((e.target as HTMLInputElement).value)
-        if (!isNaN(val) && val >= 0.5 && val <= 8) {
-          handleSettingsChange({ growthRateThreshold: val })
-          setGrowthInput('')
-        }
-      }
-    }
-
-    return (
+  const DetectionControls = () => (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-3">
         <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
@@ -191,20 +155,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </Select>
 
         <div className="space-y-1.5">
-          {/* Manual input field for Threshold */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder={String(settings.feedbackThresholdDb)}
-              value={thresholdInput}
-              onChange={(e) => setThresholdInput(e.target.value)}
-              onKeyDown={handleThresholdInputKeyDown}
-              className="flex-1 px-2 py-1 h-6 text-xs bg-input border border-border/50 rounded font-mono text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-              aria-label="Threshold manual input"
-            />
-            <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap pt-1">2-20dB</span>
-          </div>
-          {/* Label + Value row */}
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Threshold</span>
@@ -227,20 +177,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         <div className="space-y-1.5">
-          {/* Manual input field for Ring */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder={String(settings.ringThresholdDb)}
-              value={ringInput}
-              onChange={(e) => setRingInput(e.target.value)}
-              onKeyDown={handleRingInputKeyDown}
-              className="flex-1 px-2 py-1 h-6 text-xs bg-input border border-border/50 rounded font-mono text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-              aria-label="Ring manual input"
-            />
-            <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap pt-1">1-12dB</span>
-          </div>
-          {/* Label + Value row */}
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Ring</span>
@@ -263,20 +199,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         <div className="space-y-1.5">
-          {/* Manual input field for Growth */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder={String(settings.growthRateThreshold.toFixed(1))}
-              value={growthInput}
-              onChange={(e) => setGrowthInput(e.target.value)}
-              onKeyDown={handleGrowthInputKeyDown}
-              className="flex-1 px-2 py-1 h-6 text-xs bg-input border border-border/50 rounded font-mono text-foreground placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-              aria-label="Growth manual input"
-            />
-            <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap pt-1">0.5-8dB/s</span>
-          </div>
-          {/* Label + Value row */}
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Growth</span>
@@ -299,8 +221,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
       </div>
     </TooltipProvider>
-    )
-  }
+  )
 
   return (
     <div className="flex flex-col h-screen">
