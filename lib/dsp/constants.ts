@@ -184,6 +184,7 @@ export const DEFAULT_SETTINGS = {
   eqPreset: 'surgical' as const,
   musicAware: false,
   inputGainDb: 12,
+  graphTextSize: 12,
 }
 
 // Color palette for visualizations

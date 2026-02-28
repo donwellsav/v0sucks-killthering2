@@ -244,6 +244,7 @@ export interface DetectorSettings {
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
   inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
+  graphTextSize: number // Font size for graph labels (8-20px)
 }
 
 // Default configuration

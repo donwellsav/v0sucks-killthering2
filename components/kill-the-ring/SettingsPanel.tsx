@@ -106,6 +106,22 @@ export function SettingsPanel({
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-6">
+            <Section title="Graph Text Size">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-xs font-mono">{settings.graphTextSize}px</span>
+                </div>
+                <Slider
+                  value={[settings.graphTextSize]}
+                  onValueChange={([v]) => onSettingsChange({ graphTextSize: v })}
+                  min={8}
+                  max={20}
+                  step={1}
+                />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1.5">Font size for graph axis labels and markers</p>
+            </Section>
+
             <Section title="Max Issues Displayed">
               <div className="space-y-2">
                 <div className="flex justify-between">

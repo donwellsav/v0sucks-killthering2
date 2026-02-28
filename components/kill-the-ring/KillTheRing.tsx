@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { IssuesList } from './IssuesList'
 import { SpectrumCanvas } from './SpectrumCanvas'
@@ -30,6 +31,23 @@ export function KillTheRing() {
     updateSettings,
     resetSettings,
   } = useAudioAnalyzer()
+
+  // Spacebar keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault()
+        if (isRunning) {
+          stop()
+        } else {
+          start()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isRunning, start, stop])
 
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
@@ -234,6 +252,7 @@ export function KillTheRing() {
                     spectrum={spectrum}
                     advisories={advisories}
                     isRunning={isRunning}
+                    graphTextSize={settings.graphTextSize}
                   />
                 </div>
               </div>
@@ -247,7 +266,7 @@ export function KillTheRing() {
                   <span className="text-[10px] font-medium text-foreground">31-Band GEQ</span>
                 </div>
                 <div className="h-[calc(100%-24px)]">
-                  <GEQBarView advisories={advisories} />
+                  <GEQBarView advisories={advisories} graphTextSize={settings.graphTextSize} />
                 </div>
               </div>
 
@@ -260,6 +279,7 @@ export function KillTheRing() {
                   <WaterfallCanvas 
                     spectrum={spectrum}
                     isRunning={isRunning}
+                    graphTextSize={settings.graphTextSize}
                   />
                 </div>
               </div>
