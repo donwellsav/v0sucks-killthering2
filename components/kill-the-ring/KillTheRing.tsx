@@ -1,5 +1,5 @@
 'use client'
-// Kill The Ring — v36 patched
+// Kill The Ring — v36 default gain 12dB
 
 /**
  * Kill The Ring - Real-time feedback detection and EQ advisory

@@ -272,5 +272,5 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   noiseFloorSampleCount: 160, // Faster noise floor sampling
   noiseFloorAttackMs: 200, // Faster attack for dynamic environments
   noiseFloorReleaseMs: 1000, // Faster release
-  inputGainDb: 18, // Higher default gain for speech systems
+  inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
 }
