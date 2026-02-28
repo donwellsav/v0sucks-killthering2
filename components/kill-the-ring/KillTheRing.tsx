@@ -1,7 +1,10 @@
 'use client'
 
-// Kill The Ring - Real-time feedback detection and EQ advisory
-// Uses CSS-only responsive layout to avoid SSR hydration issues
+/**
+ * Kill The Ring - Real-time feedback detection and EQ advisory
+ * Uses CSS-only responsive layout to avoid SSR hydration issues
+ * Features: Runaway prediction warnings, velocity tracking, EQ recommendations
+ */
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
