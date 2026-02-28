@@ -475,17 +475,19 @@ export function KillTheRing() {
             <DetectionControls />
           </div>
 
-          {/* Active issues — middle section */}
-          <div className="flex-1 min-h-0 border-b border-border overflow-y-auto p-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1">
+          {/* Active issues — middle section, extends down */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-3 flex flex-col">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1 flex-shrink-0">
               <span>Active Issues</span>
               <span className="text-primary font-mono">{advisories.length}</span>
             </h2>
-            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+            </div>
           </div>
 
           {/* GEQ + Waterfall — bottom section (always visible) */}
-          <div className="flex-1 min-h-0 flex flex-col gap-1 p-2 overflow-y-auto">
+          <div className="flex-shrink-0 border-t border-border flex flex-col gap-1 p-2" style={{ height: '200px' }}>
             {/* GEQ graph */}
             <div className="flex-1 min-h-0 bg-card/60 rounded border border-border overflow-hidden flex flex-col">
               <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 text-[8px] font-medium text-muted-foreground">
