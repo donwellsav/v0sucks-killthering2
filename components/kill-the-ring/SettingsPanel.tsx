@@ -25,8 +25,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
+import { Settings, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
+import { ResetConfirmDialog } from './ResetConfirmDialog'
 
 interface SettingsPanelProps {
   settings: DetectorSettings
@@ -72,16 +73,14 @@ export function SettingsPanel({
               <Settings className="w-5 h-5" />
               Advanced Settings
             </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onReset}
-              className="h-8 px-2 gap-1.5 text-xs"
-              title="Reset all settings to defaults"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Reset
-            </Button>
+            <ResetConfirmDialog
+              onConfirm={onReset}
+              trigger={
+                <Button variant="ghost" size="sm" className="h-8 px-2 gap-1.5 text-xs" title="Reset all settings to defaults">
+                  Reset
+                </Button>
+              }
+            />
           </div>
           <DialogDescription className="text-xs">
             Analysis engine and display preferences. Detection controls are in the sidebar.
@@ -262,10 +261,10 @@ export function SettingsPanel({
             </Section>
 
             <div className="pt-3 border-t border-border">
-              <Button variant="outline" size="sm" onClick={onReset} className="w-full">
-                <RotateCcw className="h-3.5 w-3.5 mr-2" />
-                Reset to PA Defaults
-              </Button>
+              <ResetConfirmDialog
+                onConfirm={onReset}
+                variant="full"
+              />
               <p className="text-[9px] text-muted-foreground text-center mt-2">
                 Restores aggressive detection for corporate/conference PA
               </p>
