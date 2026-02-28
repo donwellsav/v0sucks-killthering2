@@ -1,11 +1,5 @@
 'use client'
-// Kill The Ring — v36 default gain 12dB
 
-/**
- * Kill The Ring - Real-time feedback detection and EQ advisory
- * Uses CSS-only responsive layout to avoid SSR hydration issues
- * Features: Runaway prediction warnings, velocity tracking, EQ recommendations
- */
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
@@ -36,7 +30,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 // Force cache rebuild - timestamp 1740754800000
-export function KillTheRing() {
+export function KillTheRingApp() {
   const {
     isRunning,
     error,
