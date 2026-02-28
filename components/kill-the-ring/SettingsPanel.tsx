@@ -24,19 +24,26 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Sparkles } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
+import type { AgentSettings, AIModel } from '@/types/agent'
+import { AI_MODELS, DEFAULT_AGENT_SETTINGS } from '@/types/agent'
 
 interface SettingsPanelProps {
   settings: DetectorSettings
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
   onReset: () => void
+  agentSettings?: AgentSettings
+  onAgentSettingsChange?: (settings: Partial<AgentSettings>) => void
 }
 
 export function SettingsPanel({
   settings,
   onSettingsChange,
   onReset,
+  agentSettings = DEFAULT_AGENT_SETTINGS,
+  onAgentSettingsChange,
 }: SettingsPanelProps) {
   return (
     <Dialog>
@@ -58,7 +65,7 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="analysis" className="gap-1.5 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
               Analysis
@@ -66,6 +73,10 @@ export function SettingsPanel({
             <TabsTrigger value="display" className="gap-1.5 text-xs">
               <Monitor className="w-3.5 h-3.5" />
               Display
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-1.5 text-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -233,6 +244,82 @@ export function SettingsPanel({
               </Button>
               <p className="text-[9px] text-muted-foreground text-center mt-2">
                 Restores aggressive detection for corporate/conference PA
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="agent" className="mt-4 space-y-5">
+            <Section 
+              title="AI Model" 
+              tooltip="Select the AI model for the sound engineer assistant. Claude Opus 4.6 is recommended for detailed technical audio advice."
+            >
+              <Select
+                value={agentSettings.model}
+                onValueChange={(v) => onAgentSettingsChange?.({ model: v as AIModel })}
+              >
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(AI_MODELS) as AIModel[]).map((model) => (
+                    <SelectItem key={model} value={model} className="text-xs">
+                      <div className="flex flex-col gap-0.5">
+                        <span>{AI_MODELS[model].name}</span>
+                        <span className="text-[10px] text-muted-foreground">{AI_MODELS[model].description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Section>
+
+            <Section 
+              title="Temperature" 
+              tooltip="Controls response creativity. Lower values (0.1-0.3) for precise technical answers, higher values (0.7-1.0) for more creative suggestions."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Creativity</span>
+                  <span className="text-xs font-mono">{agentSettings.temperature.toFixed(1)}</span>
+                </div>
+                <Slider
+                  value={[agentSettings.temperature]}
+                  onValueChange={([v]) => onAgentSettingsChange?.({ temperature: v })}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Precise</span>
+                  <span>Creative</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section 
+              title="System Prompt" 
+              tooltip="Customize the AI assistant's behavior and expertise. The default prompt is optimized for live sound engineering assistance."
+            >
+              <Textarea
+                value={agentSettings.systemPrompt}
+                onChange={(e) => onAgentSettingsChange?.({ systemPrompt: e.target.value })}
+                className="min-h-[120px] text-xs font-mono resize-y"
+                placeholder="Enter custom instructions for the AI assistant..."
+              />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => onAgentSettingsChange?.({ systemPrompt: DEFAULT_AGENT_SETTINGS.systemPrompt })}
+                className="w-full mt-2 text-xs h-7"
+              >
+                <RotateCcw className="h-3 w-3 mr-1.5" />
+                Reset to Default Prompt
+              </Button>
+            </Section>
+
+            <div className="pt-3 border-t border-border">
+              <p className="text-[9px] text-muted-foreground text-center">
+                The AI assistant can analyze your current feedback issues, suggest EQ cuts, and answer live sound questions.
               </p>
             </div>
           </TabsContent>

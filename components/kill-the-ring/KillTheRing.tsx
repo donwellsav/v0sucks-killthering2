@@ -12,12 +12,15 @@ import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { LogsViewer } from './LogsViewer'
+import { AIChatPanel } from './AIChatPanel'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { HelpCircle, Menu, X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { OperationMode } from '@/types/advisory'
+import type { AgentSettings } from '@/types/agent'
+import { DEFAULT_AGENT_SETTINGS } from '@/types/agent'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
@@ -48,6 +51,7 @@ export function KillTheRing() {
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [agentSettings, setAgentSettings] = useState<AgentSettings>(DEFAULT_AGENT_SETTINGS)
 
   const logger = getEventLogger()
 
@@ -98,6 +102,10 @@ export function KillTheRing() {
     resetSettings()
     logger.logSettingsChanged({ action: 'reset_to_defaults' })
   }
+
+  const handleAgentSettingsChange = useCallback((newSettings: Partial<AgentSettings>) => {
+    setAgentSettings(prev => ({ ...prev, ...newSettings }))
+  }, [])
 
   const inputLevel = spectrum?.peak ?? -60
 
@@ -258,13 +266,21 @@ export function KillTheRing() {
             </span>
           )}
 
-          {/* These three are icon-only on mobile */}
+          {/* These are icon-only on mobile */}
+          <AIChatPanel
+            advisories={advisories}
+            settings={settings}
+            isRunning={isRunning}
+            agentSettings={agentSettings}
+          />
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
             onSettingsChange={handleSettingsChange}
             onReset={handleResetSettings}
+            agentSettings={agentSettings}
+            onAgentSettingsChange={handleAgentSettingsChange}
           />
 
           {/* Desktop sidebar toggle */}
