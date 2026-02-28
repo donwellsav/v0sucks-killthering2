@@ -1,7 +1,7 @@
 'use client'
 
 // Kill The Ring main component
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -47,8 +47,21 @@ export function KillTheRing() {
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const logger = getEventLogger()
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
 
   // Log when analysis starts
   useEffect(() => {
@@ -76,10 +89,10 @@ export function KillTheRing() {
     logger.logSettingsChanged({ mode, reason: 'mode_changed' })
   }
 
-  const handleSettingsChange = (newSettings: Partial<typeof settings>) => {
+  const handleSettingsChange = useCallback((newSettings: Partial<typeof settings>) => {
     updateSettings(newSettings)
     logger.logSettingsChanged(newSettings)
-  }
+  }, [updateSettings, logger])
 
   const handleResetSettings = () => {
     resetSettings()
@@ -91,31 +104,109 @@ export function KillTheRing() {
   // The two graphs that appear in the small bottom row (everything except active)
   const smallGraphs = (['rta', 'geq', 'waterfall'] as GraphView[]).filter(g => g !== activeGraph)
 
+  // Shared detection controls — used in both sidebar and mobile overlay
+  const DetectionControls = () => (
+    <TooltipProvider delayDuration={400}>
+      <div className="space-y-3">
+        {/* Mode selector */}
+        <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+          <SelectTrigger className="h-7 w-full text-xs bg-input border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+            <SelectItem value="musicAware">Music-Aware</SelectItem>
+            <SelectItem value="aggressive">Aggressive</SelectItem>
+            <SelectItem value="calibration">Calibration</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Threshold</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
+          </div>
+          <Slider
+            value={[settings.feedbackThresholdDb]}
+            onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
+            min={2} max={20} step={1}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Ring</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.ringThresholdDb}dB</span>
+          </div>
+          <Slider
+            value={[settings.ringThresholdDb]}
+            onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
+            min={1} max={12} step={0.5}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Growth</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+          </div>
+          <Slider
+            value={[settings.growthRateThreshold]}
+            onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
+            min={0.5} max={8} step={0.5}
+          />
+        </div>
+      </div>
+    </TooltipProvider>
+  )
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
-        {/* Mobile Menu Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="lg:hidden flex-shrink-0"
-        >
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </Button>
 
         {/* Left: Logo */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
             <div className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0">
-              <div className="absolute inset-0 rounded-full border-1.5 border-primary/60" />
+              <div className="absolute inset-0 rounded-full border border-primary/60" />
               <svg className="w-4 sm:w-5 h-4 sm:h-5 relative z-10 text-primary" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
             </div>
-            
-            <div className="flex flex-col gap-0.5 hidden sm:flex">
+
+            <div className="hidden sm:flex flex-col gap-0.5">
               <div className="leading-none">
                 <span className="text-sm font-black tracking-tight text-foreground">KILL THE </span>
                 <span className="text-sm font-black tracking-tight text-primary">RING</span>
@@ -125,7 +216,7 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Start + Meter + Mode - Responsive */}
+        {/* Center: Start + Meter + Mode */}
         <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap sm:flex-nowrap justify-center flex-1 sm:flex-none min-w-0">
           <Button
             onClick={isRunning ? stop : start}
@@ -140,6 +231,7 @@ export function KillTheRing() {
             )}
           </Button>
 
+          {/* Gain meter — desktop only */}
           <div className="hidden md:block">
             <InputMeterSlider
               value={settings.inputGainDb}
@@ -147,23 +239,10 @@ export function KillTheRing() {
               level={inputLevel}
             />
           </div>
-
-          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
-            <SelectTrigger className="h-7 w-auto sm:w-44 text-xs bg-input border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
-              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
-              <SelectItem value="musicAware">Music-Aware</SelectItem>
-              <SelectItem value="aggressive">Aggressive</SelectItem>
-              <SelectItem value="calibration">Calibration</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
-        {/* Right: Info + Actions - Responsive */}
-        <div className="flex items-center gap-1 sm:gap-3 text-xs text-muted-foreground flex-shrink-0">
+        {/* Right: Info + Actions + Hamburger */}
+        <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
           <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
           </span>
@@ -172,6 +251,8 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+
+          {/* These three are icon-only on mobile */}
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
@@ -179,8 +260,103 @@ export function KillTheRing() {
             onSettingsChange={handleSettingsChange}
             onReset={handleResetSettings}
           />
+
+          {/* Desktop sidebar toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="hidden lg:flex h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          >
+            {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+          </Button>
+
+          {/* Mobile hamburger — right side */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            aria-label="Open menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <Menu className="w-5 h-5" />
+          </Button>
         </div>
       </header>
+
+      {/* Mobile full-screen overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Controls menu"
+        >
+          {/* Overlay header bar */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
+              <span className="text-sm font-semibold text-foreground">Controls</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(false)}
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Scrollable overlay content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {/* Input Gain section */}
+            <section>
+              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
+              <InputMeterSlider
+                value={settings.inputGainDb}
+                onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+                level={inputLevel}
+                fullWidth
+              />
+            </section>
+
+            <div className="border-t border-border" />
+
+            {/* Detection controls section */}
+            <section>
+              <DetectionControls />
+            </section>
+
+            <div className="border-t border-border" />
+
+            {/* Active Issues section */}
+            <section>
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                <span>Active Issues</span>
+                <span className="text-primary font-mono">{advisories.length}</span>
+              </h2>
+              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+            </section>
+          </div>
+
+          {/* Overlay footer: close button */}
+          <div className="flex-shrink-0 border-t border-border p-4">
+            <Button
+              variant="outline"
+              className="w-full h-10 text-sm font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Error Banner */}
       {error && (
@@ -191,91 +367,21 @@ export function KillTheRing() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Hidden on mobile, collapsible */}
+        {/* Left Sidebar — desktop only, collapsible */}
         {sidebarOpen && (
-          <aside className="w-full sm:w-64 md:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 absolute sm:static inset-0 top-auto z-40 sm:z-auto">
-            <TooltipProvider delayDuration={400}>
+          <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
             <div className="p-3 border-b border-border space-y-3">
-              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                {settings.mode === 'feedbackHunt' ? 'Feedback Hunt' : settings.mode === 'vocalRing' ? 'Vocal Ring' : settings.mode === 'musicAware' ? 'Music-Aware' : settings.mode === 'aggressive' ? 'Aggressive' : 'Calibration'}
-              </h2>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Threshold</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[200px] text-xs">
-                        Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
-                </div>
-                <Slider
-                  value={[settings.feedbackThresholdDb]}
-                  onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
-                  min={2} max={20} step={1}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Ring</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[200px] text-xs">
-                        Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <span className="font-mono">{settings.ringThresholdDb}dB</span>
-                </div>
-                <Slider
-                  value={[settings.ringThresholdDb]}
-                  onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
-                  min={1} max={12} step={0.5}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Growth</span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[200px] text-xs">
-                        How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
-                </div>
-                <Slider
-                  value={[settings.growthRateThreshold]}
-                  onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
-                  min={0.5} max={8} step={0.5}
-                />
-              </div>
+              <DetectionControls />
             </div>
-          </TooltipProvider>
 
-          <div className="p-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
-              <span>Active Issues</span>
-              <span className="text-primary font-mono">{advisories.length}</span>
-            </h2>
-            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
-          </div>
-        </aside>
+            <div className="p-3">
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                <span>Active Issues</span>
+                <span className="text-primary font-mono">{advisories.length}</span>
+              </h2>
+              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+            </div>
+          </aside>
         )}
 
         {/* Main Visualization Area */}
@@ -318,7 +424,24 @@ export function KillTheRing() {
             </div>
           </div>
 
-          {/* Bottom Row - the two non-active graphs - Hidden on small screens */}
+          {/* Mobile graph pill switcher — below main canvas, hidden on sm+ */}
+          <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5">
+            {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
+              <button
+                key={graph}
+                onClick={() => setActiveGraph(graph)}
+                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                  activeGraph === graph
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
+              </button>
+            ))}
+          </div>
+
+          {/* Bottom Row — the two non-active graphs — desktop/tablet only */}
           <div className="hidden sm:flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
             {smallGraphs.map((graph) => (
               <button
@@ -348,5 +471,3 @@ export function KillTheRing() {
     </div>
   )
 }
-
-

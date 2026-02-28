@@ -41,9 +41,9 @@ export function SettingsPanel({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Settings">
           <Settings className="w-4 h-4" />
-          <span className="text-xs">Settings</span>
+          <span className="hidden sm:inline text-xs">Settings</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
