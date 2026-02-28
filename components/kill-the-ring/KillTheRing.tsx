@@ -34,6 +34,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'waterfall', label: 'WTF' },
 ]
 
+// Force cache rebuild - timestamp 1740754800000
 export function KillTheRing() {
   const {
     isRunning,
