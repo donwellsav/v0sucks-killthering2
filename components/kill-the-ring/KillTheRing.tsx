@@ -102,7 +102,7 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Info + Start + Settings */}
+        {/* Right: Info + Settings + Start */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -113,6 +113,13 @@ export function KillTheRing() {
             </span>
           )}
           
+          <HelpMenu />
+          <SettingsPanel
+            settings={settings}
+            onSettingsChange={updateSettings}
+            onReset={resetSettings}
+          />
+
           <Button
             onClick={isRunning ? stop : start}
             variant={isRunning ? 'destructive' : 'default'}
@@ -131,13 +138,6 @@ export function KillTheRing() {
               </>
             )}
           </Button>
-
-          <HelpMenu />
-          <SettingsPanel
-            settings={settings}
-            onSettingsChange={updateSettings}
-            onReset={resetSettings}
-          />
         </div>
       </header>
 
