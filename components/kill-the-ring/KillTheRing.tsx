@@ -49,8 +49,8 @@ export function KillTheRing() {
     <div className="flex flex-col h-screen">
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
-        {/* Left: Logo only */}
-        <div className="flex items-center gap-4">
+        {/* Left: Logo + Start Button */}
+        <div className="flex items-center gap-3">
           {/* Logo with Design */}
           <div className="flex items-center gap-2.5 pl-3 border-l border-border/50">
             {/* Circular Icon - Smaller */}
@@ -71,29 +71,8 @@ export function KillTheRing() {
               <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
             </div>
           </div>
-        </div>
 
-        {/* Center: Mode + Gain Meter + Start Button */}
-        <div className="flex items-center gap-4">
-          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
-            <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
-              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
-              <SelectItem value="musicAware">Music-Aware</SelectItem>
-              <SelectItem value="aggressive">Aggressive</SelectItem>
-              <SelectItem value="calibration">Calibration</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <InputMeterSlider
-            value={settings.inputGainDb}
-            onChange={(v) => updateSettings({ inputGainDb: v })}
-            level={inputLevel}
-          />
-
+          {/* Start Button */}
           <Button
             onClick={isRunning ? stop : start}
             variant={isRunning ? 'destructive' : 'default'}
@@ -119,6 +98,28 @@ export function KillTheRing() {
               <span className="text-[10px] text-primary font-medium">LIVE</span>
             </div>
           )}
+        </div>
+
+        {/* Center: Mode + Gain Meter */}
+        <div className="flex items-center gap-4">
+          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+            <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+              <SelectItem value="musicAware">Music-Aware</SelectItem>
+              <SelectItem value="aggressive">Aggressive</SelectItem>
+              <SelectItem value="calibration">Calibration</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <InputMeterSlider
+            value={settings.inputGainDb}
+            onChange={(v) => updateSettings({ inputGainDb: v })}
+            level={inputLevel}
+          />
         </div>
 
         {/* Right: Info + Settings */}
