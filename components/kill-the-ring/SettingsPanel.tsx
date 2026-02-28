@@ -150,12 +150,12 @@ export function SettingsPanel({
                   value={[settings.inputGainDb]}
                   onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
                   min={-6}
-                  max={30}
+                  max={42}
                   step={1}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
                   <span>-6dB</span>
-                  <span>+30dB</span>
+                  <span>+42dB</span>
                 </div>
               </div>
             </Section>
