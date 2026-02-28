@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -24,8 +25,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2 } from 'lucide-react'
+import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
 interface SettingsPanelProps {
@@ -39,6 +42,38 @@ export function SettingsPanel({
   onSettingsChange,
   onReset,
 }: SettingsPanelProps) {
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const logger = getEventLogger()
+
+  useEffect(() => {
+    setLogs(logger.getLogs())
+    const unsubscribe = logger.subscribe((updated) => setLogs(updated))
+    return unsubscribe
+  }, [logger])
+
+  const handleExport = (format: 'csv' | 'json' | 'text') => {
+    let content = ''
+    let filename = `kill-the-ring-logs_${new Date().toISOString().split('T')[0]}`
+    let mimeType = 'text/plain'
+    switch (format) {
+      case 'csv':  content = logger.exportAsCSV();  filename += '.csv';  mimeType = 'text/csv'; break
+      case 'json': content = logger.exportAsJSON(); filename += '.json'; mimeType = 'application/json'; break
+      case 'text': content = logger.exportAsText(); filename += '.txt';  mimeType = 'text/plain'; break
+    }
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename
+    document.body.appendChild(a); a.click()
+    document.body.removeChild(a); URL.revokeObjectURL(url)
+    logger.logExport(format, logs.length)
+  }
+
+  const handleClearLogs = () => {
+    if (confirm('Clear all logs? This cannot be undone.')) logger.clearLogs()
+  }
+
+  const issueLogs = logs.filter(l => l.type === 'issue_detected')
 
   return (
     <Dialog>
@@ -55,12 +90,12 @@ export function SettingsPanel({
             Advanced Settings
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Analysis engine and display preferences. Detection controls are in the sidebar.
+            Analysis engine, display preferences, and log export.
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="analysis" className="gap-1.5 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
               Analysis
@@ -68,6 +103,15 @@ export function SettingsPanel({
             <TabsTrigger value="display" className="gap-1.5 text-xs">
               <Monitor className="w-3.5 h-3.5" />
               Display
+            </TabsTrigger>
+            <TabsTrigger value="export" className="gap-1.5 text-xs">
+              <Download className="w-3.5 h-3.5" />
+              Export
+              {issueLogs.length > 0 && (
+                <span className="ml-1 px-1 py-px bg-primary/20 text-primary text-[9px] rounded-full font-medium leading-none">
+                  {issueLogs.length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -266,6 +310,51 @@ export function SettingsPanel({
                 Restores aggressive detection for corporate/conference PA
               </p>
             </div>
+          </TabsContent>
+
+          <TabsContent value="export" className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearLogs}
+                className="text-destructive hover:text-destructive h-7 text-xs gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              {(
+                [
+                  { format: 'csv'  as const, label: 'CSV',        desc: 'Open in Excel or Sheets for analysis',           icon: <Sheet    className="w-4 h-4" /> },
+                  { format: 'json' as const, label: 'JSON',       desc: 'Complete data structure for programmatic use',   icon: <FileJson className="w-4 h-4" /> },
+                  { format: 'text' as const, label: 'Plain Text', desc: 'Human-readable formatted report',                icon: <FileText className="w-4 h-4" /> },
+                ] as const
+              ).map(({ format, label, desc, icon }) => (
+                <button
+                  key={format}
+                  onClick={() => handleExport(format)}
+                  disabled={logs.length === 0}
+                  className="w-full flex items-start gap-3 p-3 border border-border rounded-md hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-left"
+                >
+                  <div className="mt-0.5 text-muted-foreground">{icon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">{label}</div>
+                    <div className="text-xs text-muted-foreground">{desc}</div>
+                  </div>
+                  <Download className="w-3.5 h-3.5 text-muted-foreground mt-1 flex-shrink-0" />
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
+              Logs are stored in memory for this session. Export before closing the tab.
+            </p>
           </TabsContent>
 
         </Tabs>
