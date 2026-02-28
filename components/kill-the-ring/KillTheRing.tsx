@@ -206,11 +206,11 @@ export function KillTheRing() {
               <Slider
                 value={[settings.feedbackThresholdDb]}
                 onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
-                min={6}
-                max={24}
+                min={2}
+                max={20}
                 step={1}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = more sensitive to faint feedback</p>
+              <p className="text-[9px] text-muted-foreground">Lower = more sensitive (default: 6dB for PA)</p>
             </div>
 
             {/* Ring Threshold */}
@@ -222,11 +222,11 @@ export function KillTheRing() {
               <Slider
                 value={[settings.ringThresholdDb]}
                 onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
-                min={3}
-                max={15}
+                min={1}
+                max={12}
                 step={0.5}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances</p>
+              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances (default: 3dB)</p>
             </div>
 
             {/* Growth Rate */}
@@ -238,11 +238,11 @@ export function KillTheRing() {
               <Slider
                 value={[settings.growthRateThreshold]}
                 onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
-                min={1}
-                max={10}
+                min={0.5}
+                max={8}
                 step={0.5}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster</p>
+              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster (default: 1dB/s)</p>
             </div>
           </div>
 

@@ -246,27 +246,27 @@ export interface DetectorSettings {
   inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
 }
 
-// Default configuration
+// Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)
 export const DEFAULT_CONFIG: AnalysisConfig = {
   fftSize: 8192,
-  minHz: 60,
-  maxHz: 16000,
-  analysisIntervalMs: 25,
-  sustainMs: 300,
-  clearMs: 500,
+  minHz: 200, // Vocal-focused lower bound
+  maxHz: 8000, // Vocal-focused upper bound - where most speech feedback occurs
+  analysisIntervalMs: 20, // Faster analysis for quicker detection
+  sustainMs: 250, // Faster confirmation for speech dynamics
+  clearMs: 400, // Faster clearing for responsive display
   thresholdMode: 'hybrid',
-  thresholdDb: -35,
-  relativeThresholdDb: 20,
-  prominenceDb: 15,
+  thresholdDb: -40, // More sensitive absolute threshold
+  relativeThresholdDb: 18, // Slightly more sensitive relative threshold
+  prominenceDb: 12, // Lower prominence for catching subtle peaks
   neighborhoodBins: 8, // ±2 exclusion means effective 6 each side
-  maxIssues: 10,
+  maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
-  mode: 'feedbackHunt',
+  mode: 'aggressive', // Aggressive by default for maximum detection
   aWeightingEnabled: false,
   noiseFloorEnabled: true,
-  noiseFloorSampleCount: 192,
-  noiseFloorAttackMs: 250,
-  noiseFloorReleaseMs: 1200,
-  inputGainDb: 0,
+  noiseFloorSampleCount: 160, // Faster noise floor sampling
+  noiseFloorAttackMs: 200, // Faster attack for dynamic environments
+  noiseFloorReleaseMs: 1000, // Faster release
+  inputGainDb: 18, // Higher default gain for speech systems
 }

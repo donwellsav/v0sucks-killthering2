@@ -92,13 +92,13 @@ export const EQ_PRESETS = {
   },
 } as const
 
-// Vocal ring assist mode settings
+// Vocal ring assist mode settings - optimized for speech/corporate PA
 export const VOCAL_RING_SETTINGS = {
   BASELINE_EMA_ALPHA: 0.02, // Slow LTAS baseline adaptation
-  RING_THRESHOLD_DB: 5, // dB above baseline for ring candidate
-  RING_PERSISTENCE_MS: 200, // ms for ring confirmation
-  VOICE_FREQ_LOW: 150, // Hz - voice presence detection
-  VOICE_FREQ_HIGH: 4000, // Hz
+  RING_THRESHOLD_DB: 4, // Lower threshold for earlier ring detection
+  RING_PERSISTENCE_MS: 150, // Faster confirmation for speech dynamics
+  VOICE_FREQ_LOW: 200, // Hz - vocal-focused lower bound
+  VOICE_FREQ_HIGH: 8000, // Hz - extended for speech sibilance
   SUGGESTED_CUT_MIN: -2, // dB
   SUGGESTED_CUT_MAX: -6, // dB
 } as const
@@ -134,60 +134,64 @@ export const CANVAS_SETTINGS = {
 } as const
 
 // Operation mode presets - optimized for PA system feedback detection
+// Default is Aggressive for corporate/conference environments with vocal focus
 export const OPERATION_MODES = {
   feedbackHunt: {
-    // Default PA mode - balanced sensitivity for catching feedback early
-    feedbackThreshold: 10, // Lower threshold for earlier detection
+    // Balanced PA mode - good sensitivity without excessive false positives
+    feedbackThreshold: 8, // Moderate threshold for balanced detection
     ringThreshold: 5, // Catch resonances before they become problematic
-    growthRateThreshold: 2, // Faster response to growing feedback
+    growthRateThreshold: 2, // Responsive to growing feedback
     musicAware: false,
   },
   vocalRing: {
-    feedbackThreshold: 8,
-    ringThreshold: 4,
-    growthRateThreshold: 1.5,
+    // Optimized for vocal frequencies (200Hz-8kHz)
+    feedbackThreshold: 6, // More sensitive for speech feedback
+    ringThreshold: 4, // Catch vocal ring-outs
+    growthRateThreshold: 1.5, // Fast response for speech dynamics
     musicAware: false,
   },
   musicAware: {
     // Use during live performance to reduce false positives
-    feedbackThreshold: 14,
-    ringThreshold: 8,
-    growthRateThreshold: 3,
+    feedbackThreshold: 12, // Higher threshold to ignore musical content
+    ringThreshold: 7, // Less sensitive during music
+    growthRateThreshold: 3, // Only catch severe feedback
     musicAware: true,
   },
   aggressive: {
-    // Maximum sensitivity for system tuning/ring-out
-    feedbackThreshold: 6,
-    ringThreshold: 3,
-    growthRateThreshold: 1,
+    // DEFAULT - Maximum sensitivity for corporate/conference PA
+    // Catches feedback early before it becomes audible to audience
+    feedbackThreshold: 6, // Very sensitive detection
+    ringThreshold: 3, // Catch subtle resonances
+    growthRateThreshold: 1, // Immediate response to any growth
     musicAware: false,
   },
   calibration: {
-    // Ultra-sensitive for initial system setup
-    feedbackThreshold: 4,
-    ringThreshold: 2,
-    growthRateThreshold: 0.5,
+    // Ultra-sensitive for initial system setup and ring-out
+    feedbackThreshold: 4, // Maximum sensitivity
+    ringThreshold: 2, // Catch everything
+    growthRateThreshold: 0.5, // Fastest possible response
     musicAware: false,
   },
 } as const
 
-// Default settings for the analyzer - optimized for PA feedback detection
+// Default settings for the analyzer - optimized for Corporate/Conference PA feedback detection
+// with Aggressive mode default and Vocal-Focused frequency range (200Hz-8kHz)
 export const DEFAULT_SETTINGS = {
-  mode: 'feedbackHunt' as const,
-  fftSize: 8192 as const,
-  smoothingTimeConstant: 0.7, // Slightly less smoothing for faster response
-  minFrequency: 60,
-  maxFrequency: 16000,
-  feedbackThresholdDb: 10, // Lower default for better PA detection
-  ringThresholdDb: 5, // Catch resonances earlier
-  growthRateThreshold: 2, // Faster detection of growing feedback
-  holdTimeMs: 2500, // Slightly longer hold for reference during EQ adjustments
-  noiseFloorDecay: 0.99, // Faster noise floor adaptation
+  mode: 'aggressive' as const, // Aggressive mode for maximum sensitivity during setup
+  fftSize: 8192 as const, // Good balance of resolution and response time
+  smoothingTimeConstant: 0.6, // Less smoothing for faster transient response
+  minFrequency: 200, // Vocal-focused lower bound
+  maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
+  feedbackThresholdDb: 6, // Aggressive threshold for catching feedback early
+  ringThresholdDb: 3, // Very sensitive to resonances
+  growthRateThreshold: 1, // Fast detection of any growing feedback
+  holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
+  noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 10, // Show more issues for comprehensive system tuning
-  eqPreset: 'surgical' as const,
-  musicAware: false,
-  inputGainDb: 15, // Higher default gain for better signal capture
+  maxDisplayedIssues: 12, // Show more issues for comprehensive system tuning
+  eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
+  musicAware: false, // Disabled by default for maximum detection
+  inputGainDb: 18, // Higher default gain for better signal capture in speech systems
 }
 
 // Color palette for visualizations
