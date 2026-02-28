@@ -323,23 +323,17 @@ export function KillTheRing() {
         {/* ── Mobile: Controls page (default) ── */}
         {mobilePage === 'controls' && (
           <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-4 space-y-6">
-              {/* Input Gain */}
-              <section>
-                <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Detection controls — includes mode select + sliders */}
+              <section className="space-y-3">
+                <DetectionControls />
+                {/* Input Gain — compact inline row below the sliders */}
                 <InputMeterSlider
                   value={settings.inputGainDb}
                   onChange={(v) => handleSettingsChange({ inputGainDb: v })}
                   level={inputLevel}
                   fullWidth
                 />
-              </section>
-
-              <div className="border-t border-border" />
-
-              {/* Detection controls */}
-              <section>
-                <DetectionControls />
               </section>
 
               <div className="border-t border-border" />
