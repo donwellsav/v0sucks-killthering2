@@ -112,19 +112,6 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
       ctx.setLineDash([])
     }
 
-    // Draw threshold
-    if (spectrum?.effectiveThresholdDb !== undefined) {
-      const threshY = ((RTA_DB_MAX - spectrum.effectiveThresholdDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
-      ctx.strokeStyle = VIZ_COLORS.THRESHOLD
-      ctx.lineWidth = 1
-      ctx.setLineDash([2, 2])
-      ctx.beginPath()
-      ctx.moveTo(0, threshY)
-      ctx.lineTo(plotWidth, threshY)
-      ctx.stroke()
-      ctx.setLineDash([])
-    }
-
     // Draw spectrum
     if (spectrum?.freqDb && spectrum.sampleRate && spectrum.fftSize) {
       const freqDb = spectrum.freqDb
