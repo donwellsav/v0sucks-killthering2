@@ -82,7 +82,7 @@ export function HelpMenu() {
                   <strong>Input Gain (meter slider):</strong> Digital boost applied before analysis (+0 to +30 dB). Increase if feedback is not being detected; reduce if clipping. Does not affect audio output.
                 </li>
                 <li>
-                  <strong>Mode:</strong> Detection sensitivity preset. Default is <strong>Aggressive</strong>. See the Modes tab for details.
+                  <strong>Mode:</strong> Detection sensitivity preset. Default is <strong>Feedback Hunt</strong>. See the Modes tab for details.
                 </li>
                 <li>
                   <strong>Logs:</strong> Opens the session log viewer with CSV, JSON, plain text, and PDF export.
@@ -96,9 +96,9 @@ export function HelpMenu() {
             <Section title="Sidebar Detection Controls">
               <p className="mb-2">These three sliders are the primary real-time tuning controls:</p>
               <ul className="space-y-2">
-                <li><strong>Threshold:</strong> Primary sensitivity. 4–8 dB for aggressive detection, 10–14 dB balanced, 16+ dB conservative. Default: 6 dB.</li>
-                <li><strong>Ring:</strong> Resonance detection sensitivity. 2–4 dB for calibration, 5–7 dB normal use, 8+ dB during shows. Default: 3 dB.</li>
-                <li><strong>Growth:</strong> How fast a frequency must grow (dB/s) to be flagged. 0.5–1 dB/s catches feedback early, 3+ dB/s only runaway. Default: 1 dB/s.</li>
+                <li><strong>Threshold:</strong> Primary sensitivity. 4–8 dB for aggressive detection, 10–14 dB balanced, 16+ dB conservative. Default: 8 dB.</li>
+                <li><strong>Ring:</strong> Resonance detection sensitivity. 2–4 dB for calibration, 5–7 dB normal use, 8+ dB during shows. Default: 5 dB.</li>
+                <li><strong>Growth:</strong> How fast a frequency must grow (dB/s) to be flagged. 0.5–1 dB/s catches feedback early, 3+ dB/s only runaway. Default: 2 dB/s.</li>
               </ul>
               <p className="mt-2">Each slider has a help icon with a quick reference tooltip.</p>
             </Section>
@@ -107,8 +107,8 @@ export function HelpMenu() {
               <p className="mb-2">Advanced settings split into two tabs — detection controls are intentionally kept in the sidebar for quick access:</p>
               <ul className="space-y-2">
                 <li><strong>Analysis tab:</strong> FFT Size (resolution vs. speed trade-off), Spectrum Smoothing, Hold Time (how long issues stay visible), Input Gain.</li>
-                <li><strong>Display tab:</strong> Max Issues Shown, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
-                <li><strong>Reset to PA Defaults:</strong> Restores all settings to the aggressive corporate/conference optimized defaults.</li>
+                <li><strong>Display tab:</strong> Max Issues Shown, Graph Label Size, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
+                <li><strong>Reset to PA Defaults:</strong> Restores all settings to Feedback Hunt defaults optimized for corporate/conference PA systems.</li>
               </ul>
             </Section>
 
@@ -126,10 +126,10 @@ export function HelpMenu() {
             <Section title="Operation Modes">
               <ul className="space-y-3">
                 <li>
-                  <strong>Aggressive (Default):</strong> Maximum sensitivity for corporate/conference PA. Threshold 6 dB, Ring 3 dB, Growth 1 dB/s. Catches feedback early before it becomes audible.
+                  <strong>Feedback Hunt (Default):</strong> Balanced PA mode. Threshold 8 dB, Ring 5 dB, Growth 2 dB/s. Good general sensitivity with fewer false positives — the recommended starting point.
                 </li>
                 <li>
-                  <strong>Feedback Hunt:</strong> Balanced PA mode. Threshold 8 dB, Ring 5 dB, Growth 2 dB/s. Good general sensitivity with fewer false positives than Aggressive.
+                  <strong>Aggressive:</strong> Maximum sensitivity for system calibration and ring-out. Threshold 6 dB, Ring 3 dB, Growth 1 dB/s. Catches feedback early before it becomes audible.
                 </li>
                 <li>
                   <strong>Vocal Ring:</strong> Tuned for speech frequencies (200 Hz–8 kHz). Threshold 6 dB, Ring 4 dB, Growth 1.5 dB/s. Use when fine-tuning monitor mixes or tracking subtle vocal ring-outs.
@@ -145,9 +145,8 @@ export function HelpMenu() {
 
             <Section title="Choosing a Mode">
               <ul className="space-y-2">
-                <li>Initial system setup / ring-out: <strong>Calibration</strong></li>
-                <li>Corporate/conference PA (default): <strong>Aggressive</strong></li>
-                <li>General soundcheck: <strong>Feedback Hunt</strong></li>
+                <li>Default / general soundcheck: <strong>Feedback Hunt</strong></li>
+                <li>Initial system setup / ring-out: <strong>Calibration</strong> or <strong>Aggressive</strong></li>
                 <li>Monitor tuning: <strong>Vocal Ring</strong></li>
                 <li>During live performance: <strong>Music-Aware</strong></li>
               </ul>
@@ -199,7 +198,7 @@ export function HelpMenu() {
             <Section title="Workflow Best Practices">
               <ol className="list-decimal list-inside space-y-2">
                 <li>Start with <strong>Calibration</strong> mode during initial system setup and ring-out</li>
-                <li>Switch to <strong>Aggressive</strong> for general PA monitoring (the default)</li>
+                <li>Switch to <strong>Feedback Hunt</strong> for general PA monitoring (the default balanced mode)</li>
                 <li>Ring out monitors one at a time, addressing the worst frequencies first</li>
                 <li>Apply cuts conservatively — start with 3 dB and increase only if needed</li>
                 <li>Switch to <strong>Music-Aware</strong> during performance to reduce false positives</li>
@@ -297,11 +296,11 @@ export function HelpMenu() {
 
             <Section title="Default Configuration (PA-Optimised)">
               <ul className="space-y-2">
-                <li><strong>Mode:</strong> Aggressive</li>
+                <li><strong>Mode:</strong> Feedback Hunt</li>
                 <li><strong>Frequency range:</strong> 200 Hz – 8 kHz (vocal-focused)</li>
-                <li><strong>Feedback threshold:</strong> 6 dB</li>
-                <li><strong>Ring threshold:</strong> 3 dB</li>
-                <li><strong>Growth rate:</strong> 1 dB/s</li>
+                <li><strong>Feedback threshold:</strong> 8 dB</li>
+                <li><strong>Ring threshold:</strong> 5 dB</li>
+                <li><strong>Growth rate:</strong> 2 dB/s</li>
                 <li><strong>FFT size:</strong> 8192</li>
                 <li><strong>Smoothing:</strong> 60%</li>
                 <li><strong>Hold time:</strong> 3 s</li>
