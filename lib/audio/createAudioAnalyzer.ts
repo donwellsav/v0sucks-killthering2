@@ -327,11 +327,6 @@ export class AudioAnalyzer {
     }
     return false
   }
-      }
-    }
-
-    return false
-  }
 }
 
 /**
