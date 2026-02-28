@@ -13,21 +13,9 @@ import {
 import type { DetectedPeak, AnalysisConfig, DetectorSettings } from '@/types/advisory'
 import { DEFAULT_CONFIG } from '@/types/advisory'
 
-export interface FeedbackPrediction {
-  binIndex: number
-  frequencyHz: number
-  currentDb: number
-  velocityDbPerSec: number
-  predictedDb: number
-  predictedTimeMs: number
-  confidence: number
-  timestamp: number
-}
-
 export interface FeedbackDetectorCallbacks {
   onPeakDetected?: (peak: DetectedPeak) => void
   onPeakCleared?: (peak: { binIndex: number; frequencyHz: number; timestamp: number }) => void
-  onRunawayPredicted?: (prediction: FeedbackPrediction) => void
 }
 
 export interface FeedbackDetectorState {
@@ -86,12 +74,6 @@ export class FeedbackDetector {
   // Analysis bounds
   private analysisMinDb: number = -100
   private analysisMaxDb: number = 0
-
-  // Velocity tracking for feedback prediction
-  private velocityHistory: Map<number, { timestamps: number[]; amplitudes: number[] }> = new Map()
-  private readonly velocityWindowMs: number = 500 // Track last 500ms
-  private readonly velocityHistoryMaxLen: number = 25 // Max samples per bin
-  private readonly runawayVelocityThreshold: number = 15 // dB/s — predict runaway if exceeding this
 
   constructor(config: Partial<AnalysisConfig> = {}, callbacks: FeedbackDetectorCallbacks = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -627,13 +609,6 @@ export class FeedbackDetector {
           ;(peak as DetectedPeak & { qEstimate: number; bandwidthHz: number }).qEstimate = qEstimate
           ;(peak as DetectedPeak & { qEstimate: number; bandwidthHz: number }).bandwidthHz = bandwidthHz
 
-          // Track velocity for feedback prediction
-          const velocityDbPerSec = this.updateVelocityTracking(i, trueAmplitudeDb, now)
-          ;(peak as DetectedPeak & { velocityDbPerSec: number }).velocityDbPerSec = velocityDbPerSec
-
-          // Predict runaway feedback
-          this.predictRunaway(i, trueFrequencyHz, trueAmplitudeDb, velocityDbPerSec, now)
-
           this.callbacks.onPeakDetected?.(peak)
         }
       } else {
@@ -663,9 +638,6 @@ export class FeedbackDetector {
               }
             }
             if (this.activeHz) this.activeHz[i] = 0
-
-            // Clear velocity history for this bin
-            this.clearVelocityHistory(i)
 
             this.callbacks.onPeakCleared?.({
               binIndex: i,
@@ -769,106 +741,5 @@ export class FeedbackDetector {
       case 'hybrid': return Math.max(absT, relT)
       default: return Math.max(absT, relT)
     }
-  }
-
-  /**
-   * Track amplitude history and compute velocity for feedback prediction
-   */
-  private updateVelocityTracking(binIndex: number, amplitudeDb: number, timestamp: number): number {
-    let history = this.velocityHistory.get(binIndex)
-    
-    if (!history) {
-      history = { timestamps: [], amplitudes: [] }
-      this.velocityHistory.set(binIndex, history)
-    }
-
-    // Add new sample
-    history.timestamps.push(timestamp)
-    history.amplitudes.push(amplitudeDb)
-
-    // Prune old samples outside window
-    const cutoff = timestamp - this.velocityWindowMs
-    while (history.timestamps.length > 0 && history.timestamps[0] < cutoff) {
-      history.timestamps.shift()
-      history.amplitudes.shift()
-    }
-
-    // Limit max length
-    while (history.timestamps.length > this.velocityHistoryMaxLen) {
-      history.timestamps.shift()
-      history.amplitudes.shift()
-    }
-
-    // Compute velocity via linear regression
-    if (history.timestamps.length < 3) return 0
-
-    const n = history.timestamps.length
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0
-    const t0 = history.timestamps[0]
-
-    for (let i = 0; i < n; i++) {
-      const x = (history.timestamps[i] - t0) / 1000 // Convert to seconds
-      const y = history.amplitudes[i]
-      sumX += x
-      sumY += y
-      sumXY += x * y
-      sumXX += x * x
-    }
-
-    const denom = n * sumXX - sumX * sumX
-    if (Math.abs(denom) < 1e-10) return 0
-
-    const slope = (n * sumXY - sumX * sumY) / denom // dB per second
-    return slope
-  }
-
-  /**
-   * Predict if a peak will become runaway feedback
-   * Returns prediction if velocity indicates imminent runaway
-   */
-  private predictRunaway(
-    binIndex: number,
-    frequencyHz: number,
-    currentDb: number,
-    velocityDbPerSec: number,
-    timestamp: number
-  ): void {
-    // Only predict if velocity exceeds threshold
-    if (velocityDbPerSec < this.runawayVelocityThreshold) return
-
-    // Predict when it will reach 0dB (clipping)
-    const dbToClip = 0 - currentDb
-    if (dbToClip <= 0) return // Already clipping
-
-    const predictedTimeMs = (dbToClip / velocityDbPerSec) * 1000
-
-    // Only warn if runaway predicted within 200-2000ms
-    if (predictedTimeMs < 50 || predictedTimeMs > 2000) return
-
-    // Confidence based on velocity consistency and magnitude
-    const confidence = Math.min(1, velocityDbPerSec / 30) * 
-                      Math.min(1, 500 / predictedTimeMs)
-
-    if (confidence < 0.3) return
-
-    const prediction: FeedbackPrediction = {
-      binIndex,
-      frequencyHz,
-      currentDb,
-      velocityDbPerSec,
-      predictedDb: 0,
-      predictedTimeMs,
-      confidence,
-      timestamp,
-    }
-
-    this.callbacks.onRunawayPredicted?.(prediction)
-  }
-
-  /**
-   * Clean up velocity history for cleared peaks
-   */
-  private clearVelocityHistory(binIndex: number): void {
-    this.velocityHistory.delete(binIndex)
   }
 }
