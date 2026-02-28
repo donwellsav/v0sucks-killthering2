@@ -187,7 +187,7 @@ export function SettingsPanel({
 
             <Section 
               title="Max Issues Shown" 
-              tooltip="Limits how many feedback issues display at once. Lower for focused work on worst problems, higher for full system overview during calibration."
+              tooltip="Limits how many feedback issues display at once. Default is 6 for focused work on worst problems; increase up to 12 for full system overview during calibration."
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-center">

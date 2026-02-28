@@ -230,7 +230,7 @@ Selecting a mode applies all three thresholds simultaneously. Individual sliders
 | Setting | Range | Default | Description |
 |---|---|---|---|
 | Graph Label Size | 8 – 26 px | 15 px | Font size for canvas frequency and dB labels |
-| Max Issues Shown | 3 – 12 | 12 | Limits the active issues list length |
+| Max Issues Shown | 3 – 12 | 6 | Limits the active issues list length |
 | EQ Style | Surgical / Heavy | Surgical | Surgical = narrow Q (8–16), Heavy = wide Q (2–4) |
 
 ### Sidebar Detection Controls
