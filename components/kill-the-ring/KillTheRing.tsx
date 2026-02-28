@@ -31,6 +31,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 export function KillTheRing() {
+  // Real-time audio analysis for feedback detection and EQ advisory
   const {
     isRunning,
     error,
