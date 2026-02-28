@@ -8,6 +8,8 @@ interface InputMeterSliderProps {
   level: number // Current input level in dB (-60 to 0)
   min?: number
   max?: number
+  /** When true the slider expands to fill its container (used in mobile overlay) */
+  fullWidth?: boolean
 }
 
 export function InputMeterSlider({
@@ -16,6 +18,7 @@ export function InputMeterSlider({
   level,
   min = -12,
   max = 24,
+  fullWidth = false,
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
@@ -28,13 +31,13 @@ export function InputMeterSlider({
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-    
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     const width = canvas.width
     const height = canvas.height
-    
+
     // Clear
     ctx.clearRect(0, 0, width, height)
 
@@ -50,7 +53,7 @@ export function InputMeterSlider({
     gradient.addColorStop(0.8, '#eab308')
     gradient.addColorStop(0.95, '#ef4444')
     gradient.addColorStop(1, '#ef4444')
-    
+
     ctx.fillStyle = gradient
     ctx.fillRect(0, 0, meterWidth, height)
 
@@ -63,7 +66,7 @@ export function InputMeterSlider({
     ctx.lineTo(gainPos, height)
     ctx.stroke()
 
-    // Gain marker triangle
+    // Gain marker triangles
     ctx.fillStyle = '#fff'
     ctx.beginPath()
     ctx.moveTo(gainPos - 4, 0)
@@ -78,57 +81,91 @@ export function InputMeterSlider({
     ctx.lineTo(gainPos, height - 5)
     ctx.closePath()
     ctx.fill()
-
   }, [normalizedLevel, value, min, max])
 
+  const updateValueFromX = (clientX: number) => {
+    const slider = sliderRef.current
+    if (!slider) return
+    const rect = slider.getBoundingClientRect()
+    const x = Math.max(0, Math.min(rect.width, clientX - rect.left))
+    const ratio = x / rect.width
+    const newValue = Math.round(min + ratio * (max - min))
+    onChange(newValue)
+  }
+
+  // Mouse handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true
-    updateValue(e)
+    updateValueFromX(e.clientX)
   }
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging.current) return
-    updateValue(e)
+    updateValueFromX(e.clientX)
   }
 
   const handleMouseUp = () => {
     isDragging.current = false
   }
 
-  const updateValue = (e: MouseEvent | React.MouseEvent) => {
-    const slider = sliderRef.current
-    if (!slider) return
-    
-    const rect = slider.getBoundingClientRect()
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
-    const ratio = x / rect.width
-    const newValue = Math.round(min + ratio * (max - min))
-    onChange(newValue)
+  // Touch handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDragging.current = true
+    updateValueFromX(e.touches[0].clientX)
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging.current) return
+    e.preventDefault()
+    updateValueFromX(e.touches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    isDragging.current = false
   }
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('mouseup', handleMouseUp)
+    window.addEventListener('touchmove', handleTouchMove, { passive: false })
+    window.addEventListener('touchend', handleTouchEnd)
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
+      window.removeEventListener('touchmove', handleTouchMove)
+      window.removeEventListener('touchend', handleTouchEnd)
     }
   }, [])
 
+  // Canvas logical width: use a larger size when fullWidth so the drawing is sharp
+  const canvasLogicalWidth = fullWidth ? 320 : 112
+
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
       <span className="text-[10px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">
         Gain
       </span>
-      <div 
+      <div
         ref={sliderRef}
-        className="relative w-28 h-4 rounded cursor-ew-resize overflow-hidden"
+        className={`relative h-5 rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : 'w-28'}`}
+        style={{ touchAction: 'none' }}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        role="slider"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-label="Input gain"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight') onChange(Math.min(max, value + 1))
+          if (e.key === 'ArrowLeft') onChange(Math.max(min, value - 1))
+        }}
       >
-        <canvas 
+        <canvas
           ref={canvasRef}
-          width={112}
-          height={16}
+          width={canvasLogicalWidth}
+          height={20}
           className="w-full h-full"
         />
       </div>

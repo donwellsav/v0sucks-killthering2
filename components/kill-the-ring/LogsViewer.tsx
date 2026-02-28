@@ -114,11 +114,11 @@ export function LogsViewer() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Logs">
           <BarChart3 className="w-4 h-4" />
-          <span className="text-xs">Logs</span>
+          <span className="hidden sm:inline text-xs">Logs</span>
           {issueLogsCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] rounded-full font-medium">
+            <span className="ml-0.5 sm:ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] rounded-full font-medium">
               {issueLogsCount}
             </span>
           )}
