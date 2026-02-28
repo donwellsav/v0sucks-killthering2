@@ -555,52 +555,51 @@ export function KillTheRing() {
                       <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                     </div>
                   </div>
-            </div>
-          </div>
-
-          {/* Mobile graph pill switcher — below main canvas, hidden on sm+ */}
-          <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5">
-            {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
-              <button
-                key={graph}
-                onClick={() => setActiveGraph(graph)}
-                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
-                  activeGraph === graph
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                }`}
-              >
-                {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom Row — the two non-active graphs — desktop/tablet only */}
-          <div className="hidden sm:flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
-            {smallGraphs.map((graph) => (
-              <button
-                key={graph}
-                onClick={() => setActiveGraph(graph)}
-                className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden text-left hover:border-primary/50 transition-colors group"
-              >
-                <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 border-b border-border bg-muted/20">
-                  <span className="text-[8px] sm:text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                    {GRAPH_CHIPS.find((c) => c.value === graph)?.label ?? graph.toUpperCase()}
-                  </span>
-                  <span className="text-[7px] sm:text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
-                    click
-                  </span>
                 </div>
-                <div className="h-[calc(100%-20px)] pointer-events-none">
-                  {graph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
-                  {graph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />}
-                  {graph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
-                </div>
-              </button>
-            ))}
-          </div>
+              </div>
 
-        </main>
+              {/* Mobile graph pill switcher — below main canvas, hidden on sm+ */}
+              <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5">
+                {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
+                  <button
+                    key={graph}
+                    onClick={() => setActiveGraph(graph)}
+                    className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                      activeGraph === graph
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                    }`}
+                  >
+                    {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Bottom Row — the two non-active graphs — desktop/tablet only */}
+              <div className="hidden sm:flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
+                {smallGraphs.map((graph) => (
+                  <button
+                    key={graph}
+                    onClick={() => setActiveGraph(graph)}
+                    className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden text-left hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 border-b border-border bg-muted/20">
+                      <span className="text-[8px] sm:text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        {GRAPH_CHIPS.find((c) => c.value === graph)?.label ?? graph.toUpperCase()}
+                      </span>
+                      <span className="text-[7px] sm:text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
+                        click
+                      </span>
+                    </div>
+                    <div className="h-[calc(100%-20px)] pointer-events-none">
+                      {graph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
+                      {graph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />}
+                      {graph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </main>
           </>
         )}
       </div>
