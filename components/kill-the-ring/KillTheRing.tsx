@@ -50,7 +50,9 @@ export function KillTheRing() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  const logger = getEventLogger()
+  // Stable ref — never changes reference across renders
+  const loggerRef = useRef(getEventLogger())
+  const logger = loggerRef.current
 
   // DB session tracking
   const sessionIdRef = useRef<string | null>(null)
@@ -58,7 +60,7 @@ export function KillTheRing() {
 
   // Flush buffered logs to DB (called periodically while running + on stop)
   const flushEventsToDB = useCallback(async (sessionId: string) => {
-    const allLogs = logger.getLogs()
+    const allLogs = loggerRef.current.getLogs()
     const newLogs = allLogs.slice(lastFlushedRef.current)
     if (newLogs.length === 0) return
     lastFlushedRef.current = allLogs.length
@@ -71,7 +73,7 @@ export function KillTheRing() {
     } catch {
       // Non-fatal: events remain in-memory
     }
-  }, [logger])
+  }, [])
 
   // Lock body scroll when mobile menu is open
   useEffect(() => {
@@ -93,7 +95,7 @@ export function KillTheRing() {
         fftSize: settings.fftSize,
       })
       // Create a new DB session
-      const newId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const newId = crypto.randomUUID()
       sessionIdRef.current = newId
       lastFlushedRef.current = 0
       fetch('/api/sessions', {
@@ -139,8 +141,8 @@ export function KillTheRing() {
 
   const handleSettingsChange = useCallback((newSettings: Partial<typeof settings>) => {
     updateSettings(newSettings)
-    logger.logSettingsChanged(newSettings)
-  }, [updateSettings, logger])
+    loggerRef.current.logSettingsChanged(newSettings)
+  }, [updateSettings])
 
   const handleResetSettings = () => {
     resetSettings()

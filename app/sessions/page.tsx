@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { listSessions } from '@/lib/db/sessions'
 import { SessionsTable } from '@/components/kill-the-ring/SessionsTable'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, AlertCircle } from 'lucide-react'
 
 export const metadata = {
   title: 'Session History — Kill The Ring',
@@ -10,7 +10,14 @@ export const metadata = {
 }
 
 export default async function SessionsPage() {
-  const sessions = await listSessions(50)
+  let sessions: Awaited<ReturnType<typeof listSessions>> = []
+  let dbError = false
+
+  try {
+    sessions = await listSessions(50)
+  } catch {
+    dbError = true
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -38,21 +45,35 @@ export default async function SessionsPage() {
 
       {/* Main */}
       <main className="flex-1 p-4 sm:p-6 max-w-5xl mx-auto w-full">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-foreground text-balance">Session History</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {sessions.length === 0
-                ? 'No sessions recorded yet. Start an analysis to begin capturing data.'
-                : `${sessions.length} session${sessions.length === 1 ? '' : 's'} recorded`}
+        {dbError ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+            <AlertCircle className="w-8 h-8 text-destructive/60" />
+            <p className="text-sm font-medium text-foreground">Could not load sessions</p>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              The database is temporarily unavailable. Check your Neon connection and try again.
             </p>
+            <Button asChild size="sm" variant="outline" className="mt-2">
+              <Link href="/sessions">Retry</Link>
+            </Button>
           </div>
-          <Button asChild size="sm" variant="outline" className="flex-shrink-0">
-            <Link href="/">New Session</Link>
-          </Button>
-        </div>
-
-        <SessionsTable sessions={sessions} />
+        ) : (
+          <>
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-lg font-semibold text-foreground text-balance">Session History</h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {sessions.length === 0
+                    ? 'No sessions recorded yet. Start an analysis to begin capturing data.'
+                    : `${sessions.length} session${sessions.length === 1 ? '' : 's'} recorded`}
+                </p>
+              </div>
+              <Button asChild size="sm" variant="outline" className="flex-shrink-0">
+                <Link href="/">New Session</Link>
+              </Button>
+            </div>
+            <SessionsTable sessions={sessions} />
+          </>
+        )}
       </main>
     </div>
   )

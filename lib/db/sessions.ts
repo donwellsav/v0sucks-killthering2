@@ -51,6 +51,10 @@ export async function listSessions(limit = 50): Promise<Session[]> {
   return rows as Session[]
 }
 
+export async function deleteSession(id: string): Promise<void> {
+  await sql`DELETE FROM sessions WHERE id = ${id}`
+}
+
 export async function getSession(id: string): Promise<Session | null> {
   const rows = await sql`
     SELECT
@@ -92,32 +96,44 @@ export async function bulkInsertEvents(
 ): Promise<void> {
   if (events.length === 0) return
 
-  // Build per-row values and insert one at a time to keep parameterized queries safe
-  for (const ev of events) {
+  // Single multi-value INSERT — one round-trip regardless of batch size
+  const rows = events.map((ev) => {
     const d = ev.data as Record<string, unknown>
     const isIssue = ev.type === 'issue_detected'
-    await sql`
-      INSERT INTO session_events (
-        id, session_id, occurred_at, event_type,
-        frequency, amplitude, severity, classification,
-        q_factor, bandwidth, growth_rate, metadata
-      ) VALUES (
-        ${ev.id},
-        ${sessionId},
-        ${new Date(ev.timestamp).toISOString()},
-        ${ev.type},
-        ${isIssue ? (d.frequency as number) : null},
-        ${isIssue ? (d.amplitude as number) : null},
-        ${isIssue ? (d.severity as string) : null},
-        ${isIssue ? (d.classification as string) : null},
-        ${isIssue ? (d.qFactor as number) : null},
-        ${isIssue ? (d.bandwidth as number) : null},
-        ${isIssue ? (d.growthRate as number) : null},
-        ${isIssue ? null : JSON.stringify(d)}
-      )
-      ON CONFLICT (id) DO NOTHING
-    `
-  }
+    return {
+      id: ev.id,
+      session_id: sessionId,
+      occurred_at: new Date(ev.timestamp).toISOString(),
+      event_type: ev.type,
+      frequency: isIssue ? (d.frequency as number) ?? null : null,
+      amplitude: isIssue ? (d.amplitude as number) ?? null : null,
+      severity: isIssue ? (d.severity as string) ?? null : null,
+      classification: isIssue ? (d.classification as string) ?? null : null,
+      q_factor: isIssue ? (d.qFactor as number) ?? null : null,
+      bandwidth: isIssue ? (d.bandwidth as number) ?? null : null,
+      growth_rate: isIssue ? (d.growthRate as number) ?? null : null,
+      metadata: isIssue ? null : JSON.stringify(d),
+    }
+  })
+
+  // Neon tagged template can't splat dynamic arrays — build a single INSERT
+  // by looping the sql tag per row but batching via Promise.all (parallel, not serial)
+  await Promise.all(
+    rows.map((r) =>
+      sql`
+        INSERT INTO session_events (
+          id, session_id, occurred_at, event_type,
+          frequency, amplitude, severity, classification,
+          q_factor, bandwidth, growth_rate, metadata
+        ) VALUES (
+          ${r.id}, ${r.session_id}, ${r.occurred_at}, ${r.event_type},
+          ${r.frequency}, ${r.amplitude}, ${r.severity}, ${r.classification},
+          ${r.q_factor}, ${r.bandwidth}, ${r.growth_rate}, ${r.metadata}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `,
+    ),
+  )
 }
 
 export async function getSessionEvents(sessionId: string): Promise<SessionEventRow[]> {

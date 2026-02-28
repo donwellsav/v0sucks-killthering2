@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { endSession, getSession, getSessionEvents } from '@/lib/db/sessions'
+import { endSession, getSession, getSessionEvents, deleteSession } from '@/lib/db/sessions'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -28,5 +28,16 @@ export async function PATCH(_req: NextRequest, { params }: Params) {
   } catch (err) {
     console.error('[sessions/:id] PATCH error:', err)
     return NextResponse.json({ error: 'Failed to end session' }, { status: 500 })
+  }
+}
+
+export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { id } = await params
+  try {
+    await deleteSession(id)
+    return new NextResponse(null, { status: 204 })
+  } catch (err) {
+    console.error('[sessions/:id] DELETE error:', err)
+    return NextResponse.json({ error: 'Failed to delete session' }, { status: 500 })
   }
 }

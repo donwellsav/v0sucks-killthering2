@@ -1,6 +1,9 @@
 'use client'
 
-import Link from 'next/link'
+import { useTransition, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { Session } from '@/lib/db/sessions'
 
 interface SessionsTableProps {
@@ -36,6 +39,42 @@ const MODE_LABELS: Record<string, string> = {
   calibration: 'Calibration',
 }
 
+function DeleteButton({ id }: { id: string }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [confirmed, setConfirmed] = useState(false)
+
+  const handleClick = () => {
+    if (!confirmed) {
+      setConfirmed(true)
+      // Auto-reset after 3s if not confirmed
+      setTimeout(() => setConfirmed(false), 3000)
+      return
+    }
+    startTransition(async () => {
+      await fetch(`/api/sessions/${id}`, { method: 'DELETE' })
+      router.refresh()
+    })
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleClick}
+      disabled={isPending}
+      aria-label={confirmed ? 'Confirm delete session' : 'Delete session'}
+      className={`h-7 w-7 p-0 transition-colors ${
+        confirmed
+          ? 'text-destructive hover:text-destructive hover:bg-destructive/10'
+          : 'text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10'
+      } ${isPending ? 'opacity-50' : ''}`}
+    >
+      <Trash2 className="w-3.5 h-3.5" />
+    </Button>
+  )
+}
+
 export function SessionsTable({ sessions }: SessionsTableProps) {
   if (sessions.length === 0) {
     return (
@@ -61,13 +100,14 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
             <th className="text-left px-4 py-2.5 text-muted-foreground font-medium">Duration</th>
             <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Issues</th>
             <th className="text-right px-4 py-2.5 text-muted-foreground font-medium">Status</th>
+            <th className="w-10 px-2 py-2.5" aria-label="Actions" />
           </tr>
         </thead>
         <tbody>
           {sessions.map((s, i) => (
             <tr
               key={s.id}
-              className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/5'}`}
+              className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors group ${i % 2 === 0 ? '' : 'bg-muted/5'}`}
             >
               <td className="px-4 py-3 font-mono text-foreground/80">{formatDate(s.started_at)}</td>
               <td className="px-4 py-3 text-foreground">{MODE_LABELS[s.mode] ?? s.mode}</td>
@@ -90,6 +130,9 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
                   </span>
                 )}
               </td>
+              <td className="px-2 py-3 text-right">
+                <DeleteButton id={s.id} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -101,14 +144,17 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
           <div key={s.id} className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground">{formatDate(s.started_at)}</span>
-              {s.ended_at ? (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Ended</span>
-              ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  Live
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {s.ended_at ? (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Ended</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Live
+                  </span>
+                )}
+                <DeleteButton id={s.id} />
+              </div>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span>{MODE_LABELS[s.mode] ?? s.mode}</span>
