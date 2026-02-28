@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
+import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
@@ -8,12 +10,14 @@ import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
+import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Mic, MicOff } from 'lucide-react'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
+import { getEventLogger } from '@/lib/logging/eventLogger'
 
 export function KillTheRing() {
   const {
@@ -31,6 +35,23 @@ export function KillTheRing() {
     resetSettings,
   } = useAudioAnalyzer()
 
+  const logger = getEventLogger()
+
+  // Log when analysis starts
+  useEffect(() => {
+    if (isRunning) {
+      logger.logAnalysisStarted({
+        mode: settings.mode,
+        fftSize: settings.fftSize,
+      })
+    } else {
+      logger.logAnalysisStopped()
+    }
+  }, [isRunning, settings.mode, settings.fftSize, logger])
+
+  // Log new advisories as they're detected
+  useAdvisoryLogging(advisories)
+
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
     updateSettings({
@@ -39,6 +60,22 @@ export function KillTheRing() {
       ringThresholdDb: modeSettings.ringThreshold,
       growthRateThreshold: modeSettings.growthRateThreshold,
       musicAware: modeSettings.musicAware,
+    })
+    logger.logSettingsChanged({
+      mode,
+      reason: 'mode_changed',
+    })
+  }
+
+  const handleSettingsChange = (newSettings: Partial<typeof settings>) => {
+    updateSettings(newSettings)
+    logger.logSettingsChanged(newSettings)
+  }
+
+  const handleResetSettings = () => {
+    resetSettings()
+    logger.logSettingsChanged({
+      action: 'reset_to_defaults',
     })
   }
 
@@ -105,7 +142,7 @@ export function KillTheRing() {
 
           <InputMeterSlider
             value={settings.inputGainDb}
-            onChange={(v) => updateSettings({ inputGainDb: v })}
+            onChange={(v) => handleSettingsChange({ inputGainDb: v })}
             level={inputLevel}
           />
 
@@ -133,11 +170,12 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+          <LogsViewer />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
-            onSettingsChange={updateSettings}
-            onReset={resetSettings}
+            onSettingsChange={handleSettingsChange}
+            onReset={handleResetSettings}
           />
         </div>
       </header>
@@ -167,7 +205,7 @@ export function KillTheRing() {
               </div>
               <Slider
                 value={[settings.feedbackThresholdDb]}
-                onValueChange={([v]) => updateSettings({ feedbackThresholdDb: v })}
+                onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
                 min={6}
                 max={24}
                 step={1}
@@ -183,7 +221,7 @@ export function KillTheRing() {
               </div>
               <Slider
                 value={[settings.ringThresholdDb]}
-                onValueChange={([v]) => updateSettings({ ringThresholdDb: v })}
+                onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
                 min={3}
                 max={15}
                 step={0.5}
@@ -199,7 +237,7 @@ export function KillTheRing() {
               </div>
               <Slider
                 value={[settings.growthRateThreshold]}
-                onValueChange={([v]) => updateSettings({ growthRateThreshold: v })}
+                onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
                 min={1}
                 max={10}
                 step={0.5}
