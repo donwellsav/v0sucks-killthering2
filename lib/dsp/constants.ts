@@ -188,7 +188,7 @@ export const DEFAULT_SETTINGS = {
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
   noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 12, // Show more issues for comprehensive system tuning
+  maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues, can adjust up to 12
   eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
   musicAware: false, // Disabled by default for maximum detection
   inputGainDb: 18, // Higher default gain for better signal capture in speech systems

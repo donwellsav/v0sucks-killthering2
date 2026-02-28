@@ -108,7 +108,7 @@ export function HelpMenu() {
               <p className="mb-2">Advanced settings split into two tabs — detection controls are intentionally kept in the sidebar for quick access:</p>
               <ul className="space-y-2">
                 <li><strong>Analysis tab:</strong> FFT Size (resolution vs. speed trade-off), Spectrum Smoothing, Hold Time (how long issues stay visible), Input Gain.</li>
-                <li><strong>Display tab:</strong> Max Issues Shown, Graph Label Size, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
+                <li><strong>Display tab:</strong> Max Issues Shown (default 6 — focus on worst problems, adjustable to 12), Graph Label Size, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
                 <li><strong>Reset to PA Defaults:</strong> Restores all settings to Feedback Hunt defaults optimized for corporate/conference PA systems.</li>
               </ul>
             </Section>

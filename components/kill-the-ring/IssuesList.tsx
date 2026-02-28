@@ -10,26 +10,24 @@ interface IssuesListProps {
 }
 
 export function IssuesList({ advisories, maxIssues = 10 }: IssuesListProps) {
-  // Sort by frequency (low to high) for easier GEQ/PEQ navigation
-  const sortedAdvisories = [...advisories].sort((a, b) => 
-    (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0)
-  )
-  const displayedAdvisories = sortedAdvisories.slice(0, maxIssues)
-
-  if (displayedAdvisories.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-        <div className="text-sm">No issues detected</div>
-        <div className="text-xs mt-1">Monitoring for feedback...</div>
-      </div>
-    )
-  }
+  // Sort by frequency (low → high) and slice to max
+  const sorted = [...advisories]
+    .sort((a, b) => (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0))
+    .slice(0, maxIssues)
 
   return (
     <div className="flex flex-col gap-2">
-      {displayedAdvisories.map((advisory, index) => (
-        <IssueCard key={advisory.id} advisory={advisory} rank={index + 1} />
-      ))}
+      {/* Issue cards */}
+      {sorted.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
+          <div className="text-sm">No issues detected</div>
+          <div className="text-xs mt-1">Monitoring for feedback...</div>
+        </div>
+      ) : (
+        sorted.map((advisory, index) => (
+          <IssueCard key={advisory.id} advisory={advisory} rank={index + 1} />
+        ))
+      )}
     </div>
   )
 }
@@ -43,12 +41,12 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
   const severityColor = getSeverityColor(advisory.severity)
   const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
   const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
-  
+
   const geq = advisory.advisory?.geq
   const peq = advisory.advisory?.peq
 
   return (
-    <div 
+    <div
       className="flex flex-col gap-0.5 px-2 py-1.5 rounded border border-border bg-card/80"
       style={{ borderLeftColor: severityColor, borderLeftWidth: '2px' }}
     >
@@ -62,7 +60,7 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
             {pitchStr}
           </span>
         </div>
-        <span 
+        <span
           className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
           style={{ backgroundColor: severityColor, color: '#000' }}
         >

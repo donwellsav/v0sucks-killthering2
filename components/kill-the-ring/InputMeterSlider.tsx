@@ -10,15 +10,18 @@ interface InputMeterSliderProps {
   max?: number
   /** When true the slider expands to fill its container (used in mobile overlay) */
   fullWidth?: boolean
+  /** When true use compact styling for mobile (reduced height, smaller text) */
+  compact?: boolean
 }
 
 export function InputMeterSlider({
   value,
   onChange,
   level,
-  min = -12,
-  max = 24,
+  min = -6,
+  max = 42,
   fullWidth = false,
+  compact = false,
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
@@ -138,16 +141,16 @@ export function InputMeterSlider({
   }, [])
 
   // Canvas logical width: use a larger size when fullWidth so the drawing is sharp
-  const canvasLogicalWidth = fullWidth ? 320 : 112
+  const canvasLogicalWidth = fullWidth ? 320 : compact ? 140 : 112
 
   return (
-    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
-      <span className="text-[10px] text-muted-foreground uppercase tracking-wide whitespace-nowrap">
+    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''} ${compact ? 'gap-1.5' : ''}`}>
+      <span className={`text-muted-foreground uppercase tracking-wide whitespace-nowrap ${compact ? 'text-[8px]' : 'text-[10px]'}`}>
         Gain
       </span>
       <div
         ref={sliderRef}
-        className={`relative h-5 rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : 'w-28'}`}
+        className={`relative rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : compact ? 'flex-1 h-4' : 'w-28 h-5'}`}
         style={{ touchAction: 'none' }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
@@ -165,11 +168,11 @@ export function InputMeterSlider({
         <canvas
           ref={canvasRef}
           width={canvasLogicalWidth}
-          height={20}
+          height={compact ? 16 : 20}
           className="w-full h-full"
         />
       </div>
-      <span className="text-xs font-mono w-10 text-right text-foreground">
+      <span className={`font-mono text-right text-foreground ${compact ? 'text-[8px] w-8' : 'text-xs w-10'}`}>
         {value > 0 ? '+' : ''}{value}dB
       </span>
     </div>
