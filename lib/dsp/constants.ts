@@ -38,40 +38,40 @@ export const A_WEIGHTING = {
 // FFT size options
 export const FFT_SIZE_OPTIONS = [2048, 4096, 8192, 16384, 32768] as const
 
-// Severity thresholds
+// Severity thresholds - tuned for PA system feedback detection
 export const SEVERITY_THRESHOLDS = {
-  RUNAWAY_VELOCITY: 12, // dB/sec growth rate for runaway
-  GROWING_VELOCITY: 3, // dB/sec for growing
-  HIGH_Q: 50, // Q value indicating narrow resonance
-  PERSISTENCE_MS: 500, // ms for resonance classification
+  RUNAWAY_VELOCITY: 8, // dB/sec growth rate for runaway (lower = catch faster)
+  GROWING_VELOCITY: 2, // dB/sec for growing (more sensitive)
+  HIGH_Q: 40, // Q value indicating narrow resonance (lower = catch more)
+  PERSISTENCE_MS: 400, // ms for resonance classification (faster detection)
 } as const
 
-// Classification weights
+// Classification weights - optimized for PA feedback detection
 export const CLASSIFIER_WEIGHTS = {
-  // Stationarity (low pitch variation = feedback)
-  STABILITY_FEEDBACK: 0.25,
-  STABILITY_THRESHOLD_CENTS: 15, // cents std dev threshold
+  // Stationarity (low pitch variation = feedback) - increased weight
+  STABILITY_FEEDBACK: 0.30,
+  STABILITY_THRESHOLD_CENTS: 12, // tighter threshold for feedback detection
   
   // Harmonicity (coherent harmonics = instrument)
-  HARMONICITY_INSTRUMENT: 0.30,
-  HARMONICITY_THRESHOLD: 0.6, // score threshold
+  HARMONICITY_INSTRUMENT: 0.25,
+  HARMONICITY_THRESHOLD: 0.65, // higher threshold = less false instrument classification
   
   // Modulation (vibrato = whistle)
-  MODULATION_WHISTLE: 0.25,
-  MODULATION_THRESHOLD: 0.4, // score threshold
+  MODULATION_WHISTLE: 0.20,
+  MODULATION_THRESHOLD: 0.45, // slightly higher threshold
   
   // Sideband noise (breath = whistle)
   SIDEBAND_WHISTLE: 0.10,
-  SIDEBAND_THRESHOLD: 0.3, // score threshold
+  SIDEBAND_THRESHOLD: 0.35, // slightly higher threshold
   
-  // Runaway growth (high velocity = feedback)
-  GROWTH_FEEDBACK: 0.20,
-  GROWTH_THRESHOLD: 6, // dB/sec
+  // Runaway growth (high velocity = feedback) - increased weight
+  GROWTH_FEEDBACK: 0.25,
+  GROWTH_THRESHOLD: 4, // lower threshold = catch feedback growth earlier
   
-  // Classification thresholds
-  CLASSIFICATION_THRESHOLD: 0.5, // minimum probability to classify
-  WHISTLE_THRESHOLD: 0.6, // threshold to label as whistle
-  INSTRUMENT_THRESHOLD: 0.55, // threshold to label as instrument
+  // Classification thresholds - more conservative for PA use
+  CLASSIFICATION_THRESHOLD: 0.45, // lower = more likely to flag as potential issue
+  WHISTLE_THRESHOLD: 0.65, // higher = less false whistle classification
+  INSTRUMENT_THRESHOLD: 0.60, // higher = less false instrument classification
 } as const
 
 // EQ recommendation presets
@@ -92,13 +92,13 @@ export const EQ_PRESETS = {
   },
 } as const
 
-// Vocal ring assist mode settings
+// Vocal ring assist mode settings - optimized for speech/corporate PA
 export const VOCAL_RING_SETTINGS = {
   BASELINE_EMA_ALPHA: 0.02, // Slow LTAS baseline adaptation
-  RING_THRESHOLD_DB: 5, // dB above baseline for ring candidate
-  RING_PERSISTENCE_MS: 200, // ms for ring confirmation
-  VOICE_FREQ_LOW: 150, // Hz - voice presence detection
-  VOICE_FREQ_HIGH: 4000, // Hz
+  RING_THRESHOLD_DB: 4, // Lower threshold for earlier ring detection
+  RING_PERSISTENCE_MS: 150, // Faster confirmation for speech dynamics
+  VOICE_FREQ_LOW: 200, // Hz - vocal-focused lower bound
+  VOICE_FREQ_HIGH: 8000, // Hz - extended for speech sibilance
   SUGGESTED_CUT_MIN: -2, // dB
   SUGGESTED_CUT_MAX: -6, // dB
 } as const
@@ -133,57 +133,65 @@ export const CANVAS_SETTINGS = {
   GEQ_BAR_WIDTH_RATIO: 0.8, // Bar width as ratio of band spacing
 } as const
 
-// Operation mode presets
+// Operation mode presets - optimized for PA system feedback detection
+// Default is Aggressive for corporate/conference environments with vocal focus
 export const OPERATION_MODES = {
   feedbackHunt: {
-    feedbackThreshold: 15,
-    ringThreshold: 8,
-    growthRateThreshold: 3,
+    // Balanced PA mode - good sensitivity without excessive false positives
+    feedbackThreshold: 8, // Moderate threshold for balanced detection
+    ringThreshold: 5, // Catch resonances before they become problematic
+    growthRateThreshold: 2, // Responsive to growing feedback
     musicAware: false,
   },
   vocalRing: {
-    feedbackThreshold: 10,
-    ringThreshold: 5,
-    growthRateThreshold: 2,
+    // Optimized for vocal frequencies (200Hz-8kHz)
+    feedbackThreshold: 6, // More sensitive for speech feedback
+    ringThreshold: 4, // Catch vocal ring-outs
+    growthRateThreshold: 1.5, // Fast response for speech dynamics
     musicAware: false,
   },
   musicAware: {
-    feedbackThreshold: 18,
-    ringThreshold: 10,
-    growthRateThreshold: 4,
+    // Use during live performance to reduce false positives
+    feedbackThreshold: 12, // Higher threshold to ignore musical content
+    ringThreshold: 7, // Less sensitive during music
+    growthRateThreshold: 3, // Only catch severe feedback
     musicAware: true,
   },
   aggressive: {
-    feedbackThreshold: 8,
-    ringThreshold: 4,
-    growthRateThreshold: 2,
+    // DEFAULT - Maximum sensitivity for corporate/conference PA
+    // Catches feedback early before it becomes audible to audience
+    feedbackThreshold: 6, // Very sensitive detection
+    ringThreshold: 3, // Catch subtle resonances
+    growthRateThreshold: 1, // Immediate response to any growth
     musicAware: false,
   },
   calibration: {
-    feedbackThreshold: 6,
-    ringThreshold: 3,
-    growthRateThreshold: 1,
+    // Ultra-sensitive for initial system setup and ring-out
+    feedbackThreshold: 4, // Maximum sensitivity
+    ringThreshold: 2, // Catch everything
+    growthRateThreshold: 0.5, // Fastest possible response
     musicAware: false,
   },
 } as const
 
-// Default settings for the analyzer
+// Default settings for the analyzer - optimized for Corporate/Conference PA feedback detection
+// with Aggressive mode default and Vocal-Focused frequency range (200Hz-8kHz)
 export const DEFAULT_SETTINGS = {
-  mode: 'feedbackHunt' as const,
-  fftSize: 8192 as const,
-  smoothingTimeConstant: 0.8,
-  minFrequency: 60,
-  maxFrequency: 16000,
-  feedbackThresholdDb: 15,
-  ringThresholdDb: 8,
-  growthRateThreshold: 3,
-  holdTimeMs: 2000,
-  noiseFloorDecay: 0.995,
+  mode: 'aggressive' as const, // Aggressive mode for maximum sensitivity during setup
+  fftSize: 8192 as const, // Good balance of resolution and response time
+  smoothingTimeConstant: 0.6, // Less smoothing for faster transient response
+  minFrequency: 200, // Vocal-focused lower bound
+  maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
+  feedbackThresholdDb: 6, // Aggressive threshold for catching feedback early
+  ringThresholdDb: 3, // Very sensitive to resonances
+  growthRateThreshold: 1, // Fast detection of any growing feedback
+  holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
+  noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 8,
-  eqPreset: 'surgical' as const,
-  musicAware: false,
-  inputGainDb: 12,
+  maxDisplayedIssues: 12, // Show more issues for comprehensive system tuning
+  eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
+  musicAware: false, // Disabled by default for maximum detection
+  inputGainDb: 18, // Higher default gain for better signal capture in speech systems
 }
 
 // Color palette for visualizations

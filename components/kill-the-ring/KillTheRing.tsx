@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
+import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
@@ -8,12 +10,15 @@ import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
+import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Mic, MicOff } from 'lucide-react'
+import { Mic, MicOff, HelpCircle } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
+import { getEventLogger } from '@/lib/logging/eventLogger'
 
 export function KillTheRing() {
   const {
@@ -31,6 +36,23 @@ export function KillTheRing() {
     resetSettings,
   } = useAudioAnalyzer()
 
+  const logger = getEventLogger()
+
+  // Log when analysis starts
+  useEffect(() => {
+    if (isRunning) {
+      logger.logAnalysisStarted({
+        mode: settings.mode,
+        fftSize: settings.fftSize,
+      })
+    } else {
+      logger.logAnalysisStopped()
+    }
+  }, [isRunning, settings.mode, settings.fftSize, logger])
+
+  // Log new advisories as they're detected
+  useAdvisoryLogging(advisories)
+
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
     updateSettings({
@@ -39,6 +61,22 @@ export function KillTheRing() {
       ringThresholdDb: modeSettings.ringThreshold,
       growthRateThreshold: modeSettings.growthRateThreshold,
       musicAware: modeSettings.musicAware,
+    })
+    logger.logSettingsChanged({
+      mode,
+      reason: 'mode_changed',
+    })
+  }
+
+  const handleSettingsChange = (newSettings: Partial<typeof settings>) => {
+    updateSettings(newSettings)
+    logger.logSettingsChanged(newSettings)
+  }
+
+  const handleResetSettings = () => {
+    resetSettings()
+    logger.logSettingsChanged({
+      action: 'reset_to_defaults',
     })
   }
 
@@ -105,7 +143,7 @@ export function KillTheRing() {
 
           <InputMeterSlider
             value={settings.inputGainDb}
-            onChange={(v) => updateSettings({ inputGainDb: v })}
+            onChange={(v) => handleSettingsChange({ inputGainDb: v })}
             level={inputLevel}
           />
 
@@ -133,11 +171,12 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+          <LogsViewer />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
-            onSettingsChange={updateSettings}
-            onReset={resetSettings}
+            onSettingsChange={handleSettingsChange}
+            onReset={handleResetSettings}
           />
         </div>
       </header>
@@ -154,59 +193,88 @@ export function KillTheRing() {
         {/* Left Sidebar - Detection Controls + Issues */}
         <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50">
           {/* Detection Controls */}
-          <div className="p-3 border-b border-border space-y-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              {settings.mode === 'feedbackHunt' ? 'Aggressive Feedback Detection' : settings.mode === 'vocalRing' ? 'Vocal Ring Detection' : settings.mode === 'musicAware' ? 'Music-Aware Mode' : settings.mode === 'aggressive' ? 'Maximum Sensitivity' : 'Calibration Mode'}
-            </h2>
-            
-            {/* Feedback Threshold */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Threshold</span>
-                <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
+          <TooltipProvider delayDuration={400}>
+            <div className="p-3 border-b border-border space-y-3">
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                {settings.mode === 'feedbackHunt' ? 'Feedback Hunt' : settings.mode === 'vocalRing' ? 'Vocal Ring' : settings.mode === 'musicAware' ? 'Music-Aware' : settings.mode === 'aggressive' ? 'Aggressive' : 'Calibration'}
+              </h2>
+              
+              {/* Feedback Threshold */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Threshold</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px] text-xs">
+                        Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.feedbackThresholdDb]}
+                  onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
+                  min={2}
+                  max={20}
+                  step={1}
+                />
               </div>
-              <Slider
-                value={[settings.feedbackThresholdDb]}
-                onValueChange={([v]) => updateSettings({ feedbackThresholdDb: v })}
-                min={6}
-                max={24}
-                step={1}
-              />
-              <p className="text-[9px] text-muted-foreground">Lower = more sensitive to faint feedback</p>
-            </div>
 
-            {/* Ring Threshold */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Ring Sensitivity</span>
-                <span className="font-mono">{settings.ringThresholdDb}dB</span>
+              {/* Ring Threshold */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Ring</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px] text-xs">
+                        Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <span className="font-mono">{settings.ringThresholdDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.ringThresholdDb]}
+                  onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
+                  min={1}
+                  max={12}
+                  step={0.5}
+                />
               </div>
-              <Slider
-                value={[settings.ringThresholdDb]}
-                onValueChange={([v]) => updateSettings({ ringThresholdDb: v })}
-                min={3}
-                max={15}
-                step={0.5}
-              />
-              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances</p>
-            </div>
 
-            {/* Growth Rate */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Growth Rate</span>
-                <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+              {/* Growth Rate */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">Growth</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-[200px] text-xs">
+                        How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+                </div>
+                <Slider
+                  value={[settings.growthRateThreshold]}
+                  onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
+                  min={0.5}
+                  max={8}
+                  step={0.5}
+                />
               </div>
-              <Slider
-                value={[settings.growthRateThreshold]}
-                onValueChange={([v]) => updateSettings({ growthRateThreshold: v })}
-                min={1}
-                max={10}
-                step={0.5}
-              />
-              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster</p>
             </div>
-          </div>
+          </TooltipProvider>
 
           {/* Issues List */}
           <div className="p-3">
