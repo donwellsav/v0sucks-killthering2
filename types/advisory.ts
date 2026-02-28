@@ -245,6 +245,7 @@ export interface DetectorSettings {
   musicAware: boolean
   inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
+  guiFontSize: number // Font size for GUI text (12-26px, default 18px)
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

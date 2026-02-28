@@ -49,6 +49,11 @@ export function KillTheRing() {
 
   const logger = getEventLogger()
 
+  // Update CSS variable when GUI font size changes
+  useEffect(() => {
+    document.documentElement.style.setProperty('--gui-font-size', `${settings.guiFontSize}px`)
+  }, [settings.guiFontSize])
+
   // Log when analysis starts
   useEffect(() => {
     if (isRunning) {
