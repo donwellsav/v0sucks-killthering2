@@ -144,8 +144,9 @@ export function InputMeterSlider({
   const valueLabel = `${value > 0 ? '+' : ''}${value}dB`
 
   return (
-    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''} ${compact ? 'gap-1.5' : ''}`}>
-      <span className={`text-muted-foreground uppercase tracking-wide whitespace-nowrap flex-shrink-0 ${compact ? 'text-[8px]' : 'text-[10px]'}`}>
+    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
+      {/* Label */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
         Gain
       </span>
 
@@ -183,7 +184,7 @@ export function InputMeterSlider({
         )}
       </div>
 
-      {/* Clickable dB value — click to type, scroll/+/- to step */}
+      {/* Value display — click to edit */}
       {editing ? (
         <input
           autoFocus

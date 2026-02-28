@@ -267,14 +267,21 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Gain slider — fills all space between logo and right icons */}
+        {/* Center: Gain slider — styled section container */}
         <div className="hidden md:flex items-center flex-1 min-w-0 px-4">
-          <InputMeterSlider
-            value={settings.inputGainDb}
-            onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-            level={inputLevel}
-            fullWidth
-          />
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
+            {/* Section label */}
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Input Gain
+            </div>
+            {/* Gain control */}
+            <InputMeterSlider
+              value={settings.inputGainDb}
+              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+              level={inputLevel}
+              fullWidth
+            />
+          </div>
         </div>
 
         {/* Right: actions */}
