@@ -49,7 +49,7 @@ export function KillTheRing() {
     <div className="flex flex-col h-screen">
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
-        {/* Left: Logo + Start/Stop */}
+        {/* Left: Logo */}
         <div className="flex items-center gap-4">
           {/* Logo with Design */}
           <div className="flex items-center gap-2.5 pl-3 border-l border-border/50">
@@ -71,25 +71,6 @@ export function KillTheRing() {
               <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
             </div>
           </div>
-          
-          <Button
-            onClick={isRunning ? stop : start}
-            variant={isRunning ? 'destructive' : 'default'}
-            size="sm"
-            className="h-7 px-3 text-xs font-medium"
-          >
-            {isRunning ? (
-              <>
-                <MicOff className="w-3.5 h-3.5 mr-1.5" />
-                Stop
-              </>
-            ) : (
-              <>
-                <Mic className="w-3.5 h-3.5 mr-1.5" />
-                Start
-              </>
-            )}
-          </Button>
 
           {isRunning && (
             <div className="flex items-center gap-1.5">
@@ -121,7 +102,7 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Info + Settings */}
+        {/* Right: Info + Start + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -131,6 +112,26 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
+          
+          <Button
+            onClick={isRunning ? stop : start}
+            variant={isRunning ? 'destructive' : 'default'}
+            size="sm"
+            className="h-7 px-3 text-xs font-medium"
+          >
+            {isRunning ? (
+              <>
+                <MicOff className="w-3.5 h-3.5 mr-1.5" />
+                Stop
+              </>
+            ) : (
+              <>
+                <Mic className="w-3.5 h-3.5 mr-1.5" />
+                Start
+              </>
+            )}
+          </Button>
+
           <HelpMenu />
           <SettingsPanel
             settings={settings}
