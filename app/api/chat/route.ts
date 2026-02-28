@@ -70,11 +70,14 @@ function buildSystemPrompt(basePrompt: string, context: AnalysisContext): string
 }
 
 export async function POST(req: Request) {
-  const { messages, context, agentSettings } = await req.json() as {
-    messages: Array<{ role: string; parts?: Array<{ type: string; text?: string }> }>
+  const body = await req.json() as {
+    messages?: Array<{ role: string; parts?: Array<{ type: string; text?: string }> }>
     context: AnalysisContext
     agentSettings: AgentConfig
   }
+
+  const { context, agentSettings } = body
+  const messages = Array.isArray(body.messages) ? body.messages : []
 
   // Define tools for the sound engineer assistant
   const tools = {

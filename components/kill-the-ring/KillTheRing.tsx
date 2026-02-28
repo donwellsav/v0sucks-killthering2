@@ -2,6 +2,7 @@
 
 // Kill The Ring main component
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -15,7 +16,7 @@ import { LogsViewer } from './LogsViewer'
 import { AIChatPanel } from './AIChatPanel'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { HelpCircle, Menu, X, Target, Music, Zap, Settings2, Radio } from 'lucide-react'
+import { HelpCircle, Menu, X, Target, Music, Zap, Settings2, Radio, History } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { OperationMode } from '@/types/advisory'
@@ -33,11 +34,11 @@ const GRAPH_LABELS: Record<GraphView, string> = {
 }
 
 const MODE_CHIPS = [
-  { value: 'feedbackHunt' as OperationMode, label: 'Feedback Hunt', shortLabel: 'Hunt', icon: <Target className="w-3 h-3" /> },
-  { value: 'vocalRing'    as OperationMode, label: 'Vocal Ring',    shortLabel: 'Vocal', icon: <Radio className="w-3 h-3" /> },
-  { value: 'musicAware'   as OperationMode, label: 'Music-Aware',   shortLabel: 'Music', icon: <Music className="w-3 h-3" /> },
-  { value: 'aggressive'   as OperationMode, label: 'Aggressive',    shortLabel: 'Aggro', icon: <Zap className="w-3 h-3" /> },
-  { value: 'calibration'  as OperationMode, label: 'Calibration',   shortLabel: 'Cal',   icon: <Settings2 className="w-3 h-3" /> },
+  { value: 'feedbackHunt' as OperationMode, label: 'Feedback Hunt', shortLabel: 'Hunt', subtitle: 'Balanced PA', icon: <Target className="w-3 h-3" /> },
+  { value: 'vocalRing'    as OperationMode, label: 'Vocal Ring',    shortLabel: 'Vocal', subtitle: 'Speech freqs', icon: <Radio className="w-3 h-3" /> },
+  { value: 'musicAware'   as OperationMode, label: 'Music-Aware',   shortLabel: 'Music', subtitle: 'Less false+', icon: <Music className="w-3 h-3" /> },
+  { value: 'aggressive'   as OperationMode, label: 'Aggressive',    shortLabel: 'Aggro', subtitle: 'Max sensitivity', icon: <Zap className="w-3 h-3" /> },
+  { value: 'calibration'  as OperationMode, label: 'Calibration',   shortLabel: 'Cal',   subtitle: 'Ring-out', icon: <Settings2 className="w-3 h-3" /> },
 ]
 
 export function KillTheRing() {
@@ -132,16 +133,24 @@ export function KillTheRing() {
               onClick={() => handleModeChange(chip.value)}
               title={chip.label}
               className={cn(
-                'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-all border',
+                'inline-flex flex-col items-start gap-0 px-2 py-1.5 rounded-md text-[10px] font-medium transition-all border',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background',
                 settings.mode === chip.value
                   ? 'bg-primary text-primary-foreground border-primary shadow-sm'
                   : 'bg-muted/50 text-muted-foreground border-border hover:bg-muted hover:text-foreground'
               )}
             >
-              {chip.icon}
-              <span className="hidden xl:inline">{chip.label}</span>
-              <span className="xl:hidden">{chip.shortLabel}</span>
+              <span className="flex items-center gap-1">
+                {chip.icon}
+                <span className="hidden xl:inline">{chip.label}</span>
+                <span className="xl:hidden">{chip.shortLabel}</span>
+              </span>
+              <span className={cn(
+                'text-[9px] leading-none pl-4',
+                settings.mode === chip.value ? 'text-primary-foreground/70' : 'text-muted-foreground/70'
+              )}>
+                {chip.subtitle}
+              </span>
             </button>
           ))}
         </div>
@@ -289,6 +298,12 @@ export function KillTheRing() {
             isRunning={isRunning}
             agentSettings={agentSettings}
           />
+          <Link href="/history">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Session history">
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline text-xs">History</span>
+            </Button>
+          </Link>
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
