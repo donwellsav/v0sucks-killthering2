@@ -252,6 +252,7 @@ export interface DetectorSettings {
   autoMusicAwareHysteresisDb: number // dB above noise floor to trigger music-aware mode
   inputGainDb: number // Software gain applied to analysis (-40 to +40 dB)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
+  harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–100, default 50)
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

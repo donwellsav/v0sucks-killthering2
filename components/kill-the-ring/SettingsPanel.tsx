@@ -139,6 +139,29 @@ export function SettingsPanel({
               </div>
             </Section>
 
+            <Section
+              title="Harmonic Tolerance"
+              tooltip="Cents window used when matching overtones and sub-harmonics. Tighten for calibration in controlled rooms (25–35¢). Widen for live performance with reverb or temperature drift (65–100¢). Default 50¢ = half a semitone."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Window</span>
+                  <span className="text-xs font-mono">{settings.harmonicToleranceCents}¢</span>
+                </div>
+                <Slider
+                  value={[settings.harmonicToleranceCents]}
+                  onValueChange={([v]) => onSettingsChange({ harmonicToleranceCents: v })}
+                  min={25}
+                  max={100}
+                  step={5}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Tight (calibration)</span>
+                  <span>Wide (live)</span>
+                </div>
+              </div>
+            </Section>
+
             <Section 
               title="Input Gain" 
               tooltip="Digital boost applied before analysis. Increase if your signal is weak, decrease if clipping. Does not affect audio output, only analysis sensitivity."

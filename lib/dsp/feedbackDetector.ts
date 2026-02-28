@@ -75,6 +75,9 @@ export class FeedbackDetector {
   private analysisMinDb: number = -100
   private analysisMaxDb: number = 0
 
+  // Harmonic detection — runtime override (set via updateSettings)
+  private harmonicToleranceCents: number = HARMONIC_SETTINGS.TOLERANCE_CENTS
+
   constructor(config: Partial<AnalysisConfig> = {}, callbacks: FeedbackDetectorCallbacks = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.callbacks = callbacks
@@ -250,6 +253,9 @@ export class FeedbackDetector {
     }
     if (settings.inputGainDb !== undefined) {
       mappedConfig.inputGainDb = settings.inputGainDb
+    }
+    if (settings.harmonicToleranceCents !== undefined) {
+      this.harmonicToleranceCents = settings.harmonicToleranceCents
     }
 
     if (Object.keys(mappedConfig).length > 0) {
@@ -564,7 +570,7 @@ export class FeedbackDetector {
 
           if (this.activeBins && this.activeHz && this.activeCount > 0) {
             const maxHarmonic = HARMONIC_SETTINGS.MAX_HARMONIC
-            const tolCents = HARMONIC_SETTINGS.TOLERANCE_CENTS
+            const tolCents = this.harmonicToleranceCents
 
             // ── A: Overtone check ──────────────────────────────────────────
             // Is this new peak an overtone (2nd–8th) of any active root?
@@ -615,9 +621,6 @@ export class FeedbackDetector {
               }
             }
           }
-
-          // Mark active
-          active[i] = 1
 
           // Mark active
           active[i] = 1
