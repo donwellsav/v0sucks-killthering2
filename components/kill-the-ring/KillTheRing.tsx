@@ -139,13 +139,6 @@ export function KillTheRing() {
             )}
           </Button>
 
-          {isRunning && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium hidden sm:inline">LIVE</span>
-            </div>
-          )}
-
           <div className="hidden md:block">
             <InputMeterSlider
               value={settings.inputGainDb}
