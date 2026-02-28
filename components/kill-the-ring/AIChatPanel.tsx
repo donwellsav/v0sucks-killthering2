@@ -33,10 +33,10 @@ export function AIChatPanel({ advisories, settings, isRunning, agentSettings }: 
       api: '/api/chat',
       prepareSendMessagesRequest: ({ id, messages }) => ({
         body: {
-          message: messages[messages.length - 1],
+          messages,
           id,
           context: {
-            advisories: advisories.slice(0, 10), // Send top 10 issues
+            advisories: advisories.slice(0, 10),
             settings: {
               mode: settings.mode,
               feedbackThresholdDb: settings.feedbackThresholdDb,
@@ -118,6 +118,7 @@ export function AIChatPanel({ advisories, settings, isRunning, agentSettings }: 
       </SheetTrigger>
       <SheetContent 
         side="right" 
+        aria-describedby={undefined}
         className="w-full sm:w-[420px] sm:max-w-[420px] p-0 flex flex-col gap-0 border-l border-border bg-card"
       >
         {/* Header */}
