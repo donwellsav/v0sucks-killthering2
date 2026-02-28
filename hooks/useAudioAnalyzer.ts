@@ -1,7 +1,9 @@
 // KillTheRing2 React Hook - Manages audio analyzer lifecycle
+// DSP post-processing (classification, EQ advisory) runs in a Web Worker via useDSPWorker.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AudioAnalyzer, createAudioAnalyzer } from '@/lib/audio/createAudioAnalyzer'
+import { useDSPWorker } from './useDSPWorker'
 import type { 
   Advisory, 
   SpectrumData,
@@ -58,6 +60,42 @@ export function useAudioAnalyzer(
     settingsRef.current = settings
   }, [settings])
 
+  // ── DSP Worker ──────────────────────────────────────────────────────────────
+  const dspWorker = useDSPWorker({
+    onAdvisory: (advisory) => {
+      setState(prev => {
+        const existing = prev.advisories.findIndex(a => a.id === advisory.id)
+        const next = [...prev.advisories]
+        if (existing >= 0) {
+          next[existing] = advisory
+        } else {
+          next.push(advisory)
+        }
+        return {
+          ...prev,
+          advisories: next
+            .sort((a, b) => {
+              const urgencyA = getSeverityUrgency(a.severity)
+              const urgencyB = getSeverityUrgency(b.severity)
+              if (urgencyA !== urgencyB) return urgencyB - urgencyA
+              return b.trueAmplitudeDb - a.trueAmplitudeDb
+            })
+            .slice(0, settingsRef.current.maxDisplayedIssues),
+        }
+      })
+    },
+    onAdvisoryCleared: () => {
+      // Keep advisories visible until next start — same policy as before
+    },
+    onTracksUpdate: (tracks) => {
+      setState(prev => ({ ...prev, tracks }))
+    },
+    onReady: () => {
+      // Worker is ready — nothing extra to do
+    },
+  })
+
+  // ── Analyzer ────────────────────────────────────────────────────────────────
   // Initialize analyzer
   useEffect(() => {
     const analyzer = createAudioAnalyzer(settings, {
@@ -68,36 +106,12 @@ export function useAudioAnalyzer(
           noiseFloorDb: data.noiseFloorDb,
         }))
       },
-      onAdvisory: (advisory) => {
-        setState(prev => {
-          const existing = prev.advisories.findIndex(a => a.id === advisory.id)
-          const newAdvisories = [...prev.advisories]
-          if (existing >= 0) {
-            newAdvisories[existing] = advisory
-          } else {
-            newAdvisories.push(advisory)
-          }
-          // Sort by urgency and limit
-          return {
-            ...prev,
-            advisories: newAdvisories
-              .sort((a, b) => {
-                const urgencyA = getSeverityUrgency(a.severity)
-                const urgencyB = getSeverityUrgency(b.severity)
-                if (urgencyA !== urgencyB) return urgencyB - urgencyA
-                return b.trueAmplitudeDb - a.trueAmplitudeDb
-              })
-              .slice(0, settingsRef.current.maxDisplayedIssues),
-          }
-        })
+      // Route raw peaks to the DSP worker
+      onPeakDetected: (peak, spectrum, sampleRate, fftSize) => {
+        dspWorker.processPeak(peak, spectrum, sampleRate, fftSize)
       },
-      onAdvisoryCleared: (_advisoryId) => {
-        // Do NOT remove advisories during analysis - keep them visible
-        // so the engineer can see and address the issues
-        // Advisories are only cleared on new analysis start
-      },
-      onTracksUpdate: (tracks) => {
-        setState(prev => ({ ...prev, tracks }))
+      onPeakCleared: (peak) => {
+        dspWorker.clearPeak(peak.binIndex, peak.frequencyHz, peak.timestamp)
       },
       onError: (error) => {
         setState(prev => ({
@@ -118,23 +132,29 @@ export function useAudioAnalyzer(
     }
   }, []) // Only create once
 
-  // Update settings when they change
+  // Update analyzer + worker when settings change
   useEffect(() => {
     if (analyzerRef.current) {
       analyzerRef.current.updateSettings(settings)
       setState(prev => ({ ...prev, fftSize: settings.fftSize }))
     }
-  }, [settings])
+    dspWorker.updateSettings(settings)
+  }, [settings, dspWorker])
 
   const start = useCallback(async () => {
     if (!analyzerRef.current) return
     
     try {
-      // Clear previous advisories when starting fresh analysis
+      // Clear previous advisories + worker state when starting fresh analysis
       setState(prev => ({ ...prev, advisories: [], tracks: [] }))
+      dspWorker.reset()
       
       await analyzerRef.current.start()
       const analyzerState = analyzerRef.current.getState()
+
+      // Init worker with current settings + audio context params
+      dspWorker.init(settingsRef.current, analyzerState.sampleRate, analyzerState.fftSize)
+
       setState(prev => ({
         ...prev,
         isRunning: true,
@@ -152,7 +172,7 @@ export function useAudioAnalyzer(
         hasPermission: false,
       }))
     }
-  }, [])
+  }, [dspWorker])
 
   const stop = useCallback(() => {
     if (!analyzerRef.current) return
