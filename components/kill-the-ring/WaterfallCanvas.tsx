@@ -44,12 +44,6 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
     return () => observer.disconnect()
   }, [])
 
-  // Render grid on mount
-  useEffect(() => {
-    const timer = setTimeout(() => render(), 100)
-    return () => clearTimeout(timer)
-  }, [render])
-
   // Update history
   useEffect(() => {
     if (!spectrum?.freqDb || !isRunning) return
@@ -151,7 +145,7 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
 
     // Time axis (right side)
     ctx.fillStyle = '#555'
-    ctx.font = '12px system-ui, sans-serif'
+    ctx.font = '9px system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('Now', width - padding.right + 3, padding.top + 8)
     ctx.fillText('~5s', width - padding.right + 3, height - padding.bottom - 5)

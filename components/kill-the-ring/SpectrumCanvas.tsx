@@ -46,12 +46,6 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
     return () => observer.disconnect()
   }, [])
 
-  // Render grid on mount
-  useEffect(() => {
-    const timer = setTimeout(() => render(), 100)
-    return () => clearTimeout(timer)
-  }, [render])
-
   const render = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -204,7 +198,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
       // Label
       ctx.fillStyle = color
-      ctx.font = '13px system-ui, sans-serif'
+      ctx.font = '10px system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -213,7 +207,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = '13px system-ui, sans-serif'
+    ctx.font = '10px system-ui, sans-serif'
 
     // Y-axis (dB)
     ctx.textAlign = 'right'
