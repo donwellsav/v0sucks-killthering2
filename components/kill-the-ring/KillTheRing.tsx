@@ -31,8 +31,8 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 export function KillTheRing() {
-  // Real-time audio analysis, feedback detection, EQ advisory
-  // Build: timestamp for cache-busting
+  // Real-time audio analysis, feedback detection, and EQ advisory
+  // Cache bust: force rebuild now
   const {
     isRunning,
     error,
