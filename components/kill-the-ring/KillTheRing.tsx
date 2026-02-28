@@ -242,15 +242,25 @@ export function KillTheRing() {
         <aside className="w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50">
           {/* Detection Controls */}
           <div className="p-3 border-b border-border space-y-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              {settings.mode === 'feedbackHunt' ? 'Aggressive Feedback Detection' : settings.mode === 'vocalRing' ? 'Vocal Ring Detection' : settings.mode === 'musicAware' ? 'Music-Aware Mode' : settings.mode === 'aggressive' ? 'Maximum Sensitivity' : 'Calibration Mode'}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                Detection Controls
+              </h2>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                settings.feedbackThresholdDb <= 10 ? 'bg-red-500/20 text-red-500' :
+                settings.feedbackThresholdDb <= 14 ? 'bg-amber-500/20 text-amber-500' :
+                'bg-green-500/20 text-green-500'
+              }`}>
+                {settings.feedbackThresholdDb <= 10 ? 'High Sens' :
+                 settings.feedbackThresholdDb <= 14 ? 'Medium' : 'Low Sens'}
+              </span>
+            </div>
             
             {/* Feedback Threshold */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">Threshold</span>
-                <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
+                <span className="text-muted-foreground">Feedback Threshold</span>
+                <span className="font-mono font-semibold">{settings.feedbackThresholdDb}dB</span>
               </div>
               <Slider
                 value={[settings.feedbackThresholdDb]}
@@ -259,14 +269,17 @@ export function KillTheRing() {
                 max={24}
                 step={1}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = more sensitive to faint feedback</p>
+              <div className="flex justify-between text-[9px] text-muted-foreground">
+                <span>Sensitive</span>
+                <span>Conservative</span>
+              </div>
             </div>
 
             {/* Ring Threshold */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Ring Sensitivity</span>
-                <span className="font-mono">{settings.ringThresholdDb}dB</span>
+                <span className="font-mono font-semibold">{settings.ringThresholdDb}dB</span>
               </div>
               <Slider
                 value={[settings.ringThresholdDb]}
@@ -275,14 +288,17 @@ export function KillTheRing() {
                 max={15}
                 step={0.5}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = detect subtle resonances</p>
+              <div className="flex justify-between text-[9px] text-muted-foreground">
+                <span>Catch subtle</span>
+                <span>Ignore minor</span>
+              </div>
             </div>
 
             {/* Growth Rate */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Growth Rate</span>
-                <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+                <span className="font-mono font-semibold">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
               </div>
               <Slider
                 value={[settings.growthRateThreshold]}
@@ -291,7 +307,23 @@ export function KillTheRing() {
                 max={10}
                 step={0.5}
               />
-              <p className="text-[9px] text-muted-foreground">Lower = catch feedback faster</p>
+              <div className="flex justify-between text-[9px] text-muted-foreground">
+                <span>Early warning</span>
+                <span>Severe only</span>
+              </div>
+            </div>
+
+            {/* Current Mode Badge */}
+            <div className="pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2 text-[10px]">
+                <span className="text-muted-foreground">Mode:</span>
+                <span className="font-semibold capitalize">{settings.mode.replace(/([A-Z])/g, ' $1').trim()}</span>
+                {settings.musicAware && (
+                  <span className="bg-blue-500/20 text-blue-500 px-1.5 py-0.5 rounded text-[9px]">
+                    Music-Aware
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

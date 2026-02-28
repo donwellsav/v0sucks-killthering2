@@ -1,15 +1,15 @@
 // Compact control strip for quick detection threshold adjustments
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Settings2, Zap } from 'lucide-react'
+import { Activity, AlertTriangle, Radio, Headphones, Music, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { BUILT_IN_PRESETS, PresetManager, type DetectionPreset } from '@/lib/dsp/presets'
 import { Badge } from '@/components/ui/badge'
-import type { DetectorSettings, OperationMode } from '@/types/advisory'
+import { cn } from '@/lib/utils'
+import type { DetectorSettings } from '@/types/advisory'
 
 interface CompactControlStripProps {
   settings: DetectorSettings
@@ -20,23 +20,32 @@ interface CompactControlStripProps {
   currentPresetId?: string
 }
 
+// Quick preset buttons with icons
+const QUICK_PRESETS = [
+  { id: 'live-pa', icon: Radio, label: 'PA', color: 'text-red-500', shortcut: '1' },
+  { id: 'stage-monitors', icon: Headphones, label: 'Mon', color: 'text-amber-500', shortcut: '2' },
+  { id: 'studio', icon: Music, label: 'Studio', color: 'text-blue-500', shortcut: '3' },
+] as const
+
 export function CompactControlStrip({
   settings,
   detectedFrequenciesAboveThreshold,
   onSettingsChange,
-  onOpenSettings,
   onPresetChange,
   currentPresetId,
 }: CompactControlStripProps) {
-  const [presets] = useState(() => PresetManager.getAllPresets())
+  const [expanded, setExpanded] = useState(false)
 
-  const presetOptions = presets.map(p => ({
-    id: p.id,
-    name: p.name,
-    isBuiltIn: p.category === 'built-in',
-  }))
+  // Get sensitivity level description
+  const sensitivityLevel = useMemo(() => {
+    if (settings.feedbackThresholdDb <= 8) return { label: 'Very High', color: 'text-red-500' }
+    if (settings.feedbackThresholdDb <= 12) return { label: 'High', color: 'text-orange-500' }
+    if (settings.feedbackThresholdDb <= 16) return { label: 'Medium', color: 'text-yellow-500' }
+    if (settings.feedbackThresholdDb <= 20) return { label: 'Low', color: 'text-green-500' }
+    return { label: 'Very Low', color: 'text-blue-500' }
+  }, [settings.feedbackThresholdDb])
 
-  const handlePresetChange = (presetId: string) => {
+  const handleQuickPreset = (presetId: string) => {
     const preset = PresetManager.getPreset(presetId)
     if (preset) {
       onPresetChange(preset)
@@ -44,32 +53,58 @@ export function CompactControlStrip({
   }
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 rounded-lg border border-border/50 text-xs">
-      <TooltipProvider>
-        {/* Preset selector */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Select value={currentPresetId || ''} onValueChange={handlePresetChange}>
-              <SelectTrigger className="w-32 h-8 text-xs">
-                <SelectValue placeholder="Preset" />
-              </SelectTrigger>
-              <SelectContent>
-                {presetOptions.map(preset => (
-                  <SelectItem key={preset.id} value={preset.id}>
-                    {preset.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </TooltipTrigger>
-          <TooltipContent>Load a detection preset</TooltipContent>
-        </Tooltip>
+    <TooltipProvider delayDuration={200}>
+      <div className="bg-gradient-to-r from-card via-card/95 to-card rounded-lg border border-border shadow-sm">
+        {/* Main control row */}
+        <div className="flex items-center gap-3 px-3 py-2">
+          {/* Quick Preset Buttons */}
+          <div className="flex items-center gap-1">
+            {QUICK_PRESETS.map(({ id, icon: Icon, label, color }) => (
+              <Tooltip key={id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={currentPresetId === id ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => handleQuickPreset(id)}
+                    className={cn(
+                      'h-7 px-2 text-xs gap-1',
+                      currentPresetId === id ? '' : color
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <div className="text-xs">
+                    <p className="font-semibold">{BUILT_IN_PRESETS[id]?.name}</p>
+                    <p className="text-muted-foreground">{BUILT_IN_PRESETS[id]?.description}</p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
 
-        {/* Main threshold slider */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 flex-1 min-w-48">
-              <span className="text-muted-foreground">Threshold</span>
+          <div className="w-px h-6 bg-border" />
+
+          {/* Main Threshold Slider with visual feedback */}
+          <div className="flex items-center gap-3 flex-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Activity className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-muted-foreground font-medium">Sensitivity</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <div className="text-xs max-w-48">
+                  <p className="font-semibold">Detection Sensitivity</p>
+                  <p className="text-muted-foreground">Controls how easily feedback is detected. Lower threshold = more sensitive detection.</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="flex-1 flex items-center gap-2 min-w-40">
               <Slider
                 value={[settings.feedbackThresholdDb]}
                 onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
@@ -78,50 +113,128 @@ export function CompactControlStrip({
                 step={1}
                 className="flex-1"
               />
-              <span className="font-mono w-10 text-right">{settings.feedbackThresholdDb}dB</span>
+              <div className="flex items-center gap-1.5 min-w-20">
+                <span className={cn('text-xs font-semibold', sensitivityLevel.color)}>
+                  {sensitivityLevel.label}
+                </span>
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {settings.feedbackThresholdDb}dB
+                </span>
+              </div>
             </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            <div className="text-xs space-y-1">
-              <p>Detection sensitivity threshold</p>
-              <p className="text-muted-foreground">Lower = more sensitive</p>
+          </div>
+
+          <div className="w-px h-6 bg-border" />
+
+          {/* Live Detection Indicator */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors',
+                detectedFrequenciesAboveThreshold > 10 
+                  ? 'bg-red-500/20 text-red-500' 
+                  : detectedFrequenciesAboveThreshold > 0 
+                    ? 'bg-amber-500/20 text-amber-500'
+                    : 'bg-muted/50 text-muted-foreground'
+              )}>
+                {detectedFrequenciesAboveThreshold > 0 && (
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                )}
+                <span className="font-mono text-xs font-semibold">
+                  {detectedFrequenciesAboveThreshold}
+                </span>
+                <span className="text-[10px]">peaks</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <div className="text-xs">
+                <p className="font-semibold">Live Peak Count</p>
+                <p className="text-muted-foreground">
+                  {detectedFrequenciesAboveThreshold > 0
+                    ? `${detectedFrequenciesAboveThreshold} frequency bins above ${settings.feedbackThresholdDb}dB threshold`
+                    : 'No peaks above threshold'}
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Expand/Collapse Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="h-7 w-7 p-0"
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+        </div>
+
+        {/* Expanded controls */}
+        {expanded && (
+          <div className="px-3 pb-3 pt-1 border-t border-border/50 space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Ring Threshold */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                        <span>Ring Sensitivity</span>
+                        <Info className="w-3 h-3" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-48">
+                      <p className="text-xs">Controls detection of sustained resonances. Lower values catch subtle ringing.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="font-mono text-xs">{settings.ringThresholdDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.ringThresholdDb]}
+                  onValueChange={([v]) => onSettingsChange({ ringThresholdDb: v })}
+                  min={3}
+                  max={15}
+                  step={0.5}
+                />
+              </div>
+
+              {/* Growth Rate */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground cursor-help">
+                        <span>Growth Rate</span>
+                        <Info className="w-3 h-3" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-48">
+                      <p className="text-xs">How fast amplitude must rise to trigger feedback alert. Lower values catch feedback earlier.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <span className="font-mono text-xs">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
+                </div>
+                <Slider
+                  value={[settings.growthRateThreshold]}
+                  onValueChange={([v]) => onSettingsChange({ growthRateThreshold: v })}
+                  min={1}
+                  max={10}
+                  step={0.5}
+                />
+              </div>
             </div>
-          </TooltipContent>
-        </Tooltip>
 
-        {/* Detection indicator */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge
-              variant={detectedFrequenciesAboveThreshold > 0 ? 'default' : 'outline'}
-              className="gap-1"
-            >
-              <Zap className="w-3 h-3" />
-              {detectedFrequenciesAboveThreshold}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>
-            {detectedFrequenciesAboveThreshold > 0
-              ? `${detectedFrequenciesAboveThreshold} frequencies above threshold`
-              : 'No frequencies above threshold'}
-          </TooltipContent>
-        </Tooltip>
-
-        {/* Advanced settings button */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenSettings}
-              className="h-8 w-8 p-0"
-            >
-              <Settings2 className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Open advanced settings</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
+            {/* Current settings summary */}
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+              <Badge variant="outline" className="text-[9px] h-5">
+                {settings.mode}
+              </Badge>
+              <span>FFT: {settings.fftSize}</span>
+              <span>Music-aware: {settings.musicAware ? 'On' : 'Off'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   )
 }
