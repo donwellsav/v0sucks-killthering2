@@ -292,20 +292,18 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Gain meter — desktop only */}
-        <div className="hidden md:flex items-center justify-center flex-1 sm:flex-none min-w-0">
+        {/* Center: Gain meter — fills space between logo and right icons */}
+        <div className="hidden md:flex items-center flex-1 min-w-0 px-4">
           <InputMeterSlider
             value={settings.inputGainDb}
             onChange={(v) => handleSettingsChange({ inputGainDb: v })}
             level={inputLevel}
+            fullWidth
           />
         </div>
 
         {/* Right: Info + Actions + Hamburger */}
         <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
-          <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
-            {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
-          </span>
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
               Floor: {noiseFloorDb.toFixed(0)}dB
