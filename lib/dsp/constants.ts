@@ -1,4 +1,4 @@
-// KillTheRing2 Constants - ISO bands, note frequencies, and configuration
+// Kill The Ring Constants - ISO bands, note frequencies, and configuration
 
 // Standard ISO 31-band graphic EQ center frequencies (1/3 octave)
 export const ISO_31_BANDS: readonly number[] = [
