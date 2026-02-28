@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import {
   Select,
@@ -14,12 +12,19 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Settings, RotateCcw } from 'lucide-react'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
 
 interface SettingsPanelProps {
@@ -41,19 +46,34 @@ export function SettingsPanel({
           <span className="text-xs">Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg">Settings</DialogTitle>
+          <DialogTitle className="text-lg flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Advanced Settings
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Analysis engine and display preferences. Detection controls are in the sidebar.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
-            <TabsTrigger value="display">Display</TabsTrigger>
+            <TabsTrigger value="analysis" className="gap-1.5 text-xs">
+              <BarChart3 className="w-3.5 h-3.5" />
+              Analysis
+            </TabsTrigger>
+            <TabsTrigger value="display" className="gap-1.5 text-xs">
+              <Monitor className="w-3.5 h-3.5" />
+              Display
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="analysis" className="mt-4 space-y-6">
-            <Section title="FFT Resolution">
+          <TabsContent value="analysis" className="mt-4 space-y-5">
+            <Section 
+              title="FFT Size" 
+              tooltip="Controls frequency resolution vs response time. Higher FFT = better precision for low frequencies but slower updates. 4096 for fast response, 8192 for balanced PA use, 16384 for precise low-end analysis."
+            >
               <Select
                 value={settings.fftSize.toString()}
                 onValueChange={(v) =>
@@ -64,18 +84,21 @@ export function SettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="4096">4096 (Fast response)</SelectItem>
-                  <SelectItem value="8192">8192 (Balanced)</SelectItem>
-                  <SelectItem value="16384">16384 (High resolution)</SelectItem>
+                  <SelectItem value="4096">4096 - Fast (~12Hz res @ 48kHz)</SelectItem>
+                  <SelectItem value="8192">8192 - Balanced (~6Hz res)</SelectItem>
+                  <SelectItem value="16384">16384 - High Res (~3Hz res)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Higher = better frequency accuracy, slower response</p>
             </Section>
 
-            <Section title="Spectrum Smoothing">
+            <Section 
+              title="Spectrum Smoothing" 
+              tooltip="Averages spectral frames to reduce visual noise. 0-30% for detailed analysis, 50-70% for general use, 80%+ for presentation. Lower values show faster transients but more jitter."
+            >
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs">{(settings.smoothingTimeConstant * 100).toFixed(0)}%</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Amount</span>
+                  <span className="text-xs font-mono">{(settings.smoothingTimeConstant * 100).toFixed(0)}%</span>
                 </div>
                 <Slider
                   value={[settings.smoothingTimeConstant]}
@@ -84,14 +107,21 @@ export function SettingsPanel({
                   max={0.95}
                   step={0.05}
                 />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Raw</span>
+                  <span>Smooth</span>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Reduces display noise for cleaner visualization</p>
             </Section>
 
-            <Section title="Hold Time">
+            <Section 
+              title="Hold Time" 
+              tooltip="How long detected issues stay visible after disappearing from spectrum. Longer times help reference issues while making EQ cuts. 1-2s for fast workflow, 3-4s for careful tuning."
+            >
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-xs font-mono">{settings.holdTimeMs}ms</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Duration</span>
+                  <span className="text-xs font-mono">{(settings.holdTimeMs / 1000).toFixed(1)}s</span>
                 </div>
                 <Slider
                   value={[settings.holdTimeMs]}
@@ -100,15 +130,45 @@ export function SettingsPanel({
                   max={5000}
                   step={250}
                 />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Quick</span>
+                  <span>Long Hold</span>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">How long issues persist after detection stops</p>
+            </Section>
+
+            <Section 
+              title="Input Gain" 
+              tooltip="Digital boost applied before analysis. Increase if your signal is weak, decrease if clipping. Does not affect audio output, only analysis sensitivity."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Boost</span>
+                  <span className="text-xs font-mono">+{settings.inputGainDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.inputGainDb]}
+                  onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
+                  min={0}
+                  max={30}
+                  step={1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Unity</span>
+                  <span>+30dB</span>
+                </div>
+              </div>
             </Section>
           </TabsContent>
 
-          <TabsContent value="display" className="mt-4 space-y-6">
-            <Section title="Max Issues Displayed">
+          <TabsContent value="display" className="mt-4 space-y-5">
+            <Section 
+              title="Max Issues Shown" 
+              tooltip="Limits how many feedback issues display at once. Lower for focused work on worst problems, higher for full system overview during calibration."
+            >
               <div className="space-y-2">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Limit</span>
                   <span className="text-xs font-mono">{settings.maxDisplayedIssues}</span>
                 </div>
                 <Slider
@@ -118,11 +178,17 @@ export function SettingsPanel({
                   max={12}
                   step={1}
                 />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Focused</span>
+                  <span>All Issues</span>
+                </div>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Limits the active issues list size</p>
             </Section>
 
-            <Section title="EQ Recommendation Style">
+            <Section 
+              title="EQ Recommendation Style" 
+              tooltip="Surgical: narrow Q (8-16), deep cuts for precise feedback removal. Heavy: wider Q (2-4), moderate cuts for broader tonal shaping and room mode control."
+            >
               <Select
                 value={settings.eqPreset}
                 onValueChange={(v) => onSettingsChange({ eqPreset: v as 'surgical' | 'heavy' })}
@@ -131,17 +197,21 @@ export function SettingsPanel({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="surgical">Surgical (Narrow, deep)</SelectItem>
-                  <SelectItem value="heavy">Heavy (Wide, moderate)</SelectItem>
+                  <SelectItem value="surgical">Surgical - Narrow Q, Deep Cuts</SelectItem>
+                  <SelectItem value="heavy">Heavy - Wide Q, Moderate Cuts</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground mt-1.5">Affects PEQ Q factor and gain recommendations</p>
             </Section>
 
-            <Button variant="outline" size="sm" onClick={onReset} className="w-full">
-              <RotateCcw className="h-3.5 w-3.5 mr-2" />
-              Reset to Defaults
-            </Button>
+            <div className="pt-3 border-t border-border">
+              <Button variant="outline" size="sm" onClick={onReset} className="w-full">
+                <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                Reset to PA Defaults
+              </Button>
+              <p className="text-[9px] text-muted-foreground text-center mt-2">
+                Restores aggressive detection for corporate/conference PA
+              </p>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -149,13 +219,31 @@ export function SettingsPanel({
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+interface SectionProps {
+  title: string
+  tooltip?: string
+  children: React.ReactNode
+}
+
+function Section({ title, tooltip, children }: SectionProps) {
   return (
-    <div>
-      <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
-      <div className="text-sm text-muted-foreground space-y-2">
+    <TooltipProvider delayDuration={300}>
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-medium text-foreground">{title}</h3>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[220px] text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
         {children}
       </div>
-    </div>
+    </TooltipProvider>
   )
 }
