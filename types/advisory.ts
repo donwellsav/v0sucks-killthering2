@@ -44,6 +44,7 @@ export interface DetectedPeak {
   prominenceDb: number
   sustainedMs: number
   harmonicOfHz: number | null
+  isSubHarmonicRoot?: boolean // True when this peak is the root of a harmonic series already active
   timestamp: number
   noiseFloorDb: number | null
   effectiveThresholdDb: number
@@ -84,6 +85,7 @@ export interface Track {
   bandwidthHz: number
   velocityDbPerSec: number
   harmonicOfHz: number | null
+  isSubHarmonicRoot: boolean // True when this track is the fundamental of a partial series
   isActive: boolean
 }
 

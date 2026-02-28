@@ -196,6 +196,7 @@ export class TrackManager {
       bandwidthHz,
       velocityDbPerSec: 0,
       harmonicOfHz: peak.harmonicOfHz,
+      isSubHarmonicRoot: peak.isSubHarmonicRoot ?? false,
       isActive: true,
     }
 
@@ -231,6 +232,8 @@ export class TrackManager {
     track.qEstimate = qEstimate
     track.bandwidthHz = bandwidthHz
     track.harmonicOfHz = peak.harmonicOfHz
+    // Once a sub-harmonic root is identified, keep that flag sticky on the track
+    if (peak.isSubHarmonicRoot) track.isSubHarmonicRoot = true
     track.isActive = true
 
     // Calculate velocity (dB/sec)
@@ -318,17 +321,21 @@ export class TrackManager {
   }
 
   private computeHarmonicityScore(track: Track): number {
-    // Check if this track has a harmonic relationship
+    // Track is a detected overtone of a known root → strong harmonic content
     if (track.harmonicOfHz !== null) {
-      return 0.8 // Strong indicator of harmonic content
+      return 0.8
     }
 
-    // Check if other tracks are harmonics of this one
+    // Track is the fundamental of a harmonic series already active → also harmonic content
+    if (track.isSubHarmonicRoot) {
+      return 0.75
+    }
+
+    // Check if other active tracks have registered this track's frequency as their harmonic root
     let harmonicCount = 0
     for (const other of this.tracks.values()) {
       if (other.id === track.id || !other.isActive) continue
       if (other.harmonicOfHz !== null) {
-        // Check if other's harmonic root is close to this track's frequency
         const cents = Math.abs(hzToCents(other.harmonicOfHz, track.trueFrequencyHz))
         if (cents < 20) {
           harmonicCount++
@@ -336,7 +343,7 @@ export class TrackManager {
       }
     }
 
-    // More harmonics = higher score (normalized to 0-1)
+    // More confirmed partials → higher score (cap at 1.0)
     return Math.min(harmonicCount / 4, 1)
   }
 

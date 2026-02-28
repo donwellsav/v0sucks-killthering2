@@ -1,7 +1,7 @@
 // KillTheRing2 Feedback Detector - Core DSP engine for peak detection
 // Adapted from FeedbackDetector.js with TypeScript and enhancements
 
-import { A_WEIGHTING, LN10_OVER_10 } from './constants'
+import { A_WEIGHTING, LN10_OVER_10, HARMONIC_SETTINGS } from './constants'
 import { 
   medianInPlace, 
   buildPrefixSum, 
@@ -555,12 +555,19 @@ export class FeedbackDetector {
           const hzPerBin = sr / fft
           const trueFrequencyHz = (i + delta) * hzPerBin
 
-          // Harmonic detection
+          // ── Harmonic detection ─────────────────────────────────────────
+          // Uses cents-based tolerance (musically uniform across the spectrum)
+          // instead of a flat percentage, which is too coarse in the high range
+          // and can miss harmonics in the low range.
           let harmonicRootHz: number | null = null
-          if (this.activeBins && this.activeHz && this.activeCount > 0) {
-            const tol = 0.015
-            const maxHarmonic = 8
+          let isSubHarmonicRoot = false
 
+          if (this.activeBins && this.activeHz && this.activeCount > 0) {
+            const maxHarmonic = HARMONIC_SETTINGS.MAX_HARMONIC
+            const tolCents = HARMONIC_SETTINGS.TOLERANCE_CENTS
+
+            // ── A: Overtone check ──────────────────────────────────────────
+            // Is this new peak an overtone (2nd–8th) of any active root?
             for (let j = 0; j < this.activeCount; j++) {
               const rootBin = this.activeBins[j]
               const rootHz = this.activeHz[rootBin]
@@ -570,15 +577,47 @@ export class FeedbackDetector {
               const k = Math.round(ratio)
               if (k < 2 || k > maxHarmonic) continue
 
-              const expected = rootHz * k
-              const diff = Math.abs(trueFrequencyHz - expected)
-              if (diff <= expected * tol) {
+              const expectedHz = rootHz * k
+              // Convert frequency deviation to cents: 1200 * log2(actual/expected)
+              const cents = Math.abs(1200 * Math.log2(trueFrequencyHz / expectedHz))
+              if (cents <= tolCents) {
+                // Prefer the lowest matching root (closest to fundamental)
                 if (harmonicRootHz === null || rootHz < harmonicRootHz) {
                   harmonicRootHz = rootHz
                 }
               }
             }
+
+            // ── B: Sub-harmonic check ──────────────────────────────────────
+            // Is this new peak the FUNDAMENTAL of a partial that is already
+            // active? (e.g. the 2nd partial was detected first; now we see
+            // the root appear below it.)
+            if (HARMONIC_SETTINGS.CHECK_SUB_HARMONICS && harmonicRootHz === null) {
+              for (let j = 0; j < this.activeCount; j++) {
+                const partialBin = this.activeBins[j]
+                const partialHz = this.activeHz[partialBin]
+                if (partialHz <= 0 || partialHz <= trueFrequencyHz) continue
+
+                const ratio = partialHz / trueFrequencyHz
+                const k = Math.round(ratio)
+                if (k < 2 || k > maxHarmonic) continue
+
+                const expectedPartialHz = trueFrequencyHz * k
+                const cents = Math.abs(1200 * Math.log2(partialHz / expectedPartialHz))
+                if (cents <= tolCents) {
+                  // This peak is the fundamental of a harmonic series already present.
+                  // harmonicRootHz stays null (this IS the root) but we mark it so
+                  // the classifier can boost harmonicity scoring appropriately.
+                  harmonicRootHz = null // peak is the root, not an overtone
+                  isSubHarmonicRoot = true
+                  break
+                }
+              }
+            }
           }
+
+          // Mark active
+          active[i] = 1
 
           // Mark active
           active[i] = 1
@@ -600,6 +639,7 @@ export class FeedbackDetector {
             prominenceDb: prominence,
             sustainedMs: hold[i],
             harmonicOfHz: harmonicRootHz,
+            isSubHarmonicRoot,
             timestamp: now,
             noiseFloorDb: this.noiseFloorDb,
             effectiveThresholdDb,

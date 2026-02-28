@@ -123,6 +123,14 @@ export const TRACK_SETTINGS = {
   TRACK_TIMEOUT_MS: 1000, // Remove track after this inactive time
 } as const
 
+// Harmonic detection settings
+export const HARMONIC_SETTINGS = {
+  MAX_HARMONIC: 8, // Check overtones up to this partial (2nd–8th)
+  TOLERANCE_CENTS: 50, // ±50 cents = half a semitone; matches track association tolerance
+  // Sub-harmonic check: if new peak F and an active track is near F*k, new peak may be the fundamental
+  CHECK_SUB_HARMONICS: true,
+} as const
+
 // Canvas rendering settings
 export const CANVAS_SETTINGS = {
   RTA_DB_MIN: -100,
