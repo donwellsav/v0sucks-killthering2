@@ -1,5 +1,6 @@
 'use client'
 
+// Help menu for Kill The Ring application
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {

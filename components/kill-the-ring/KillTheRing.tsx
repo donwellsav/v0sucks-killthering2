@@ -1,5 +1,6 @@
 'use client'
 
+// Kill The Ring main component
 import { useEffect, useState } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
@@ -107,9 +108,9 @@ export function KillTheRing() {
         {/* Left: Logo */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
-            <div className="relative w-6 sm:w-7 h-6 sm:h-7 flex items-center justify-center flex-shrink-0">
+            <div className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0">
               <div className="absolute inset-0 rounded-full border-1.5 border-primary/60" />
-              <svg className="w-3 sm:w-4 h-3 sm:h-4 relative z-10 text-primary" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 relative z-10 text-primary" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
               </svg>
             </div>
@@ -138,13 +139,6 @@ export function KillTheRing() {
               <><Mic className="w-3 sm:w-3.5 h-3 sm:h-3.5 mr-0 sm:mr-1.5" /><span className="hidden sm:inline">Start</span></>
             )}
           </Button>
-
-          {isRunning && (
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium hidden sm:inline">LIVE</span>
-            </div>
-          )}
 
           <div className="hidden md:block">
             <InputMeterSlider
