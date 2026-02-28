@@ -24,7 +24,7 @@ export function InputMeterSlider({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
-  const [editing, setEditing] = useState(false)
+  const [inputValue, setInputValue] = useState(String(value))
 
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
 
@@ -96,7 +96,6 @@ export function InputMeterSlider({
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (editing) return
     isDragging.current = true
     updateValueFromX(e.clientX)
   }
@@ -109,7 +108,6 @@ export function InputMeterSlider({
   const handleMouseUp = () => { isDragging.current = false }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (editing) return
     isDragging.current = true
     updateValueFromX(e.touches[0].clientX)
   }
@@ -133,12 +131,33 @@ export function InputMeterSlider({
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [editing])
+  }, [])
 
-  const commitEdit = (raw: string) => {
+  useEffect(() => {
+    setInputValue(String(value))
+  }, [value])
+
+  const clampValue = (val: number) => Math.max(min, Math.min(max, val))
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value
+    setInputValue(raw)
+    
     const parsed = parseInt(raw, 10)
-    if (!isNaN(parsed)) onChange(Math.max(min, Math.min(max, parsed)))
-    setEditing(false)
+    if (!isNaN(parsed)) {
+      onChange(clampValue(parsed))
+    }
+  }
+
+  const handleInputBlur = () => {
+    setInputValue(String(value))
+  }
+
+  const handleStepper = (direction: 'up' | 'down') => {
+    const delta = direction === 'up' ? 1 : -1
+    const newValue = clampValue(value + delta)
+    onChange(newValue)
+    setInputValue(String(newValue))
   }
 
   const valueLabel = `${value > 0 ? '+' : ''}${value}dB`
@@ -184,35 +203,49 @@ export function InputMeterSlider({
         )}
       </div>
 
-      {/* Value display — click to edit */}
-      {editing ? (
+      {/* Input with integrated +/- arrows */}
+      <div className="relative flex items-center flex-shrink-0">
         <input
-          autoFocus
-          type="text"
-          defaultValue={String(value)}
-          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[8px] w-9 h-4' : 'text-xs w-12 h-5'}`}
-          onBlur={(e) => commitEdit(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
-            if (e.key === 'Escape') setEditing(false)
-            if (e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(max, value + 1)) }
-            if (e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(min, value - 1)) }
+          type="number"
+          value={inputValue}
+          onChange={handleInputChange}
+          onBlur={handleInputBlur}
+          min={min}
+          max={max}
+          step={1}
+          className={`font-mono text-center text-foreground bg-input border border-border rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring tabular-nums appearance-none pl-6 pr-6 ${compact ? 'text-[8px] w-10 h-4' : 'text-xs w-14 h-5'}`}
+          style={{
+            backgroundImage: `
+              linear-gradient(135deg, transparent 0%, transparent calc(50% - 8px), #666 calc(50% - 8px), #666 calc(50% - 5px), transparent calc(50% - 5px), transparent 50%, transparent calc(50% + 5px), #666 calc(50% + 5px), #666 calc(50% + 8px), transparent calc(50% + 8px), transparent 100%),
+              linear-gradient(45deg, transparent 0%, transparent calc(50% - 8px), #666 calc(50% - 8px), #666 calc(50% - 5px), transparent calc(50% - 5px), transparent 50%, transparent calc(50% + 5px), #666 calc(50% + 5px), #666 calc(50% + 8px), transparent calc(50% + 8px), transparent 100%)
+            `,
+            backgroundPosition: 'left 4px center, right 4px center',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: '12px 14px',
           }}
+          title="Click ± to adjust, or type a value"
         />
-      ) : (
+        {/* Clickable minus button */}
         <button
-          className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[8px] w-9' : 'text-xs w-12'}`}
-          onClick={() => setEditing(true)}
-          onWheel={(e) => {
-            e.preventDefault()
-            onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
-          }}
-          title="Click to type, scroll to step ±1dB"
-          aria-label={`Input gain ${valueLabel}, click to edit`}
+          onClick={() => handleStepper('down')}
+          disabled={value <= min}
+          className="absolute left-1 h-full px-1 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Decrease gain by 1dB"
+          title="Decrease by 1dB"
         >
-          {valueLabel}
+          −
         </button>
-      )}
+        {/* Clickable plus button */}
+        <button
+          onClick={() => handleStepper('up')}
+          disabled={value >= max}
+          className="absolute right-1 h-full px-1 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          aria-label="Increase gain by 1dB"
+          title="Increase by 1dB"
+        >
+          +
+        </button>
+      </div>
     </div>
   )
 }
