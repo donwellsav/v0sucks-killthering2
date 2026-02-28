@@ -296,13 +296,13 @@ export function KillTheRing() {
               {/* Graph area with crossfade */}
               <div className="relative h-[calc(100%-24px)]">
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} />
+                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <GEQBarView advisories={advisories} />
+                  <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
                 </div>
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} />
+                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
               </div>
             </div>
@@ -325,9 +325,9 @@ export function KillTheRing() {
                   </span>
                 </div>
                 <div className="h-[calc(100%-24px)] pointer-events-none">
-                  {graph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} />}
-                  {graph === 'geq' && <GEQBarView advisories={advisories} />}
-                  {graph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} />}
+                  {graph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
+                  {graph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />}
+                  {graph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
                 </div>
               </button>
             ))}

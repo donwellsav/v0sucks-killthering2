@@ -12,11 +12,12 @@ interface SpectrumCanvasProps {
   spectrum: SpectrumData | null
   advisories: Advisory[]
   isRunning: boolean
+  graphFontSize?: number
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanvasProps) {
+export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize = 11 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -198,7 +199,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
       // Label
       ctx.fillStyle = color
-      ctx.font = '14px system-ui, sans-serif'
+      ctx.font = `${graphFontSize + 3}px system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -207,7 +208,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = '13px system-ui, sans-serif'
+    ctx.font = `${graphFontSize}px system-ui, sans-serif`
 
     // Y-axis (dB)
     ctx.textAlign = 'right'
@@ -237,7 +238,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
     ctx.textAlign = 'center'
     ctx.fillText('Hz', width / 2, height - 2)
 
-  }, [spectrum, advisories])
+  }, [spectrum, advisories, graphFontSize])
 
   useAnimationFrame(render, isRunning || spectrum !== null)
 

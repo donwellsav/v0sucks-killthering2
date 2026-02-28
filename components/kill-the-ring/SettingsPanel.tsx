@@ -163,6 +163,29 @@ export function SettingsPanel({
 
           <TabsContent value="display" className="mt-4 space-y-5">
             <Section 
+              title="Graph Label Size" 
+              tooltip="Font size for frequency, dB, and annotation labels inside the RTA, GEQ, and Waterfall graphs. Increase for high-DPI displays or viewing from a distance."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Size</span>
+                  <span className="text-xs font-mono">{settings.graphFontSize}px</span>
+                </div>
+                <Slider
+                  value={[settings.graphFontSize]}
+                  onValueChange={([v]) => onSettingsChange({ graphFontSize: v })}
+                  min={9}
+                  max={16}
+                  step={1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Small</span>
+                  <span>Large</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section 
               title="Max Issues Shown" 
               tooltip="Limits how many feedback issues display at once. Lower for focused work on worst problems, higher for full system overview during calibration."
             >
