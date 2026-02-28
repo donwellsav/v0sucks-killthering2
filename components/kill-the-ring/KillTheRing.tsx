@@ -49,9 +49,11 @@ export function KillTheRing() {
 
   const logger = getEventLogger()
 
-  // Update CSS variable when GUI font size changes
+  // Apply GUI font size to html element so all rem-based Tailwind sizes scale with it
   useEffect(() => {
-    document.documentElement.style.setProperty('--gui-font-size', `${settings.guiFontSize}px`)
+    const size = settings.guiFontSize ?? 18
+    document.documentElement.style.setProperty('--gui-font-size', `${size}px`)
+    document.documentElement.style.fontSize = `${size}px`
   }, [settings.guiFontSize])
 
   // Log when analysis starts
