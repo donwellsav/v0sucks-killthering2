@@ -1,5 +1,6 @@
 'use client'
 
+// Kill The Ring main component
 import { useEffect, useState } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
