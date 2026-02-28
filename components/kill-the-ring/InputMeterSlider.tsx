@@ -1,16 +1,14 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 interface InputMeterSliderProps {
   value: number
   onChange: (value: number) => void
-  level: number // Current input level in dB (-60 to 0)
+  level: number
   min?: number
   max?: number
-  /** When true the slider expands to fill its container (used in mobile overlay) */
   fullWidth?: boolean
-  /** When true use compact styling for mobile (reduced height, smaller text) */
   compact?: boolean
 }
 
@@ -18,58 +16,61 @@ export function InputMeterSlider({
   value,
   onChange,
   level,
-  min = -6,
-  max = 42,
+  min = -40,
+  max = 40,
   fullWidth = false,
   compact = false,
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
+  const [editing, setEditing] = useState(false)
 
-  // Normalize level to 0-1 range
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
 
-  // Draw meter
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
-
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const width = canvas.width
-    const height = canvas.height
+    const w = canvas.width
+    const h = canvas.height
 
-    // Clear
-    ctx.clearRect(0, 0, width, height)
+    ctx.clearRect(0, 0, w, h)
+    ctx.fillStyle = 'rgba(255,255,255,0.08)'
+    ctx.fillRect(0, 0, w, h)
 
-    // Background track
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
-    ctx.fillRect(0, 0, width, height)
-
-    // Meter gradient (green -> yellow -> red)
-    const meterWidth = width * normalizedLevel
-    const gradient = ctx.createLinearGradient(0, 0, width, 0)
+    const meterWidth = w * normalizedLevel
+    const gradient = ctx.createLinearGradient(0, 0, w, 0)
     gradient.addColorStop(0, '#22c55e')
     gradient.addColorStop(0.6, '#22c55e')
     gradient.addColorStop(0.8, '#eab308')
     gradient.addColorStop(0.95, '#ef4444')
     gradient.addColorStop(1, '#ef4444')
-
     ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, meterWidth, height)
+    ctx.fillRect(0, 0, meterWidth, h)
 
-    // Gain marker line
-    const gainPos = ((value - min) / (max - min)) * width
+    // Zero-dB tick mark
+    const zeroPos = ((0 - min) / (max - min)) * w
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = 1
+    ctx.setLineDash([2, 2])
+    ctx.beginPath()
+    ctx.moveTo(zeroPos, 0)
+    ctx.lineTo(zeroPos, h)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Gain marker
+    const gainPos = ((value - min) / (max - min)) * w
     ctx.strokeStyle = '#fff'
     ctx.lineWidth = 2
     ctx.beginPath()
     ctx.moveTo(gainPos, 0)
-    ctx.lineTo(gainPos, height)
+    ctx.lineTo(gainPos, h)
     ctx.stroke()
 
-    // Gain marker triangles
     ctx.fillStyle = '#fff'
     ctx.beginPath()
     ctx.moveTo(gainPos - 4, 0)
@@ -77,11 +78,10 @@ export function InputMeterSlider({
     ctx.lineTo(gainPos, 5)
     ctx.closePath()
     ctx.fill()
-
     ctx.beginPath()
-    ctx.moveTo(gainPos - 4, height)
-    ctx.lineTo(gainPos + 4, height)
-    ctx.lineTo(gainPos, height - 5)
+    ctx.moveTo(gainPos - 4, h)
+    ctx.lineTo(gainPos + 4, h)
+    ctx.lineTo(gainPos, h - 5)
     ctx.closePath()
     ctx.fill()
   }, [normalizedLevel, value, min, max])
@@ -92,12 +92,11 @@ export function InputMeterSlider({
     const rect = slider.getBoundingClientRect()
     const x = Math.max(0, Math.min(rect.width, clientX - rect.left))
     const ratio = x / rect.width
-    const newValue = Math.round(min + ratio * (max - min))
-    onChange(newValue)
+    onChange(Math.round(min + ratio * (max - min)))
   }
 
-  // Mouse handlers
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (editing) return
     isDragging.current = true
     updateValueFromX(e.clientX)
   }
@@ -107,12 +106,10 @@ export function InputMeterSlider({
     updateValueFromX(e.clientX)
   }
 
-  const handleMouseUp = () => {
-    isDragging.current = false
-  }
+  const handleMouseUp = () => { isDragging.current = false }
 
-  // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (editing) return
     isDragging.current = true
     updateValueFromX(e.touches[0].clientX)
   }
@@ -123,9 +120,7 @@ export function InputMeterSlider({
     updateValueFromX(e.touches[0].clientX)
   }
 
-  const handleTouchEnd = () => {
-    isDragging.current = false
-  }
+  const handleTouchEnd = () => { isDragging.current = false }
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove)
@@ -138,43 +133,86 @@ export function InputMeterSlider({
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [])
+  }, [editing])
 
-  // Canvas logical width: use a larger size when fullWidth so the drawing is sharp
-  const canvasLogicalWidth = fullWidth ? 320 : compact ? 140 : 112
+  const commitEdit = (raw: string) => {
+    const parsed = parseInt(raw, 10)
+    if (!isNaN(parsed)) onChange(Math.max(min, Math.min(max, parsed)))
+    setEditing(false)
+  }
+
+  const valueLabel = `${value > 0 ? '+' : ''}${value}dB`
 
   return (
-    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''} ${compact ? 'gap-1.5' : ''}`}>
-      <span className={`text-muted-foreground uppercase tracking-wide whitespace-nowrap ${compact ? 'text-[8px]' : 'text-[10px]'}`}>
+    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
+      {/* Label */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
         Gain
       </span>
-      <div
-        ref={sliderRef}
-        className={`relative rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : compact ? 'flex-1 h-4' : 'w-28 h-5'}`}
-        style={{ touchAction: 'none' }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        role="slider"
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={value}
-        aria-label="Input gain"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') onChange(Math.min(max, value + 1))
-          if (e.key === 'ArrowLeft') onChange(Math.max(min, value - 1))
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          width={canvasLogicalWidth}
-          height={compact ? 16 : 20}
-          className="w-full h-full"
-        />
+
+      {/* Slider track + 0dB label */}
+      <div className="relative flex-1 flex flex-col">
+        <div
+          ref={sliderRef}
+          className={`relative rounded cursor-ew-resize overflow-hidden w-full ${compact ? 'h-4' : 'h-5'}`}
+          style={{ touchAction: 'none' }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          role="slider"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value}
+          aria-label="Input gain"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(max, value + 1))
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(min, value - 1))
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            width={512}
+            height={compact ? 16 : 20}
+            className="w-full h-full"
+          />
+        </div>
+        {/* 0dB unity label — positioned at the center (50%) of the range */}
+        {!compact && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-none">
+            <span className="text-[8px] text-muted-foreground/60 font-mono leading-none">0</span>
+          </div>
+        )}
       </div>
-      <span className={`font-mono text-right text-foreground ${compact ? 'text-[8px] w-8' : 'text-xs w-10'}`}>
-        {value > 0 ? '+' : ''}{value}dB
-      </span>
+
+      {/* Value display — click to edit */}
+      {editing ? (
+        <input
+          autoFocus
+          type="text"
+          defaultValue={String(value)}
+          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[8px] w-9 h-4' : 'text-xs w-12 h-5'}`}
+          onBlur={(e) => commitEdit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
+            if (e.key === 'Escape') setEditing(false)
+            if (e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(max, value + 1)) }
+            if (e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(min, value - 1)) }
+          }}
+        />
+      ) : (
+        <button
+          className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[8px] w-9' : 'text-xs w-12'}`}
+          onClick={() => setEditing(true)}
+          onWheel={(e) => {
+            e.preventDefault()
+            onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
+          }}
+          title="Click to type, scroll to step ±1dB"
+          aria-label={`Input gain ${valueLabel}, click to edit`}
+        >
+          {valueLabel}
+        </button>
+      )}
     </div>
   )
 }

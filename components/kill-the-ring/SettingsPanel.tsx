@@ -25,6 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -172,13 +173,14 @@ export function SettingsPanel({
                 <Slider
                   value={[settings.inputGainDb]}
                   onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
-                  min={-6}
-                  max={42}
+                  min={-40}
+                  max={40}
                   step={1}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>-6dB</span>
-                  <span>+42dB</span>
+                  <span>-40dB</span>
+                  <span>0dB</span>
+                  <span>+40dB</span>
                 </div>
               </div>
             </Section>
@@ -250,10 +252,15 @@ export function SettingsPanel({
             </Section>
 
             <div className="pt-3 border-t border-border">
-              <Button variant="outline" size="sm" onClick={onReset} className="w-full">
-                <RotateCcw className="h-3.5 w-3.5 mr-2" />
-                Reset to PA Defaults
-              </Button>
+              <ResetConfirmDialog
+                onConfirm={onReset}
+                trigger={
+                  <Button variant="outline" size="sm" className="w-full">
+                    <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                    Reset to PA Defaults
+                  </Button>
+                }
+              />
               <p className="text-[9px] text-muted-foreground text-center mt-2">
                 Restores aggressive detection for corporate/conference PA
               </p>

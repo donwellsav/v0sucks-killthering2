@@ -1,10 +1,5 @@
 'use client'
 
-/**
- * Kill The Ring - Real-time feedback detection and EQ advisory
- * Uses CSS-only responsive layout to avoid SSR hydration issues
- * Features: Runaway prediction warnings, velocity tracking, EQ recommendations
- */
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
@@ -15,6 +10,7 @@ import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
+import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,7 +30,6 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'waterfall', label: 'WTF' },
 ]
 
-// Force cache rebuild - timestamp 1740754800000
 export function KillTheRing() {
   const {
     isRunning,
@@ -52,19 +47,14 @@ export function KillTheRing() {
   } = useAudioAnalyzer()
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileShowGraph, setMobileShowGraph] = useState(false) // Default: show controls+issues
+  const [mobileShowGraph, setMobileShowGraph] = useState(false)
 
-  // Stable ref — never changes reference across renders
   const loggerRef = useRef(getEventLogger())
   const logger = loggerRef.current
-
-  // DB session tracking
   const sessionIdRef = useRef<string | null>(null)
   const lastFlushedRef = useRef<number>(0)
 
-  // Flush buffered logs to DB (called periodically while running + on stop)
   const flushEventsToDB = useCallback(async (sessionId: string) => {
     const allLogs = loggerRef.current.getLogs()
     const newLogs = allLogs.slice(lastFlushedRef.current)
@@ -81,28 +71,18 @@ export function KillTheRing() {
     }
   }, [])
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
     }
-    return () => {
-      document.body.style.overflow = ''
-    }
+    return () => { document.body.style.overflow = '' }
   }, [mobileMenuOpen])
 
-
-
-  // Log when analysis starts; create/end DB session
   useEffect(() => {
     if (isRunning) {
-      logger.logAnalysisStarted({
-        mode: settings.mode,
-        fftSize: settings.fftSize,
-      })
-      // Create a new DB session
+      logger.logAnalysisStarted({ mode: settings.mode, fftSize: settings.fftSize })
       const newId = crypto.randomUUID()
       sessionIdRef.current = newId
       lastFlushedRef.current = 0
@@ -113,7 +93,6 @@ export function KillTheRing() {
       }).catch(() => {})
     } else {
       logger.logAnalysisStopped()
-      // End the DB session and flush remaining events
       const sid = sessionIdRef.current
       if (sid) {
         flushEventsToDB(sid).then(() => {
@@ -124,7 +103,6 @@ export function KillTheRing() {
     }
   }, [isRunning, settings.mode, settings.fftSize, logger, flushEventsToDB])
 
-  // Periodic flush every 30s while running
   useEffect(() => {
     if (!isRunning) return
     const interval = setInterval(() => {
@@ -152,21 +130,11 @@ export function KillTheRing() {
     loggerRef.current.logSettingsChanged(newSettings)
   }, [updateSettings])
 
-  const handleResetSettings = () => {
-    resetSettings()
-    logger.logSettingsChanged({ action: 'reset_to_defaults' })
-  }
-
   const inputLevel = spectrum?.peak ?? -60
 
-  // The two graphs that appear in the small bottom row (everything except active)
-  const smallGraphs = (['rta', 'geq', 'waterfall'] as GraphView[]).filter(g => g !== activeGraph)
-
-  // Shared detection controls — used in both sidebar and mobile overlay
   const DetectionControls = () => (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-3">
-        {/* Mode selector */}
         <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
           <SelectTrigger className="h-7 w-full text-xs bg-input border-border">
             <SelectValue />
@@ -251,11 +219,12 @@ export function KillTheRing() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
+
+      {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
 
-        {/* Left: Logo — doubles as start/stop button */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        {/* Logo / start-stop */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
           <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
             <TooltipProvider delayDuration={400}>
               <Tooltip>
@@ -265,9 +234,7 @@ export function KillTheRing() {
                     aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
                     className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                   >
-                    {/* Static border ring */}
                     <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
-                    {/* Pulsing ring — only when running */}
                     {isRunning && (
                       <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
                     )}
@@ -296,27 +263,31 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Gain meter — desktop only */}
-        <div className="hidden md:flex items-center justify-center flex-1 sm:flex-none min-w-0">
-          <InputMeterSlider
-            value={settings.inputGainDb}
-            onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-            level={inputLevel}
-          />
+        {/* Center: Gain slider — styled section container */}
+        <div className="hidden md:flex items-center flex-1 min-w-0 px-4">
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
+            {/* Section label */}
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Input Gain
+            </div>
+            {/* Gain control */}
+            <InputMeterSlider
+              value={settings.inputGainDb}
+              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+              level={inputLevel}
+              fullWidth
+            />
+          </div>
         </div>
 
-        {/* Right: Info + Actions + Hamburger */}
+        {/* Right: actions */}
         <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
-          <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
-            {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
-          </span>
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
 
-          {/* These three are icon-only on mobile */}
           <LogsViewer />
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Session History">
             <Link href="/sessions">
@@ -328,21 +299,13 @@ export function KillTheRing() {
           <SettingsPanel
             settings={settings}
             onSettingsChange={handleSettingsChange}
-            onReset={handleResetSettings}
+            onReset={() => {
+              resetSettings()
+              logger.logSettingsChanged({ action: 'reset_to_defaults' })
+            }}
           />
 
-          {/* Desktop sidebar toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hidden lg:flex h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-          >
-            {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </Button>
-
-          {/* Mobile: Toggle graph view */}
+          {/* Mobile: toggle graph vs controls */}
           <Button
             variant="ghost"
             size="sm"
@@ -365,7 +328,7 @@ export function KillTheRing() {
             )}
           </Button>
 
-          {/* Mobile hamburger — right side */}
+          {/* Mobile hamburger */}
           <Button
             variant="ghost"
             size="sm"
@@ -379,7 +342,7 @@ export function KillTheRing() {
         </div>
       </header>
 
-      {/* Mobile full-screen overlay */}
+      {/* ── Mobile full-screen overlay ─────────────────────────── */}
       {mobileMenuOpen && (
         <div
           className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
@@ -387,7 +350,6 @@ export function KillTheRing() {
           aria-modal="true"
           aria-label="Controls menu"
         >
-          {/* Overlay header bar */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
@@ -406,9 +368,7 @@ export function KillTheRing() {
             </Button>
           </div>
 
-          {/* Scrollable overlay content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Input Gain section */}
             <section>
               <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
               <InputMeterSlider
@@ -418,17 +378,11 @@ export function KillTheRing() {
                 fullWidth
               />
             </section>
-
             <div className="border-t border-border" />
-
-            {/* Detection controls section */}
             <section>
               <DetectionControls />
             </section>
-
             <div className="border-t border-border" />
-
-            {/* Active Issues section */}
             <section>
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
@@ -438,7 +392,6 @@ export function KillTheRing() {
             </section>
           </div>
 
-          {/* Overlay footer: close button */}
           <div className="flex-shrink-0 border-t border-border p-4">
             <Button
               variant="outline"
@@ -451,19 +404,19 @@ export function KillTheRing() {
         </div>
       )}
 
-      {/* Error Banner */}
+      {/* ── Error banner ───────────────────────────────────────── */}
       {error && (
         <div className="px-4 py-1.5 bg-destructive/10 border-b border-destructive/20">
           <span className="text-xs text-destructive">{error}</span>
         </div>
       )}
 
-      {/* Main Content */}
+      {/* ── Main Content ───────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Mobile: Controls + Issues panel (default view) — show when not viewing graph */}
+
+        {/* Mobile: Controls + Issues panel (hidden when viewing graph) */}
         {!mobileShowGraph && (
           <div className="lg:hidden flex-1 flex flex-col overflow-hidden bg-background">
-            {/* Compact input gain section */}
             <div className="border-b border-border p-2 flex-shrink-0 bg-card/50">
               <InputMeterSlider
                 value={settings.inputGainDb}
@@ -472,13 +425,9 @@ export function KillTheRing() {
                 compact
               />
             </div>
-
-            {/* Detection controls */}
             <div className="border-b border-border p-3 flex-shrink-0 bg-card/50 overflow-y-auto max-h-48">
               <DetectionControls />
             </div>
-
-            {/* Active issues list */}
             <div className="flex-1 overflow-y-auto p-3">
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
@@ -489,113 +438,100 @@ export function KillTheRing() {
           </div>
         )}
 
-        {/* Graph view — always rendered, visibility controlled by CSS */}
-        <div className={`flex-1 flex lg:contents ${mobileShowGraph ? 'flex' : 'hidden lg:flex'}`}>
-          {/* Left Sidebar — desktop only, collapsible */}
-          {sidebarOpen && (
-            <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
-                <div className="p-3 border-b border-border space-y-3">
-                  <DetectionControls />
+        {/* Desktop: Always-visible left sidebar */}
+        <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+          <div className="flex-shrink-0 border-b border-border p-3 overflow-y-auto max-h-96">
+            <DetectionControls />
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1 z-10">
+              <span>Active Issues</span>
+              <span className="text-primary font-mono">{advisories.length}</span>
+            </h2>
+            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+          </div>
+        </aside>
+
+        {/* Graph area — full width on mobile (when mobileShowGraph), right panel on desktop */}
+        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 ${mobileShowGraph ? 'flex' : 'hidden lg:flex'}`}>
+
+          {/* Top: Large active graph (~60% height) */}
+          <div className="flex-[3] min-h-0 p-1.5 sm:p-2 md:p-3 pb-0.5 sm:pb-1">
+            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
+              <div className="flex-shrink-0 flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
+                <div className="flex items-center gap-1">
+                  {GRAPH_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      onClick={() => setActiveGraph(chip.value)}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                        activeGraph === chip.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
                 </div>
-
-                <div className="p-3">
-                  <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
-                    <span>Active Issues</span>
-                    <span className="text-primary font-mono">{advisories.length}</span>
-                  </h2>
-                  <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">
+                  {isRunning && spectrum?.noiseFloorDb != null
+                    ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
+                    : 'Ready'}
+                </span>
+              </div>
+              <div className="relative flex-1 min-h-0">
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
-              </aside>
-            )}
-
-            {/* Main Visualization Area */}
-            <main className="flex-1 flex flex-col overflow-hidden">
-
-              {/* Large Panel */}
-              <div className="flex-1 min-h-0 p-1.5 sm:p-2 md:p-3 pb-1 sm:pb-1.5">
-                <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
-                  {/* Panel header with graph switcher */}
-                  <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
-                    <div className="flex items-center gap-1">
-                      {GRAPH_CHIPS.map((chip) => (
-                        <button
-                          key={chip.value}
-                          onClick={() => setActiveGraph(chip.value)}
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-                            activeGraph === chip.value
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                          }`}
-                        >
-                          {chip.label}
-                        </button>
-                      ))}
-                    </div>
-                    <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap">
-                      {isRunning && spectrum?.noiseFloorDb != null
-                        ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
-                        : 'Ready'}
-                    </span>
-                  </div>
-
-                  {/* Graph area with crossfade */}
-                  <div className="relative h-[calc(100%-24px)]">
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
-                    </div>
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
-                    </div>
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
-                    </div>
-                  </div>
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
+                </div>
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Mobile graph pill switcher — below main canvas, hidden on sm+ */}
-              <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5">
-                {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
-                  <button
-                    key={graph}
-                    onClick={() => setActiveGraph(graph)}
-                    className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
-                      activeGraph === graph
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                    }`}
-                  >
-                    {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
-                  </button>
-                ))}
-              </div>
+          {/* Mobile graph pill switcher */}
+          <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
+            {GRAPH_CHIPS.map((chip) => (
+              <button
+                key={chip.value}
+                onClick={() => setActiveGraph(chip.value)}
+                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                  activeGraph === chip.value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
 
-              {/* Bottom Row — the two non-active graphs — desktop/tablet only */}
-              <div className="hidden sm:flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
-                {smallGraphs.map((graph) => (
-                  <button
-                    key={graph}
-                    onClick={() => setActiveGraph(graph)}
-                    className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden text-left hover:border-primary/50 transition-colors group"
-                  >
-                    <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 border-b border-border bg-muted/20">
-                      <span className="text-[8px] sm:text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                        {GRAPH_CHIPS.find((c) => c.value === graph)?.label ?? graph.toUpperCase()}
-                      </span>
-                      <span className="text-[7px] sm:text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
-                        click
-                      </span>
-                    </div>
-                    <div className="h-[calc(100%-20px)] pointer-events-none">
-                      {graph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
-                      {graph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />}
-                      {graph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />}
-                    </div>
-                  </button>
-                ))}
+          {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
+          <div className="hidden sm:flex flex-[2] min-h-0 gap-1.5 md:gap-2 p-1.5 md:p-3 pt-0.5 md:pt-1">
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>
               </div>
-            </main>
-        </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+              </div>
+            </div>
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">Waterfall</span>
+              </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+              </div>
+            </div>
+          </div>
+
+        </main>
       </div>
     </div>
   )

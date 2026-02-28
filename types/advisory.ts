@@ -246,7 +246,7 @@ export interface DetectorSettings {
   maxDisplayedIssues: number
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
-  inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
+  inputGainDb: number // Software gain applied to analysis (-40 to +40 dB)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
 }
 
@@ -272,5 +272,5 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   noiseFloorSampleCount: 160, // Faster noise floor sampling
   noiseFloorAttackMs: 200, // Faster attack for dynamic environments
   noiseFloorReleaseMs: 1000, // Faster release
-  inputGainDb: 18, // Higher default gain for speech systems
+  inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
 }

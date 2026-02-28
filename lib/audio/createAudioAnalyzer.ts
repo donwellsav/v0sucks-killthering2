@@ -1,22 +1,24 @@
 // KillTheRing2 Audio Analyzer - Manages Web Audio API setup and analysis pipeline
+// DSP post-processing (classification, EQ advisory) is offloaded to a Web Worker
+// via AudioAnalyzerCallbacks.onPeakDetected / onPeakCleared wiring in useAudioAnalyzer.
 
 import { FeedbackDetector } from '@/lib/dsp/feedbackDetector'
-import { TrackManager } from '@/lib/dsp/trackManager'
-import { classifyTrack, shouldReportIssue } from '@/lib/dsp/classifier'
-import { generateEQAdvisory } from '@/lib/dsp/eqAdvisor'
-import { generateId } from '@/lib/utils/mathHelpers'
 import type { 
   Advisory, 
   DetectedPeak,
   SpectrumData,
   TrackedPeak,
-  Track,
   DetectorSettings,
 } from '@/types/advisory'
 import { DEFAULT_SETTINGS } from '@/lib/dsp/constants'
 
 export interface AudioAnalyzerCallbacks {
   onSpectrum?: (data: SpectrumData) => void
+  /** Raw peak detected — route to DSP worker for classification */
+  onPeakDetected?: (peak: DetectedPeak, spectrum: Float32Array, sampleRate: number, fftSize: number) => void
+  /** Peak cleared — route to DSP worker */
+  onPeakCleared?: (peak: { binIndex: number; frequencyHz: number; timestamp: number }) => void
+  // Legacy callbacks kept for compatibility — now driven by worker results in useAudioAnalyzer
   onAdvisory?: (advisory: Advisory) => void
   onAdvisoryCleared?: (advisoryId: string) => void
   onTracksUpdate?: (tracks: TrackedPeak[]) => void
@@ -38,10 +40,6 @@ export class AudioAnalyzer {
   private settings: DetectorSettings
   private callbacks: AudioAnalyzerCallbacks
   private detector: FeedbackDetector
-  private trackManager: TrackManager
-  
-  private advisories: Map<string, Advisory> = new Map()
-  private trackToAdvisoryId: Map<string, string> = new Map()
   
   private rafId: number = 0
   private lastSpectrumTime: number = 0
@@ -58,11 +56,18 @@ export class AudioAnalyzer {
     this.settings = { ...DEFAULT_SETTINGS, ...settings }
     this.callbacks = callbacks
 
-    this.trackManager = new TrackManager()
-
     this.detector = new FeedbackDetector(this.settings, {
-      onPeakDetected: this.handlePeakDetected.bind(this),
-      onPeakCleared: this.handlePeakCleared.bind(this),
+      onPeakDetected: (peak: DetectedPeak) => {
+        // Route to worker via callback — spectrum is read from detector
+        const spectrum = this.detector.getSpectrum()
+        const state = this.detector.getState()
+        if (spectrum) {
+          this.callbacks.onPeakDetected?.(peak, spectrum, state.sampleRate, state.fftSize)
+        }
+      },
+      onPeakCleared: (peak) => {
+        this.callbacks.onPeakCleared?.(peak)
+      },
     })
 
     this.spectrumLoop = this.spectrumLoop.bind(this)
@@ -101,10 +106,6 @@ export class AudioAnalyzer {
     }
 
     this.detector.stop(options)
-    this.trackManager.clear()
-    this.advisories.clear()
-    this.trackToAdvisoryId.clear()
-
     this.callbacks.onStateChange?.(false)
   }
 
@@ -126,148 +127,11 @@ export class AudioAnalyzer {
     }
   }
 
-  getActiveTracks(): TrackedPeak[] {
-    return this.trackManager.getActiveTracks()
-  }
-
-  getAdvisories(): Advisory[] {
-    return Array.from(this.advisories.values())
-      .sort((a, b) => {
-        // Sort by urgency (severity), then by amplitude
-        const urgencyA = this.getSeverityUrgency(a.severity)
-        const urgencyB = this.getSeverityUrgency(b.severity)
-        if (urgencyA !== urgencyB) return urgencyB - urgencyA
-        return b.trueAmplitudeDb - a.trueAmplitudeDb
-      })
-      .slice(0, this.settings.maxDisplayedIssues)
-  }
-
   getSpectrum(): Float32Array | null {
     return this.detector.getSpectrum()
   }
 
   // ==================== Private Methods ====================
-
-  private handlePeakDetected(peak: DetectedPeak): void {
-    // Process peak through track manager
-    const track = this.trackManager.processPeak(peak)
-
-    // Classify the track
-    const classification = classifyTrack(track, this.settings)
-
-    // Check if we should report this issue
-    if (!shouldReportIssue(classification, this.settings)) {
-      // Remove existing advisory if it exists
-      const existingAdvisoryId = this.trackToAdvisoryId.get(track.id)
-      if (existingAdvisoryId) {
-        this.advisories.delete(existingAdvisoryId)
-        this.trackToAdvisoryId.delete(track.id)
-        this.callbacks.onAdvisoryCleared?.(existingAdvisoryId)
-      }
-      return
-    }
-
-    // Generate EQ recommendations
-    const spectrum = this.detector.getSpectrum()
-    const state = this.detector.getState()
-    const eqAdvisory = generateEQAdvisory(
-      track,
-      classification.severity,
-      this.settings.eqPreset,
-      spectrum ?? undefined,
-      state.sampleRate,
-      state.fftSize
-    )
-
-    // Check if this frequency is a harmonic of an existing lower frequency issue
-    // If so, skip it - the fundamental is the real problem
-    if (this.isHarmonicOfExisting(track.trueFrequencyHz)) {
-      return
-    }
-
-    // Check if this frequency is a duplicate of an existing advisory (within merge tolerance)
-    // If so, skip creating a new advisory - keep the existing one to avoid clutter
-    const existingAdvisoryId = this.trackToAdvisoryId.get(track.id)
-    if (!existingAdvisoryId) {
-      const duplicateAdvisory = this.findDuplicateAdvisory(track.trueFrequencyHz, track.id)
-      if (duplicateAdvisory) {
-        // This is a duplicate in a similar frequency range
-        // Keep the existing advisory (typically the louder/more severe one)
-        // unless this new one is more severe
-        const existingUrgency = this.getSeverityUrgency(duplicateAdvisory.severity)
-        const newUrgency = this.getSeverityUrgency(classification.severity)
-        
-        // Only replace if new one is more urgent, or same urgency but louder
-        if (newUrgency <= existingUrgency && track.trueAmplitudeDb <= duplicateAdvisory.trueAmplitudeDb) {
-          return
-        }
-        // Otherwise, remove the old one and continue to create the new one
-        this.advisories.delete(duplicateAdvisory.id)
-        this.trackToAdvisoryId.delete(duplicateAdvisory.trackId)
-        this.callbacks.onAdvisoryCleared?.(duplicateAdvisory.id)
-      }
-    }
-
-    // Create or update advisory
-    const advisoryId = existingAdvisoryId ?? generateId()
-
-    // track is a raw Track object with trueFrequencyHz, not TrackedPeak with frequency
-    const advisory: Advisory = {
-      id: advisoryId,
-      trackId: track.id,
-      timestamp: peak.timestamp,
-      label: classification.label,
-      severity: classification.severity,
-      confidence: classification.confidence,
-      why: classification.reasons,
-      trueFrequencyHz: track.trueFrequencyHz,
-      trueAmplitudeDb: track.trueAmplitudeDb,
-      prominenceDb: track.prominenceDb,
-      qEstimate: track.qEstimate,
-      bandwidthHz: track.bandwidthHz,
-      velocityDbPerSec: track.velocityDbPerSec,
-      stabilityCentsStd: track.features.stabilityCentsStd,
-      harmonicityScore: track.features.harmonicityScore,
-      modulationScore: track.features.modulationScore,
-      advisory: eqAdvisory,
-    }
-
-    this.advisories.set(advisoryId, advisory)
-    if (!existingAdvisoryId) {
-      this.trackToAdvisoryId.set(track.id, advisoryId)
-    }
-
-    this.callbacks.onAdvisory?.(advisory)
-
-    // Notify tracks update
-    this.callbacks.onTracksUpdate?.(this.trackManager.getActiveTracks())
-  }
-
-  private handlePeakCleared(peak: { binIndex: number; frequencyHz: number; timestamp: number }): void {
-    this.trackManager.clearTrack(peak.binIndex, peak.timestamp)
-
-    // Prune old tracks
-    this.trackManager.pruneInactiveTracks(peak.timestamp)
-
-    // Find and remove associated advisory
-    // We need to find which track was at this bin
-    for (const [trackId, advisoryId] of this.trackToAdvisoryId.entries()) {
-      const advisory = this.advisories.get(advisoryId)
-      if (advisory) {
-        // Check if the advisory's frequency matches the cleared frequency
-        const freqDiff = Math.abs(advisory.trueFrequencyHz - peak.frequencyHz)
-        if (freqDiff < 10) { // Within 10 Hz tolerance
-          this.advisories.delete(advisoryId)
-          this.trackToAdvisoryId.delete(trackId)
-          this.callbacks.onAdvisoryCleared?.(advisoryId)
-          break
-        }
-      }
-    }
-
-    // Notify tracks update
-    this.callbacks.onTracksUpdate?.(this.trackManager.getActiveTracks())
-  }
 
   private spectrumLoop(timestamp: number): void {
     if (!this._isRunning) return
@@ -304,66 +168,6 @@ export class AudioAnalyzer {
     this.rafId = requestAnimationFrame(this.spectrumLoop)
   }
 
-  private getSeverityUrgency(severity: string): number {
-    switch (severity) {
-      case 'RUNAWAY': return 5
-      case 'GROWING': return 4
-      case 'RESONANCE': return 3
-      case 'POSSIBLE_RING': return 2
-      case 'WHISTLE': return 1
-      case 'INSTRUMENT': return 1
-      default: return 0
-    }
-  }
-
-  /**
-   * Check if a frequency is a harmonic (2x, 3x, 4x, etc.) of an existing lower advisory
-   * Uses 3% tolerance for harmonic matching
-   */
-  private isHarmonicOfExisting(freqHz: number): boolean {
-    const HARMONIC_TOLERANCE = 0.03 // 3% tolerance (~50 cents)
-    const MAX_HARMONIC = 8 // Check up to 8th harmonic
-
-    for (const advisory of this.advisories.values()) {
-      const fundamental = advisory.trueFrequencyHz
-      if (fundamental >= freqHz) continue // Only check lower frequencies as fundamentals
-
-      // Check if freqHz is a harmonic of the fundamental
-      for (let n = 2; n <= MAX_HARMONIC; n++) {
-        const harmonic = fundamental * n
-        const ratio = freqHz / harmonic
-        if (Math.abs(ratio - 1) < HARMONIC_TOLERANCE) {
-          // This frequency is the nth harmonic of an existing issue
-          return true
-        }
-      }
-    }
-
-    return false
-  }
-
-  /**
-   * Check if a frequency is a duplicate of an existing advisory within the merge tolerance
-   * Uses cents-based comparison (configurable via peakMergeCents setting)
-   * Returns the existing advisory if it's a duplicate (to potentially update it), null otherwise
-   */
-  private findDuplicateAdvisory(freqHz: number, excludeTrackId?: string): Advisory | null {
-    const mergeCents = this.settings.peakMergeCents // Default: 50 cents (~3%)
-    
-    for (const advisory of this.advisories.values()) {
-      // Skip if this is the same track (we handle updates separately)
-      if (excludeTrackId && advisory.trackId === excludeTrackId) continue
-      
-      // Calculate cents difference between frequencies
-      const centsDistance = Math.abs(1200 * Math.log2(freqHz / advisory.trueFrequencyHz))
-      
-      if (centsDistance <= mergeCents) {
-        return advisory
-      }
-    }
-
-    return null
-  }
 }
 
 /**
