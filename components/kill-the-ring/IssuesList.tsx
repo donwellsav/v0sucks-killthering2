@@ -2,7 +2,8 @@
 
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { Advisory } from '@/types/advisory'
 
 // Velocity thresholds for runaway prediction
@@ -12,9 +13,11 @@ const WARNING_VELOCITY_THRESHOLD = 10 // dB/s
 interface IssuesListProps {
   advisories: Advisory[]
   maxIssues?: number
+  appliedIds?: Set<string>
+  onApply?: (advisory: Advisory) => void
 }
 
-export function IssuesList({ advisories, maxIssues = 10 }: IssuesListProps) {
+export function IssuesList({ advisories, maxIssues = 10, appliedIds, onApply }: IssuesListProps) {
   // Sort by frequency (low → high) and slice to max
   const sorted = [...advisories]
     .sort((a, b) => (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0))
@@ -30,7 +33,13 @@ export function IssuesList({ advisories, maxIssues = 10 }: IssuesListProps) {
         </div>
       ) : (
         sorted.map((advisory, index) => (
-          <IssueCard key={advisory.id} advisory={advisory} rank={index + 1} />
+          <IssueCard
+            key={advisory.id}
+            advisory={advisory}
+            rank={index + 1}
+            isApplied={appliedIds?.has(advisory.id) ?? false}
+            onApply={onApply}
+          />
         ))
       )}
     </div>
@@ -40,9 +49,11 @@ export function IssuesList({ advisories, maxIssues = 10 }: IssuesListProps) {
 interface IssueCardProps {
   advisory: Advisory
   rank: number
+  isApplied: boolean
+  onApply?: (advisory: Advisory) => void
 }
 
-function IssueCard({ advisory, rank }: IssueCardProps) {
+function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
   const severityColor = getSeverityColor(advisory.severity)
   const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
   const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
@@ -65,17 +76,23 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
     ? `~${(timeToClipMs / 1000).toFixed(1)}s`
     : null
 
+  const hasEq = !!(geq && peq)
+
   return (
     <div
       className={`flex flex-col gap-0.5 px-2 py-1.5 rounded border bg-card/80 transition-all ${
-        isRunaway ? 'border-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 
-        isWarning ? 'border-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.3)]' : 
-        'border-border'
+        isApplied
+          ? 'border-primary/40 opacity-60'
+          : isRunaway
+            ? 'border-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+            : isWarning
+              ? 'border-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.3)]'
+              : 'border-border'
       }`}
-      style={{ borderLeftColor: isRunaway ? '#ef4444' : isWarning ? '#f59e0b' : severityColor, borderLeftWidth: '3px' }}
+      style={{ borderLeftColor: isApplied ? undefined : isRunaway ? '#ef4444' : isWarning ? '#f59e0b' : severityColor, borderLeftWidth: '3px' }}
     >
       {/* Runaway warning badge */}
-      {(isRunaway || isWarning) && (
+      {(isRunaway || isWarning) && !isApplied && (
         <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide mb-0.5 ${
           isRunaway ? 'text-red-500' : 'text-amber-500'
         }`}>
@@ -88,9 +105,9 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
         </div>
       )}
 
-      {/* Main row: freq + severity */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
+      {/* Main row: freq + severity + apply */}
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <span className="font-mono text-xs font-medium text-foreground">
             {freqStr}Hz
           </span>
@@ -98,12 +115,33 @@ function IssueCard({ advisory, rank }: IssueCardProps) {
             {pitchStr}
           </span>
         </div>
-        <span
-          className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
-          style={{ backgroundColor: severityColor, color: '#000' }}
-        >
-          {advisory.severity}
-        </span>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {!isApplied && (
+            <span
+              className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
+              style={{ backgroundColor: severityColor, color: '#000' }}
+            >
+              {advisory.severity}
+            </span>
+          )}
+          {hasEq && onApply && (
+            <Button
+              variant={isApplied ? 'ghost' : 'outline'}
+              size="sm"
+              onClick={() => !isApplied && onApply(advisory)}
+              disabled={isApplied}
+              aria-label={isApplied ? 'Cut already applied' : `Apply cut at ${freqStr}Hz`}
+              className={`h-5 px-1.5 text-[9px] font-medium gap-0.5 transition-colors ${
+                isApplied
+                  ? 'text-primary border-primary/30 cursor-default'
+                  : 'text-muted-foreground hover:text-primary hover:border-primary/60'
+              }`}
+            >
+              <CheckCircle2 className="w-2.5 h-2.5" />
+              {isApplied ? 'Applied' : 'Apply'}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* EQ line */}

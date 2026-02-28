@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
+import { EQNotepad, advisoryToPin, type PinnedCut } from './EQNotepad'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
@@ -23,8 +24,8 @@ import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { HelpCircle, Menu, X, History, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
-import type { OperationMode } from '@/types/advisory'
-import { OPERATION_MODES } from '@/lib/dsp/constants'
+import type { Advisory, OperationMode } from '@/types/advisory'
+import { OPERATION_MODES, FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
 type GraphView = 'rta' | 'geq' | 'waterfall'
@@ -55,6 +56,50 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false)
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad'>('issues')
+
+  // Applied cuts state (EQ Notepad)
+  const [pinnedCuts, setPinnedCuts] = useState<PinnedCut[]>([])
+  const appliedIdsRef = useRef<Set<string>>(new Set())
+
+  const handleApply = useCallback((advisory: Advisory) => {
+    if (appliedIdsRef.current.has(advisory.id)) return
+    const pin = advisoryToPin(advisory)
+    if (!pin) return
+    appliedIdsRef.current.add(advisory.id)
+    setPinnedCuts((prev) => [...prev, pin])
+  }, [])
+
+  const handleRemovePin = useCallback((id: string) => {
+    appliedIdsRef.current.delete(id)
+    setPinnedCuts((prev) => prev.filter((p) => p.id !== id))
+  }, [])
+
+  const handleClearPins = useCallback(() => {
+    appliedIdsRef.current.clear()
+    setPinnedCuts([])
+  }, [])
+
+  // Auto music-aware: watch spectrum.peak vs noise floor
+  const autoMusicDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (!settings.autoMusicAware || !isRunning) return
+    const peak = spectrum?.peak ?? -100
+    const floor = noiseFloorDb ?? -80
+    const hysteresis = settings.autoMusicAwareHysteresisDb ?? 15
+    const shouldBeMusic = peak > floor + hysteresis
+    const isCurrentlyMusic = settings.musicAware
+
+    if (shouldBeMusic === isCurrentlyMusic) return
+    if (autoMusicDebounceRef.current) clearTimeout(autoMusicDebounceRef.current)
+    autoMusicDebounceRef.current = setTimeout(() => {
+      updateSettings({ musicAware: shouldBeMusic })
+    }, 1000) // 1s debounce to avoid flapping
+
+    return () => {
+      if (autoMusicDebounceRef.current) clearTimeout(autoMusicDebounceRef.current)
+    }
+  }, [spectrum?.peak, noiseFloorDb, settings.autoMusicAware, settings.musicAware, settings.autoMusicAwareHysteresisDb, isRunning, updateSettings])
 
   const loggerRef = useRef(getEventLogger())
   const logger = loggerRef.current
@@ -153,6 +198,73 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             <SelectItem value="calibration">Calibration</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Frequency Range Presets */}
+        <div className="space-y-1.5">
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Freq Range</div>
+          <div className="flex items-center gap-1 flex-wrap">
+            {FREQ_RANGE_PRESETS.map((preset) => {
+              const isActive =
+                settings.minFrequency === preset.minFrequency &&
+                settings.maxFrequency === preset.maxFrequency
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() =>
+                    handleSettingsChange({
+                      minFrequency: preset.minFrequency,
+                      maxFrequency: preset.maxFrequency,
+                    })
+                  }
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Auto Music-Aware */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 text-[10px]">
+            <span className="text-muted-foreground">Auto Music-Aware</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[200px] text-xs">
+                Automatically activates music-aware mode when signal rises {settings.autoMusicAwareHysteresisDb}dB above the noise floor (band is playing).
+              </TooltipContent>
+            </Tooltip>
+            {settings.autoMusicAware && (
+              <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${
+                settings.musicAware
+                  ? 'bg-primary/10 border-primary/40 text-primary'
+                  : 'bg-muted border-border text-muted-foreground'
+              }`}>
+                {settings.musicAware ? 'Music' : 'Speech'}
+              </span>
+            )}
+          </div>
+          <button
+            role="switch"
+            aria-checked={settings.autoMusicAware}
+            onClick={() => handleSettingsChange({ autoMusicAware: !settings.autoMusicAware })}
+            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              settings.autoMusicAware ? 'bg-primary' : 'bg-muted'
+            }`}
+          >
+            <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+              settings.autoMusicAware ? 'translate-x-3.5' : 'translate-x-0.5'
+            }`} />
+          </button>
+        </div>
 
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
@@ -399,7 +511,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
               </h2>
-              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+              <IssuesList
+                advisories={advisories}
+                maxIssues={settings.maxDisplayedIssues}
+                appliedIds={appliedIdsRef.current}
+                onApply={handleApply}
+              />
             </section>
           </div>
 
@@ -457,7 +574,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
               </h2>
-              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+              <IssuesList
+                advisories={advisories}
+                maxIssues={settings.maxDisplayedIssues}
+                appliedIds={appliedIdsRef.current}
+                onApply={handleApply}
+              />
             </div>
           </div>
         )}
@@ -467,12 +589,50 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex-shrink-0 border-b border-border p-3 overflow-y-auto max-h-96">
             <DetectionControls />
           </div>
+          {/* Issues / Notepad tab bar */}
+          <div className="flex-shrink-0 flex border-b border-border">
+            <button
+              onClick={() => setActiveSidebarTab('issues')}
+              className={`flex-1 py-1.5 text-[10px] font-medium uppercase tracking-wide transition-colors ${
+                activeSidebarTab === 'issues'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Issues
+              {advisories.length > 0 && (
+                <span className="ml-1 font-mono text-primary">{advisories.length}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveSidebarTab('notepad')}
+              className={`flex-1 py-1.5 text-[10px] font-medium uppercase tracking-wide transition-colors ${
+                activeSidebarTab === 'notepad'
+                  ? 'text-foreground border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              EQ Notepad
+              {pinnedCuts.length > 0 && (
+                <span className="ml-1 font-mono text-primary">{pinnedCuts.length}</span>
+              )}
+            </button>
+          </div>
           <div className="flex-1 min-h-0 overflow-y-auto p-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1 z-10">
-              <span>Active Issues</span>
-              <span className="text-primary font-mono">{advisories.length}</span>
-            </h2>
-            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+            {activeSidebarTab === 'issues' ? (
+              <IssuesList
+                advisories={advisories}
+                maxIssues={settings.maxDisplayedIssues}
+                appliedIds={appliedIdsRef.current}
+                onApply={handleApply}
+              />
+            ) : (
+              <EQNotepad
+                pins={pinnedCuts}
+                onRemove={handleRemovePin}
+                onClear={handleClearPins}
+              />
+            )}
           </div>
         </aside>
 

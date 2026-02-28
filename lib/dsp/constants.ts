@@ -191,9 +191,19 @@ export const DEFAULT_SETTINGS = {
   maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues, can adjust up to 12
   eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
   musicAware: false, // Disabled by default for maximum detection
+  autoMusicAware: false, // Auto music-aware mode off by default
+  autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
   inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
 }
+
+// Frequency range presets — quick switching for different use cases
+export const FREQ_RANGE_PRESETS = [
+  { label: 'Vocal',    minFrequency: 200,  maxFrequency: 8000  },
+  { label: 'Monitor',  minFrequency: 300,  maxFrequency: 3000  },
+  { label: 'Full',     minFrequency: 20,   maxFrequency: 20000 },
+  { label: 'Sub',      minFrequency: 20,   maxFrequency: 250   },
+] as const
 
 // Color palette for visualizations
 export const VIZ_COLORS = {

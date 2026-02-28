@@ -19,6 +19,7 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
   const historyRef = useRef<Float32Array[]>([])
+  const frameTimesRef = useRef<number[]>([]) // Timestamps (ms) matching historyRef entries
   const lastSpectrumRef = useRef<number>(0)
 
   useEffect(() => {
@@ -55,10 +56,12 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
     // Add new spectrum to history
     const copy = new Float32Array(spectrum.freqDb)
     historyRef.current.push(copy)
+    frameTimesRef.current.push(Date.now())
 
     // Limit history size
     while (historyRef.current.length > HISTORY_SIZE) {
       historyRef.current.shift()
+      frameTimesRef.current.shift()
     }
   }, [spectrum, isRunning])
 
@@ -77,7 +80,7 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, width, height)
 
-    const padding = { top: 10, right: 10, bottom: 20, left: 40 }
+    const padding = { top: 10, right: 10, bottom: 20, left: 38 }
     const plotWidth = width - padding.left - padding.right
     const plotHeight = height - padding.top - padding.bottom
 
@@ -144,12 +147,51 @@ export function WaterfallCanvas({ spectrum, isRunning, graphFontSize = 11 }: Wat
 
     ctx.restore()
 
-    // Time axis (right side)
+    // ── Time axis (left Y-axis) ──────────────────────────────────
+    const times = frameTimesRef.current
+    const numFrames = times.length
+    const nowMs = times[numFrames - 1] ?? Date.now()
+    const oldestMs = times[0] ?? nowMs
+    const totalMs = Math.max(1, nowMs - oldestMs)
+
     ctx.fillStyle = '#555'
     ctx.font = `${graphFontSize}px system-ui, sans-serif`
-    ctx.textAlign = 'left'
-    ctx.fillText('Now', width - padding.right + 3, padding.top + 8)
-    ctx.fillText('~5s', width - padding.right + 3, height - padding.bottom - 5)
+    ctx.textAlign = 'right'
+
+    // Draw "Now" at top
+    ctx.fillText('Now', padding.left - 4, padding.top + 8)
+
+    // Compute time tick marks at nice intervals (1s, 2s, 5s, 10s)
+    const intervals = [1000, 2000, 5000, 10000, 30000]
+    const targetTicks = 4
+    let tickInterval = intervals[0]
+    for (const iv of intervals) {
+      if (totalMs / iv <= targetTicks) { tickInterval = iv; break }
+      tickInterval = iv
+    }
+
+    // Walk backwards from nowMs to find tick positions
+    let tickMs = Math.floor(nowMs / tickInterval) * tickInterval
+    while (tickMs > oldestMs) {
+      const age = nowMs - tickMs
+      // Row index: newest is row 0, oldest is row numRows-1
+      const rowFraction = (numRows > 1) ? age / totalMs : 0
+      const y = padding.top + rowFraction * plotHeight
+
+      if (y >= padding.top && y <= padding.top + plotHeight) {
+        const ageS = Math.round(age / 1000)
+        ctx.fillText(`${ageS}s`, padding.left - 4, y + 3)
+        // Gridline across the plot
+        ctx.strokeStyle = '#1f1f1f'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.moveTo(padding.left, y)
+        ctx.lineTo(padding.left + plotWidth, y)
+        ctx.stroke()
+      }
+
+      tickMs -= tickInterval
+    }
 
     // Frequency axis (bottom)
     ctx.textAlign = 'center'
