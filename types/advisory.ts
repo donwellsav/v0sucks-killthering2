@@ -244,7 +244,7 @@ export interface DetectorSettings {
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
   inputGainDb: number // Software gain applied to analysis (-12 to +24 dB)
-  graphFontSize: number // Font size for canvas graph labels (9-16px)
+  graphFontSize: number // Font size for canvas graph labels (8-26px, default 17px center)
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

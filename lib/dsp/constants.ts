@@ -192,7 +192,7 @@ export const DEFAULT_SETTINGS = {
   eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
   musicAware: false, // Disabled by default for maximum detection
   inputGainDb: 18, // Higher default gain for better signal capture in speech systems
-  graphFontSize: 11, // Default label size for canvas graphs
+  graphFontSize: 17, // Default label size for canvas graphs (8-26px range, 17px center)
 }
 
 // Color palette for visualizations

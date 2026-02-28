@@ -174,8 +174,8 @@ export function SettingsPanel({
                 <Slider
                   value={[settings.graphFontSize]}
                   onValueChange={([v]) => onSettingsChange({ graphFontSize: v })}
-                  min={9}
-                  max={16}
+                  min={8}
+                  max={26}
                   step={1}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
