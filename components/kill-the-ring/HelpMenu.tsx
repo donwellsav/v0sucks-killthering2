@@ -56,10 +56,12 @@ export function HelpMenu() {
             <Section title="Quick Start">
               <ol className="list-decimal list-inside space-y-2">
                 <li>Click <strong>Start</strong> in the header to begin monitoring</li>
-                <li>Detected issues appear in the <strong>Active Issues</strong> sidebar, sorted by severity</li>
-                <li>Each issue shows frequency, pitch, amplitude, and recommended EQ cuts</li>
-                <li>Apply the suggested GEQ or PEQ cuts to your mixer/DSP</li>
-                <li>Use the <strong>Logs</strong> panel to export session data for reference</li>
+                <li>Detected issues appear in the <strong>Active Issues</strong> sidebar, sorted by frequency</li>
+                <li>Each issue card shows frequency, pitch, and recommended GEQ/PEQ cuts</li>
+                <li>Tap <strong>Apply</strong> on a card to log the cut — it moves to the <strong>EQ Notepad</strong> tab</li>
+                <li>Use the <strong>EQ Notepad</strong> to copy all applied cuts as formatted text</li>
+                <li>Use the <strong>Logs</strong> panel to export full session data for reference</li>
+                <li>Review past sessions from the <strong>Sessions</strong> page with per-session frequency histograms</li>
               </ol>
             </Section>
 
@@ -67,7 +69,9 @@ export function HelpMenu() {
               <ul className="space-y-2">
                 <li><strong>Large Panel (top):</strong> The selected graph enlarged for detail. Use the dropdown in the panel header to switch between RTA Spectrum, 31-Band GEQ, and Waterfall. Click any small panel below to enlarge it.</li>
                 <li><strong>Small Panels (bottom row):</strong> The two non-active graphs, live and clickable. Click to swap into the large view.</li>
-                <li><strong>Left Sidebar:</strong> Detection controls (Threshold, Ring, Growth) and the Active Issues list.</li>
+                <li><strong>Left Sidebar — Issues tab:</strong> Active detected issues with Apply buttons. RUNAWAY issues pulse red.</li>
+                <li><strong>Left Sidebar — EQ Notepad tab:</strong> Accumulates cuts you have applied. Copy button exports all cuts as text for pasting into console notes.</li>
+                <li><strong>Waterfall time axis:</strong> Y-axis shows real elapsed seconds, auto-scaling to the history depth.</li>
               </ul>
             </Section>
           </TabsContent>
@@ -86,7 +90,10 @@ export function HelpMenu() {
                   <strong>Mode:</strong> Detection sensitivity preset. Default is <strong>Feedback Hunt</strong>. See the Modes tab for details.
                 </li>
                 <li>
-                  <strong>Logs:</strong> Opens the session log viewer with CSV, JSON, plain text, and PDF export.
+                  <strong>Logs:</strong> Opens the session log viewer with CSV, JSON, and plain text export.
+                </li>
+                <li>
+                  <strong>Sessions:</strong> Navigate to the Sessions page to view frequency histograms and stats for all past sessions.
                 </li>
                 <li>
                   <strong>Settings:</strong> Advanced analysis and display options (FFT size, smoothing, hold time, EQ style). Detection controls are in the sidebar, not here.
@@ -94,18 +101,38 @@ export function HelpMenu() {
               </ul>
             </Section>
 
-            <Section title="Sidebar Detection Controls">
-              <p className="mb-2">These three sliders are the primary real-time tuning controls:</p>
+            <Section title="Sidebar — Detection Controls">
+              <p className="mb-2">These controls are the primary real-time tuning tools. They live in the top half of the left sidebar:</p>
               <ul className="space-y-2">
+                <li><strong>Mode dropdown:</strong> Sets the detection sensitivity preset (Feedback Hunt, Aggressive, Vocal Ring, Music-Aware, Calibration).</li>
+                <li><strong>Freq Range chips:</strong> Four preset buttons — <em>Vocal</em> (200–8kHz), <em>Monitor</em> (300–3kHz), <em>Full</em> (20–20kHz), <em>Sub</em> (20–250Hz). Instantly updates the analysis frequency window.</li>
+                <li><strong>Auto Music-Aware toggle:</strong> When enabled, automatically switches to music-aware mode when the signal rises above the noise floor by the configured hysteresis amount (default: 15 dB). A Speech/Music pill shows the current state. This adapts sensitivity as the band starts and stops playing.</li>
                 <li><strong>Threshold:</strong> Primary sensitivity. 4–8 dB for aggressive detection, 10–14 dB balanced, 16+ dB conservative. Default: 8 dB.</li>
                 <li><strong>Ring:</strong> Resonance detection sensitivity. 2–4 dB for calibration, 5–7 dB normal use, 8+ dB during shows. Default: 5 dB.</li>
                 <li><strong>Growth:</strong> How fast a frequency must grow (dB/s) to be flagged. 0.5–1 dB/s catches feedback early, 3+ dB/s only runaway. Default: 2 dB/s.</li>
               </ul>
-              <p className="mt-2">Each slider has a help icon with a quick reference tooltip.</p>
+            </Section>
+
+            <Section title="Sidebar — Issues Tab">
+              <ul className="space-y-2">
+                <li>Lists all currently detected issues sorted by frequency (low to high).</li>
+                <li>Each card shows the frequency, musical pitch, GEQ band + cut depth, and PEQ Q + gain.</li>
+                <li>RUNAWAY issues pulse red with a dB/s velocity counter and predicted time to clip.</li>
+                <li><strong>Apply button:</strong> Tap to confirm you have applied the cut. The card fades and the cut logs to the EQ Notepad tab.</li>
+              </ul>
+            </Section>
+
+            <Section title="Sidebar — EQ Notepad Tab">
+              <ul className="space-y-2">
+                <li>Accumulates all cuts you have marked as applied during the session.</li>
+                <li><strong>Copy:</strong> Copies all cuts as formatted text (frequency, GEQ, PEQ) for pasting into console notes or a text editor.</li>
+                <li>Hover over a cut row to reveal the remove button (trash icon).</li>
+                <li>Clear button removes all cuts at once.</li>
+              </ul>
             </Section>
 
             <Section title="Settings Panel (gear icon)">
-              <p className="mb-2">Advanced settings split into two tabs — detection controls are intentionally kept in the sidebar for quick access:</p>
+              <p className="mb-2">Advanced settings split into two tabs:</p>
               <ul className="space-y-2">
                 <li><strong>Analysis tab:</strong> FFT Size (resolution vs. speed trade-off), Spectrum Smoothing, Hold Time (how long issues stay visible), Input Gain.</li>
                 <li><strong>Display tab:</strong> Max Issues Shown (default 6 — focus on worst problems, adjustable to 12), Graph Label Size, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
@@ -136,11 +163,33 @@ export function HelpMenu() {
                   <strong>Vocal Ring:</strong> Tuned for speech frequencies (200 Hz–8 kHz). Threshold 6 dB, Ring 4 dB, Growth 1.5 dB/s. Use when fine-tuning monitor mixes or tracking subtle vocal ring-outs.
                 </li>
                 <li>
-                  <strong>Music-Aware:</strong> Reduced sensitivity to avoid false positives from sustained musical notes. Threshold 12 dB, Ring 7 dB, Growth 3 dB/s, music filter enabled. Use during performance.
+                  <strong>Music-Aware:</strong> Reduced sensitivity to avoid false positives from sustained musical notes. Threshold 12 dB, Ring 7 dB, Growth 3 dB/s, music filter enabled. Use during performance. Can also be triggered automatically via the <em>Auto Music-Aware</em> toggle in the sidebar.
                 </li>
                 <li>
                   <strong>Calibration:</strong> Ultra-sensitive for initial system setup and ringing out monitors. Threshold 4 dB, Ring 2 dB, Growth 0.5 dB/s. Use with pink noise or slow gain sweeps.
                 </li>
+              </ul>
+            </Section>
+
+            <Section title="Auto Music-Aware">
+              <p className="mb-2">
+                The <strong>Auto Music-Aware</strong> toggle in the sidebar automatically switches sensitivity based on signal level — no manual mode change required during a show:
+              </p>
+              <ul className="space-y-2">
+                <li>When signal rises more than <strong>15 dB above the noise floor</strong>, the system enters music-aware mode (band is playing).</li>
+                <li>When signal drops back below that threshold for 1 second, it returns to the current base mode (band has stopped).</li>
+                <li>A <strong>Speech / Music</strong> pill next to the toggle shows the current automatic state.</li>
+                <li>The 15 dB hysteresis value can be adjusted in Settings.</li>
+              </ul>
+            </Section>
+
+            <Section title="Frequency Range Presets">
+              <p className="mb-2">Four quick-switch range chips narrow or widen the detection window:</p>
+              <ul className="space-y-2">
+                <li><strong>Vocal</strong> — 200 Hz – 8 kHz. Default. Speech PA and vocal monitors.</li>
+                <li><strong>Monitor</strong> — 300 Hz – 3 kHz. Focused on the core speech intelligibility band. Tightest window, fewest distractions.</li>
+                <li><strong>Full</strong> — 20 Hz – 20 kHz. Full-range system calibration. Catches sub-bass rumble and high-frequency feedback.</li>
+                <li><strong>Sub</strong> — 20 Hz – 250 Hz. Low-frequency subwoofer monitoring only.</li>
               </ul>
             </Section>
 
@@ -149,7 +198,8 @@ export function HelpMenu() {
                 <li>Default / general soundcheck: <strong>Feedback Hunt</strong></li>
                 <li>Initial system setup / ring-out: <strong>Calibration</strong> or <strong>Aggressive</strong></li>
                 <li>Monitor tuning: <strong>Vocal Ring</strong></li>
-                <li>During live performance: <strong>Music-Aware</strong></li>
+                <li>During live performance: <strong>Music-Aware</strong> or enable <strong>Auto Music-Aware</strong></li>
+                <li>Full system analysis: <strong>Feedback Hunt</strong> + <em>Full</em> freq range</li>
               </ul>
             </Section>
           </TabsContent>
@@ -201,10 +251,13 @@ export function HelpMenu() {
                 <li>Start with <strong>Calibration</strong> mode during initial system setup and ring-out</li>
                 <li>Switch to <strong>Feedback Hunt</strong> for general PA monitoring (the default balanced mode)</li>
                 <li>Ring out monitors one at a time, addressing the worst frequencies first</li>
+                <li>Tap <strong>Apply</strong> on each card as you make the cut — the EQ Notepad tracks your work</li>
                 <li>Apply cuts conservatively — start with 3 dB and increase only if needed</li>
-                <li>Switch to <strong>Music-Aware</strong> during performance to reduce false positives</li>
+                <li>Enable <strong>Auto Music-Aware</strong> so sensitivity adjusts automatically when the band plays</li>
                 <li>Use <strong>PEQ</strong> recommendations for surgical cuts; <strong>GEQ</strong> for broader room resonances</li>
+                <li>Use the <strong>EQ Notepad Copy</strong> button to paste all applied cuts into your console notes</li>
                 <li>Export logs after the session so you have a record of every detected frequency</li>
+                <li>Review the <strong>Sessions</strong> page frequency histogram to spot venue resonances across multiple gigs</li>
               </ol>
             </Section>
 
@@ -216,6 +269,7 @@ export function HelpMenu() {
                 <li><strong>One change at a time:</strong> Apply one EQ cut, then observe before making more changes</li>
                 <li><strong>Watch Growth:</strong> Positive dB/s values mean action is needed before the feedback builds</li>
                 <li><strong>Use Hold Time:</strong> Increase to 3–5 s in Settings when making reference cuts so issues stay visible</li>
+                <li><strong>Freq Range presets:</strong> Switch to <em>Full</em> for initial calibration, then narrow to <em>Vocal</em> during the show</li>
               </ul>
             </Section>
 
