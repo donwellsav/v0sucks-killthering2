@@ -1,6 +1,6 @@
 'use client'
 
-// Kill The Ring — main component
+// Kill The Ring — Real-time feedback detection and EQ advisory
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
