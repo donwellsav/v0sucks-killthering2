@@ -49,7 +49,7 @@ export function KillTheRing() {
     <div className="flex flex-col h-screen">
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
-        {/* Left: Logo */}
+        {/* Left: Logo only */}
         <div className="flex items-center gap-4">
           {/* Logo with Design */}
           <div className="flex items-center gap-2.5 pl-3 border-l border-border/50">
@@ -71,13 +71,6 @@ export function KillTheRing() {
               <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
             </div>
           </div>
-
-          {isRunning && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium">LIVE</span>
-            </div>
-          )}
         </div>
 
         {/* Center: Mode + Gain Meter */}
@@ -102,7 +95,7 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Start + Info + Help/Settings */}
+        {/* Right: Start Button + Info + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Button
             onClick={isRunning ? stop : start}
@@ -123,6 +116,13 @@ export function KillTheRing() {
             )}
           </Button>
 
+          {isRunning && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">LIVE</span>
+            </div>
+          )}
+
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
           </span>
@@ -131,7 +131,6 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
-          
           <HelpMenu />
           <SettingsPanel
             settings={settings}
