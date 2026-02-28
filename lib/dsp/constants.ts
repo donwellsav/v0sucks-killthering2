@@ -38,40 +38,40 @@ export const A_WEIGHTING = {
 // FFT size options
 export const FFT_SIZE_OPTIONS = [2048, 4096, 8192, 16384, 32768] as const
 
-// Severity thresholds
+// Severity thresholds - tuned for PA system feedback detection
 export const SEVERITY_THRESHOLDS = {
-  RUNAWAY_VELOCITY: 12, // dB/sec growth rate for runaway
-  GROWING_VELOCITY: 3, // dB/sec for growing
-  HIGH_Q: 50, // Q value indicating narrow resonance
-  PERSISTENCE_MS: 500, // ms for resonance classification
+  RUNAWAY_VELOCITY: 8, // dB/sec growth rate for runaway (lower = catch faster)
+  GROWING_VELOCITY: 2, // dB/sec for growing (more sensitive)
+  HIGH_Q: 40, // Q value indicating narrow resonance (lower = catch more)
+  PERSISTENCE_MS: 400, // ms for resonance classification (faster detection)
 } as const
 
-// Classification weights
+// Classification weights - optimized for PA feedback detection
 export const CLASSIFIER_WEIGHTS = {
-  // Stationarity (low pitch variation = feedback)
-  STABILITY_FEEDBACK: 0.25,
-  STABILITY_THRESHOLD_CENTS: 15, // cents std dev threshold
+  // Stationarity (low pitch variation = feedback) - increased weight
+  STABILITY_FEEDBACK: 0.30,
+  STABILITY_THRESHOLD_CENTS: 12, // tighter threshold for feedback detection
   
   // Harmonicity (coherent harmonics = instrument)
-  HARMONICITY_INSTRUMENT: 0.30,
-  HARMONICITY_THRESHOLD: 0.6, // score threshold
+  HARMONICITY_INSTRUMENT: 0.25,
+  HARMONICITY_THRESHOLD: 0.65, // higher threshold = less false instrument classification
   
   // Modulation (vibrato = whistle)
-  MODULATION_WHISTLE: 0.25,
-  MODULATION_THRESHOLD: 0.4, // score threshold
+  MODULATION_WHISTLE: 0.20,
+  MODULATION_THRESHOLD: 0.45, // slightly higher threshold
   
   // Sideband noise (breath = whistle)
   SIDEBAND_WHISTLE: 0.10,
-  SIDEBAND_THRESHOLD: 0.3, // score threshold
+  SIDEBAND_THRESHOLD: 0.35, // slightly higher threshold
   
-  // Runaway growth (high velocity = feedback)
-  GROWTH_FEEDBACK: 0.20,
-  GROWTH_THRESHOLD: 6, // dB/sec
+  // Runaway growth (high velocity = feedback) - increased weight
+  GROWTH_FEEDBACK: 0.25,
+  GROWTH_THRESHOLD: 4, // lower threshold = catch feedback growth earlier
   
-  // Classification thresholds
-  CLASSIFICATION_THRESHOLD: 0.5, // minimum probability to classify
-  WHISTLE_THRESHOLD: 0.6, // threshold to label as whistle
-  INSTRUMENT_THRESHOLD: 0.55, // threshold to label as instrument
+  // Classification thresholds - more conservative for PA use
+  CLASSIFICATION_THRESHOLD: 0.45, // lower = more likely to flag as potential issue
+  WHISTLE_THRESHOLD: 0.65, // higher = less false whistle classification
+  INSTRUMENT_THRESHOLD: 0.60, // higher = less false instrument classification
 } as const
 
 // EQ recommendation presets
@@ -133,57 +133,61 @@ export const CANVAS_SETTINGS = {
   GEQ_BAR_WIDTH_RATIO: 0.8, // Bar width as ratio of band spacing
 } as const
 
-// Operation mode presets
+// Operation mode presets - optimized for PA system feedback detection
 export const OPERATION_MODES = {
   feedbackHunt: {
-    feedbackThreshold: 15,
-    ringThreshold: 8,
-    growthRateThreshold: 3,
+    // Default PA mode - balanced sensitivity for catching feedback early
+    feedbackThreshold: 10, // Lower threshold for earlier detection
+    ringThreshold: 5, // Catch resonances before they become problematic
+    growthRateThreshold: 2, // Faster response to growing feedback
     musicAware: false,
   },
   vocalRing: {
-    feedbackThreshold: 10,
-    ringThreshold: 5,
-    growthRateThreshold: 2,
+    feedbackThreshold: 8,
+    ringThreshold: 4,
+    growthRateThreshold: 1.5,
     musicAware: false,
   },
   musicAware: {
-    feedbackThreshold: 18,
-    ringThreshold: 10,
-    growthRateThreshold: 4,
+    // Use during live performance to reduce false positives
+    feedbackThreshold: 14,
+    ringThreshold: 8,
+    growthRateThreshold: 3,
     musicAware: true,
   },
   aggressive: {
-    feedbackThreshold: 8,
-    ringThreshold: 4,
-    growthRateThreshold: 2,
-    musicAware: false,
-  },
-  calibration: {
+    // Maximum sensitivity for system tuning/ring-out
     feedbackThreshold: 6,
     ringThreshold: 3,
     growthRateThreshold: 1,
     musicAware: false,
   },
+  calibration: {
+    // Ultra-sensitive for initial system setup
+    feedbackThreshold: 4,
+    ringThreshold: 2,
+    growthRateThreshold: 0.5,
+    musicAware: false,
+  },
 } as const
 
-// Default settings for the analyzer
+// Default settings for the analyzer - optimized for PA feedback detection
 export const DEFAULT_SETTINGS = {
   mode: 'feedbackHunt' as const,
   fftSize: 8192 as const,
-  smoothingTimeConstant: 0.8,
+  smoothingTimeConstant: 0.7, // Slightly less smoothing for faster response
   minFrequency: 60,
   maxFrequency: 16000,
-  feedbackThresholdDb: 15,
-  ringThresholdDb: 8,
-  growthRateThreshold: 3,
-  holdTimeMs: 2000,
-  noiseFloorDecay: 0.995,
+  feedbackThresholdDb: 10, // Lower default for better PA detection
+  ringThresholdDb: 5, // Catch resonances earlier
+  growthRateThreshold: 2, // Faster detection of growing feedback
+  holdTimeMs: 2500, // Slightly longer hold for reference during EQ adjustments
+  noiseFloorDecay: 0.99, // Faster noise floor adaptation
   peakMergeCents: 50,
-  maxDisplayedIssues: 8,
+  maxDisplayedIssues: 10, // Show more issues for comprehensive system tuning
   eqPreset: 'surgical' as const,
   musicAware: false,
-  inputGainDb: 12,
+  inputGainDb: 15, // Higher default gain for better signal capture
 }
 
 // Color palette for visualizations
