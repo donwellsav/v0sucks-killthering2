@@ -2,8 +2,8 @@
 
 /**
  * Kill The Ring - Real-time feedback detection and EQ advisory
- * CSS-only responsive layout for SSR compatibility
- * Features: Runaway prediction, manual inputs for all parameters, wider gain slider
+ * Uses CSS-only responsive layout to avoid SSR hydration issues
+ * Features: Runaway prediction warnings, velocity tracking, EQ recommendations
  */
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
@@ -34,6 +34,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'waterfall', label: 'WTF' },
 ]
 
+// Force cache rebuild - timestamp 1740754800000
 export function KillTheRing() {
   const {
     isRunning,
@@ -52,7 +53,7 @@ export function KillTheRing() {
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mobileShowGraph, setMobileShowGraph] = useState(false)
+  const [mobileShowGraph, setMobileShowGraph] = useState(false) // Default: show controls+issues
 
   // Stable ref — never changes reference across renders
   const loggerRef = useRef(getEventLogger())
@@ -90,6 +91,8 @@ export function KillTheRing() {
       document.body.style.overflow = ''
     }
   }, [mobileMenuOpen])
+
+
 
   // Log when analysis starts; create/end DB session
   useEffect(() => {
@@ -173,7 +176,6 @@ export function KillTheRing() {
           </SelectContent>
         </Select>
 
-        {/* Threshold with manual input */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
@@ -187,15 +189,7 @@ export function KillTheRing() {
                 </TooltipContent>
               </Tooltip>
             </div>
-            <input
-              type="number"
-              min={2}
-              max={20}
-              step={1}
-              value={settings.feedbackThresholdDb}
-              onChange={(e) => handleSettingsChange({ feedbackThresholdDb: parseInt(e.target.value) || settings.feedbackThresholdDb })}
-              className="font-mono text-xs bg-input border border-border rounded px-1.5 py-0.5 w-12 text-right focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            />
+            <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
           </div>
           <Slider
             value={[settings.feedbackThresholdDb]}
@@ -204,7 +198,6 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Ring with manual input */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
@@ -218,15 +211,7 @@ export function KillTheRing() {
                 </TooltipContent>
               </Tooltip>
             </div>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              step={0.5}
-              value={settings.ringThresholdDb}
-              onChange={(e) => handleSettingsChange({ ringThresholdDb: parseFloat(e.target.value) || settings.ringThresholdDb })}
-              className="font-mono text-xs bg-input border border-border rounded px-1.5 py-0.5 w-12 text-right focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            />
+            <span className="font-mono">{settings.ringThresholdDb}dB</span>
           </div>
           <Slider
             value={[settings.ringThresholdDb]}
@@ -235,7 +220,6 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Growth with manual input */}
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
@@ -249,15 +233,7 @@ export function KillTheRing() {
                 </TooltipContent>
               </Tooltip>
             </div>
-            <input
-              type="number"
-              min={0.5}
-              max={8}
-              step={0.5}
-              value={settings.growthRateThreshold.toFixed(1)}
-              onChange={(e) => handleSettingsChange({ growthRateThreshold: parseFloat(e.target.value) || settings.growthRateThreshold })}
-              className="font-mono text-xs bg-input border border-border rounded px-1.5 py-0.5 w-12 text-right focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            />
+            <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
           </div>
           <Slider
             value={[settings.growthRateThreshold]}
@@ -316,8 +292,8 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Gain meter — desktop only (now wider) */}
-        <div className="hidden md:flex items-center justify-center flex-1 sm:flex-none min-w-0 max-w-lg">
+        {/* Center: Gain meter — desktop only */}
+        <div className="hidden md:flex items-center justify-center flex-1 sm:flex-none min-w-0">
           <InputMeterSlider
             value={settings.inputGainDb}
             onChange={(v) => handleSettingsChange({ inputGainDb: v })}

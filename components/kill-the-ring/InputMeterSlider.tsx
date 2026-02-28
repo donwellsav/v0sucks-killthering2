@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect } from 'react'
 
 interface InputMeterSliderProps {
   value: number
@@ -25,10 +25,7 @@ export function InputMeterSlider({
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
   const isDragging = useRef(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [inputValue, setInputValue] = useState(String(value))
 
   // Normalize level to 0-1 range
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
@@ -99,34 +96,8 @@ export function InputMeterSlider({
     onChange(newValue)
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value)
-  }
-
-  const handleInputBlur = () => {
-    const parsed = parseInt(inputValue, 10)
-    if (!isNaN(parsed)) {
-      const clamped = Math.max(min, Math.min(max, parsed))
-      onChange(clamped)
-      setInputValue(String(clamped))
-    } else {
-      setInputValue(String(value))
-    }
-    setIsEditing(false)
-  }
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleInputBlur()
-    } else if (e.key === 'Escape') {
-      setInputValue(String(value))
-      setIsEditing(false)
-    }
-  }
-
   // Mouse handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isEditing) return
     isDragging.current = true
     updateValueFromX(e.clientX)
   }
@@ -142,7 +113,6 @@ export function InputMeterSlider({
 
   // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isEditing) return
     isDragging.current = true
     updateValueFromX(e.touches[0].clientX)
   }
@@ -170,8 +140,8 @@ export function InputMeterSlider({
     }
   }, [])
 
-  // Canvas logical width: make it much wider now
-  const canvasLogicalWidth = fullWidth ? 480 : compact ? 200 : 240
+  // Canvas logical width: use a larger size when fullWidth so the drawing is sharp
+  const canvasLogicalWidth = fullWidth ? 320 : compact ? 140 : 112
 
   return (
     <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''} ${compact ? 'gap-1.5' : ''}`}>
@@ -180,7 +150,7 @@ export function InputMeterSlider({
       </span>
       <div
         ref={sliderRef}
-        className={`relative rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : compact ? 'flex-1 h-4' : 'flex-1 sm:w-64 h-5'}`}
+        className={`relative rounded cursor-ew-resize overflow-hidden ${fullWidth ? 'flex-1' : compact ? 'flex-1 h-4' : 'w-28 h-5'}`}
         style={{ touchAction: 'none' }}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
@@ -202,35 +172,9 @@ export function InputMeterSlider({
           className="w-full h-full"
         />
       </div>
-      
-      {/* Manual input field */}
-      {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onBlur={handleInputBlur}
-          onKeyDown={handleInputKeyDown}
-          autoFocus
-          className={`font-mono text-center text-foreground bg-input border border-primary rounded px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-            compact ? 'text-[8px] w-10' : 'text-xs w-12'
-          }`}
-        />
-      ) : (
-        <span
-          onClick={() => {
-            setIsEditing(true)
-            setInputValue(String(value))
-          }}
-          className={`font-mono text-right text-foreground cursor-text hover:text-primary transition-colors ${
-            compact ? 'text-[8px] w-8' : 'text-xs w-10'
-          }`}
-          title="Click to edit"
-        >
-          {value > 0 ? '+' : ''}{value}dB
-        </span>
-      )}
+      <span className={`font-mono text-right text-foreground ${compact ? 'text-[8px] w-8' : 'text-xs w-10'}`}>
+        {value > 0 ? '+' : ''}{value}dB
+      </span>
     </div>
   )
 }
