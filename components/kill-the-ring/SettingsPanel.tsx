@@ -144,17 +144,17 @@ export function SettingsPanel({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Boost</span>
-                  <span className="text-xs font-mono">+{settings.inputGainDb}dB</span>
+                  <span className="text-xs font-mono">{settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb}dB</span>
                 </div>
                 <Slider
                   value={[settings.inputGainDb]}
                   onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
-                  min={0}
+                  min={-6}
                   max={30}
                   step={1}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Unity</span>
+                  <span>-6dB</span>
                   <span>+30dB</span>
                 </div>
               </div>
