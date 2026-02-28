@@ -44,6 +44,12 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
     return () => observer.disconnect()
   }, [])
 
+  // Render grid on mount
+  useEffect(() => {
+    const timer = setTimeout(() => render(), 100)
+    return () => clearTimeout(timer)
+  }, [render])
+
   // Update history
   useEffect(() => {
     if (!spectrum?.freqDb || !isRunning) return

@@ -54,6 +54,12 @@ export function GEQBarView({ advisories }: GEQBarViewProps) {
     return () => observer.disconnect()
   }, [])
 
+  // Render grid on mount
+  useEffect(() => {
+    const timer = setTimeout(() => render(), 100)
+    return () => clearTimeout(timer)
+  }, [render])
+
   const render = useCallback(() => {
     const canvas = canvasRef.current
     if (!canvas) return
