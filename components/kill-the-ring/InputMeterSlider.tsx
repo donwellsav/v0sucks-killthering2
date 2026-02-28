@@ -25,7 +25,6 @@ export function InputMeterSlider({
   const sliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [editing, setEditing] = useState(false)
-  const [editValue, setEditValue] = useState('')
 
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
 
@@ -202,7 +201,7 @@ export function InputMeterSlider({
       ) : (
         <button
           className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[8px] w-9' : 'text-xs w-12'}`}
-          onClick={() => { setEditing(true); setEditValue(String(value)) }}
+          onClick={() => setEditing(true)}
           onWheel={(e) => {
             e.preventDefault()
             onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))

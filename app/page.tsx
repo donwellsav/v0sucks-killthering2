@@ -1,5 +1,5 @@
-import { KillTheRingApp } from '@/components/kill-the-ring/KillTheRing'
+import { KillTheRing } from '@/components/kill-the-ring/KillTheRing'
 
 export default function Page() {
-  return <KillTheRingApp />
+  return <KillTheRing />
 }

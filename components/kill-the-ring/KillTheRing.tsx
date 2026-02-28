@@ -30,7 +30,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 // Force cache rebuild - timestamp 1740754800000
-export function KillTheRingApp() {
+export function KillTheRing() {
   const {
     isRunning,
     error,
