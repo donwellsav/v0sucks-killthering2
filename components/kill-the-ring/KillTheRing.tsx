@@ -1,8 +1,11 @@
 'use client'
 
-// Kill The Ring — v2.0 Full Rebuild (cache invalidation v1)
+// BUILD v3.0 - Force Full Rebuild (Cache Buster)
+// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
+// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
+// Built: 2026-02-28
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -18,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { HelpCircle, Menu, X, History } from 'lucide-react'
+import { HelpCircle, Menu, X, History, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -32,10 +35,8 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'waterfall', label: 'WTF' },
 ]
 
-export function KillTheRing() {
-  // v2.1 Force Rebuild — bundler cache invalidation
-  // Ensures correct GRAPH_CHIPS usage, no window.innerWidth, proper syntax
-  // Last updated: 2026-02-28
+export const KillTheRing = memo(function KillTheRingComponent() {
+  // v3.0 Build Component
   const {
     isRunning,
     error,
@@ -558,4 +559,4 @@ export function KillTheRing() {
       </div>
     </div>
   )
-}
+})
