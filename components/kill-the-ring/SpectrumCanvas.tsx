@@ -119,11 +119,16 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
       const hzPerBin = spectrum.sampleRate / spectrum.fftSize
       const n = freqDb.length
 
-      // Gradient fill
+      // Broadcast-style amplitude gradient: green (-100dB) → yellow (-18dB) → red (0dB)
+      // y=0 is 0dB (top/red), y=plotHeight is RTA_DB_MIN (bottom/green)
+      // -6dB  = 6/100  = 0.06 from top → red zone start
+      // -18dB = 18/100 = 0.18 from top → yellow zone start
       const gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
-      gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)')
-      gradient.addColorStop(0.5, 'rgba(16, 185, 129, 0.3)')
-      gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)')
+      gradient.addColorStop(0,    'rgba(239, 68,  68,  0.85)') // red   — 0 dB
+      gradient.addColorStop(0.06, 'rgba(239, 68,  68,  0.80)') // red   — -6 dB
+      gradient.addColorStop(0.18, 'rgba(234, 179, 8,   0.75)') // yellow — -18 dB
+      gradient.addColorStop(0.85, 'rgba(34,  197, 94,  0.50)') // green fade
+      gradient.addColorStop(1,    'rgba(34,  197, 94,  0.04)') // green — noise floor
 
       ctx.beginPath()
       ctx.moveTo(0, plotHeight)
