@@ -49,6 +49,7 @@ export function KillTheRing() {
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobileShowGraph, setMobileShowGraph] = useState(false) // Default: show controls+issues
 
   // Stable ref — never changes reference across renders
   const loggerRef = useRef(getEventLogger())
@@ -334,6 +335,29 @@ export function KillTheRing() {
             {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
 
+          {/* Mobile: Toggle graph view */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMobileShowGraph(!mobileShowGraph)}
+            className="lg:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            aria-label={mobileShowGraph ? 'Show controls' : 'Show graph'}
+            title={mobileShowGraph ? 'Show controls' : 'Show graph'}
+          >
+            {mobileShowGraph ? (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="12 3 20 7.46 20 16.91 12 21 4 16.55 4 7"/>
+                <polyline points="12 12.46 20 7.46"/>
+                <polyline points="12 12.46 12 21"/>
+                <polyline points="12 12.46 4 7.46"/>
+              </svg>
+            )}
+          </Button>
+
           {/* Mobile hamburger — right side */}
           <Button
             variant="ghost"
@@ -429,55 +453,88 @@ export function KillTheRing() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar — desktop only, collapsible */}
-        {sidebarOpen && (
-          <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
-            <div className="p-3 border-b border-border space-y-3">
+        {/* Mobile: Controls + Issues panel (default view) — show when not viewing graph */}
+        {!mobileShowGraph && (
+          <div className="lg:hidden flex-1 flex flex-col overflow-hidden bg-background">
+            {/* Compact input gain section */}
+            <div className="border-b border-border p-2 flex-shrink-0 bg-card/50">
+              <InputMeterSlider
+                value={settings.inputGainDb}
+                onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+                level={inputLevel}
+                compact
+              />
+            </div>
+
+            {/* Detection controls */}
+            <div className="border-b border-border p-3 flex-shrink-0 bg-card/50 overflow-y-auto max-h-48">
               <DetectionControls />
             </div>
 
-            <div className="p-3">
+            {/* Active issues list */}
+            <div className="flex-1 overflow-y-auto p-3">
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
               </h2>
               <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
             </div>
-          </aside>
+          </div>
         )}
 
-        {/* Main Visualization Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-
-          {/* Large Panel */}
-          <div className="flex-1 min-h-0 p-1.5 sm:p-2 md:p-3 pb-1 sm:pb-1.5">
-            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
-              {/* Panel header with graph switcher */}
-              <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
-                <div className="flex items-center gap-1">
-                  {GRAPH_CHIPS.map((chip) => (
-                    <button
-                      key={chip.value}
-                      onClick={() => setActiveGraph(chip.value)}
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-                        activeGraph === chip.value
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
+        {/* Graph view — shown when mobileShowGraph is true on mobile, always shown on desktop */}
+        {(mobileShowGraph || window.innerWidth >= 1024) && (
+          <>
+            {/* Left Sidebar — desktop only, collapsible */}
+            {sidebarOpen && (
+              <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
+                <div className="p-3 border-b border-border space-y-3">
+                  <DetectionControls />
                 </div>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap">
-                  {isRunning && spectrum?.noiseFloorDb != null
-                    ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
-                    : 'Ready'}
-                </span>
-              </div>
 
-              {/* Graph area with crossfade */}
-              <div className="relative h-[calc(100%-24px)]">
+                <div className="p-3">
+                  <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                    <span>Active Issues</span>
+                    <span className="text-primary font-mono">{advisories.length}</span>
+                  </h2>
+                  <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+                </div>
+              </aside>
+            )}
+
+            {/* Main Visualization Area */}
+            <main className="flex-1 flex flex-col overflow-hidden">
+
+              {/* Large Panel */}
+              <div className="flex-1 min-h-0 p-1.5 sm:p-2 md:p-3 pb-1 sm:pb-1.5">
+                <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
+                  {/* Panel header with graph switcher */}
+                  <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
+                    <div className="flex items-center gap-1">
+                      {GRAPH_CHIPS.map((chip) => (
+                        <button
+                          key={chip.value}
+                          onClick={() => setActiveGraph(chip.value)}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                            activeGraph === chip.value
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                          }`}
+                        >
+                          {chip.label}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap">
+                      {isRunning && spectrum?.noiseFloorDb != null
+                        ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
+                        : 'Ready'}
+                    </span>
+                  </div>
+
+                  {/* Graph area with crossfade */}
+                  <div className="relative h-[calc(100%-24px)]">
+                    <div classNa... [content continues]
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                   <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
@@ -534,6 +591,8 @@ export function KillTheRing() {
           </div>
 
         </main>
+          </>
+        )}
       </div>
     </div>
   )
