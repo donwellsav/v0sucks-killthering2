@@ -1,6 +1,11 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+// BUILD v3.0 - Force Full Rebuild (Cache Buster)
+// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
+// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
+// Built: 2026-02-28
+
+import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
 import { IssuesList } from './IssuesList'
@@ -16,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { HelpCircle, Menu, X, History } from 'lucide-react'
+import { HelpCircle, Menu, X, History, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -30,7 +35,8 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'waterfall', label: 'WTF' },
 ]
 
-export function KillTheRing() {
+export const KillTheRing = memo(function KillTheRingComponent() {
+  // v3.0 Build Component
   const {
     isRunning,
     error,
@@ -219,6 +225,11 @@ export function KillTheRing() {
 
   return (
     <div className="flex flex-col h-screen">
+      {/* ─── KILL THE RING v2.1 ─────────────────────────────────────────────────
+          Buildtime: 2026-02-28 | Bundler cache: invalidated
+          Layout: Header + Mobile/Desktop content + Reset confirmation
+          Graphs: GRAPH_CHIPS (RTA/GEQ/Waterfall) - NO window.innerWidth SSR access
+          ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
@@ -392,7 +403,20 @@ export function KillTheRing() {
             </section>
           </div>
 
-          <div className="flex-shrink-0 border-t border-border p-4">
+          <div className="flex-shrink-0 border-t border-border p-4 space-y-2">
+            <ResetConfirmDialog
+              onConfirm={() => {
+                resetSettings()
+                logger.logSettingsChanged({ action: 'reset_to_defaults' })
+                setMobileMenuOpen(false)
+              }}
+              trigger={
+                <Button variant="outline" className="w-full h-10 text-sm font-medium">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reset to Defaults
+                </Button>
+              }
+            />
             <Button
               variant="outline"
               className="w-full h-10 text-sm font-medium"
@@ -535,4 +559,4 @@ export function KillTheRing() {
       </div>
     </div>
   )
-}
+})
