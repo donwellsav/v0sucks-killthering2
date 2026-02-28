@@ -25,9 +25,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Settings, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
-import { ResetConfirmDialog } from './ResetConfirmDialog'
 
 interface SettingsPanelProps {
   settings: DetectorSettings
@@ -68,20 +67,10 @@ export function SettingsPanel({
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Advanced Settings
-            </DialogTitle>
-            <ResetConfirmDialog
-              onConfirm={onReset}
-              trigger={
-                <Button variant="ghost" size="sm" className="h-8 px-2 gap-1.5 text-xs" title="Reset all settings to defaults">
-                  Reset
-                </Button>
-              }
-            />
-          </div>
+          <DialogTitle className="text-lg flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Advanced Settings
+          </DialogTitle>
           <DialogDescription className="text-xs">
             Analysis engine and display preferences. Detection controls are in the sidebar.
           </DialogDescription>
@@ -261,10 +250,10 @@ export function SettingsPanel({
             </Section>
 
             <div className="pt-3 border-t border-border">
-              <ResetConfirmDialog
-                onConfirm={onReset}
-                variant="full"
-              />
+              <Button variant="outline" size="sm" onClick={onReset} className="w-full">
+                <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                Reset to PA Defaults
+              </Button>
               <p className="text-[9px] text-muted-foreground text-center mt-2">
                 Restores aggressive detection for corporate/conference PA
               </p>
