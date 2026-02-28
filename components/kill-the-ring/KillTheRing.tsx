@@ -15,13 +15,14 @@ import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { HelpCircle, Menu, X } from 'lucide-react'
+import { HelpCircle, Menu, SlidersHorizontal, X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
 type GraphView = 'rta' | 'geq' | 'waterfall'
+type MobilePage = 'controls' | 'graph'
 
 const GRAPH_LABELS: Record<GraphView, string> = {
   rta: 'RTA Spectrum',
@@ -47,29 +48,14 @@ export function KillTheRing() {
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mobilePage, setMobilePage] = useState<MobilePage>('controls')
 
   const logger = getEventLogger()
 
-  // Lock body scroll when mobile menu is open
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [mobileMenuOpen])
-
-  // Log when analysis starts
+  // Log when analysis starts/stops
   useEffect(() => {
     if (isRunning) {
-      logger.logAnalysisStarted({
-        mode: settings.mode,
-        fftSize: settings.fftSize,
-      })
+      logger.logAnalysisStarted({ mode: settings.mode, fftSize: settings.fftSize })
     } else {
       logger.logAnalysisStopped()
     }
@@ -99,12 +85,18 @@ export function KillTheRing() {
     logger.logSettingsChanged({ action: 'reset_to_defaults' })
   }
 
+  // Switch to graph page and set graph view simultaneously
+  const handlePillSelect = (graph: GraphView) => {
+    setActiveGraph(graph)
+    setMobilePage('graph')
+  }
+
   const inputLevel = spectrum?.peak ?? -60
 
   // The two graphs that appear in the small bottom row (everything except active)
   const smallGraphs = (['rta', 'geq', 'waterfall'] as GraphView[]).filter(g => g !== activeGraph)
 
-  // Shared detection controls — used in both sidebar and mobile overlay
+  // Shared detection controls — used in both sidebar and mobile controls page
   const DetectionControls = () => (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-3">
@@ -193,10 +185,10 @@ export function KillTheRing() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Header */}
+      {/* ── Header ── */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
 
-        {/* Left: Logo — doubles as start/stop button */}
+        {/* Left: Logo — doubles as start/stop */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
             <TooltipProvider delayDuration={400}>
@@ -205,11 +197,9 @@ export function KillTheRing() {
                   <button
                     onClick={isRunning ? stop : start}
                     aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                    className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                    className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full active:scale-95 transition-transform"
                   >
-                    {/* Static border ring */}
                     <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
-                    {/* Pulsing ring — only when running */}
                     {isRunning && (
                       <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
                     )}
@@ -247,7 +237,7 @@ export function KillTheRing() {
           />
         </div>
 
-        {/* Right: Info + Actions + Hamburger */}
+        {/* Right: Info + Actions */}
         <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
           <span className="font-mono text-[9px] sm:text-[10px] hidden lg:inline">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -258,7 +248,31 @@ export function KillTheRing() {
             </span>
           )}
 
-          {/* These three are icon-only on mobile */}
+          {/* Controls return icon — only visible on mobile when on the graph page */}
+          {mobilePage === 'graph' && (
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setMobilePage('controls')}
+                    aria-label="Back to controls"
+                    className="lg:hidden relative h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    {advisories.length > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] flex items-center justify-center bg-primary text-primary-foreground text-[9px] font-bold rounded-full px-0.5 leading-none">
+                        {advisories.length > 99 ? '99+' : advisories.length}
+                      </span>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Back to controls
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           <LogsViewer />
           <HelpMenu />
           <SettingsPanel
@@ -277,92 +291,8 @@ export function KillTheRing() {
           >
             {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
-
-          {/* Mobile hamburger — right side */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-            aria-label="Open menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
         </div>
       </header>
-
-      {/* Mobile full-screen overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-background flex flex-col lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Controls menu"
-        >
-          {/* Overlay header bar */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-              <span className="text-sm font-semibold text-foreground">Controls</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMobileMenuOpen(false)}
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-
-          {/* Scrollable overlay content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Input Gain section */}
-            <section>
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
-              <InputMeterSlider
-                value={settings.inputGainDb}
-                onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-                level={inputLevel}
-                fullWidth
-              />
-            </section>
-
-            <div className="border-t border-border" />
-
-            {/* Detection controls section */}
-            <section>
-              <DetectionControls />
-            </section>
-
-            <div className="border-t border-border" />
-
-            {/* Active Issues section */}
-            <section>
-              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
-                <span>Active Issues</span>
-                <span className="text-primary font-mono">{advisories.length}</span>
-              </h2>
-              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
-            </section>
-          </div>
-
-          {/* Overlay footer: close button */}
-          <div className="flex-shrink-0 border-t border-border p-4">
-            <Button
-              variant="outline"
-              className="w-full h-10 text-sm font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Done
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Error Banner */}
       {error && (
@@ -371,15 +301,15 @@ export function KillTheRing() {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* ── Main Content ── */}
       <div className="flex flex-1 overflow-hidden">
+
         {/* Left Sidebar — desktop only, collapsible */}
         {sidebarOpen && (
           <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border overflow-y-auto bg-card/50 flex-col">
             <div className="p-3 border-b border-border space-y-3">
               <DetectionControls />
             </div>
-
             <div className="p-3">
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
@@ -390,16 +320,117 @@ export function KillTheRing() {
           </aside>
         )}
 
-        {/* Main Visualization Area */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        {/* ── Mobile: Controls page (default) ── */}
+        {mobilePage === 'controls' && (
+          <div className="lg:hidden flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Input Gain */}
+              <section>
+                <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
+                <InputMeterSlider
+                  value={settings.inputGainDb}
+                  onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+                  level={inputLevel}
+                  fullWidth
+                />
+              </section>
+
+              <div className="border-t border-border" />
+
+              {/* Detection controls */}
+              <section>
+                <DetectionControls />
+              </section>
+
+              <div className="border-t border-border" />
+
+              {/* Active Issues */}
+              <section>
+                <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                  <span>Active Issues</span>
+                  <span className="text-primary font-mono">{advisories.length}</span>
+                </h2>
+                <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+              </section>
+            </div>
+
+            {/* Graph pill switcher — tap a pill to switch to graph page */}
+            <div className="flex-shrink-0 flex items-center gap-2 px-4 py-3 border-t border-border bg-card/50">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1 whitespace-nowrap">View</span>
+              {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
+                <button
+                  key={graph}
+                  onClick={() => handlePillSelect(graph)}
+                  className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                    activeGraph === graph
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                  }`}
+                >
+                  {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Mobile: Graph page ── */}
+        {mobilePage === 'graph' && (
+          <main className="lg:hidden flex-1 flex flex-col overflow-hidden">
+            {/* Large Panel */}
+            <div className="flex-1 min-h-0 p-1.5 pb-1">
+              <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-1">
+                  <span className="text-[10px] font-medium text-foreground">{GRAPH_LABELS[activeGraph]}</span>
+                  <span className="text-[9px] text-muted-foreground font-mono whitespace-nowrap">
+                    {isRunning && spectrum?.noiseFloorDb != null
+                      ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
+                      : 'Ready'}
+                  </span>
+                </div>
+                <div className="relative h-[calc(100%-24px)]">
+                  <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                    <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
+                  </div>
+                  <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                    <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
+                  </div>
+                  <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                    <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Graph pill switcher — switch graph type or stay on graph page */}
+            <div className="flex-shrink-0 flex items-center gap-2 px-4 py-3 border-t border-border bg-card/50">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1 whitespace-nowrap">View</span>
+              {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
+                <button
+                  key={graph}
+                  onClick={() => setActiveGraph(graph)}
+                  className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                    activeGraph === graph
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                  }`}
+                >
+                  {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
+                </button>
+              ))}
+            </div>
+          </main>
+        )}
+
+        {/* ── Desktop: Full visualization area ── */}
+        <main className="hidden lg:flex flex-1 flex-col overflow-hidden">
 
           {/* Large Panel */}
-          <div className="flex-1 min-h-0 p-1.5 sm:p-2 md:p-3 pb-1 sm:pb-1.5">
+          <div className="flex-1 min-h-0 p-2 md:p-3 pb-1 md:pb-1.5">
             <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden">
-              {/* Panel header with graph switcher */}
               <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-1">
                 <Select value={activeGraph} onValueChange={(v) => setActiveGraph(v as GraphView)}>
-                  <SelectTrigger className="h-6 w-auto sm:w-32 md:w-44 text-[9px] sm:text-[10px] border-0 bg-transparent p-0 gap-1 font-medium text-foreground focus:ring-0 shadow-none">
+                  <SelectTrigger className="h-6 w-auto sm:w-32 md:w-44 text-[10px] border-0 bg-transparent p-0 gap-1 font-medium text-foreground focus:ring-0 shadow-none">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -408,14 +439,13 @@ export function KillTheRing() {
                     <SelectItem value="waterfall" className="text-xs">Waterfall</SelectItem>
                   </SelectContent>
                 </Select>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap">
+                <span className="text-[10px] text-muted-foreground font-mono whitespace-nowrap">
                   {isRunning && spectrum?.noiseFloorDb != null
                     ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
                     : 'Ready'}
                 </span>
               </div>
 
-              {/* Graph area with crossfade */}
               <div className="relative h-[calc(100%-24px)]">
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                   <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
@@ -430,36 +460,19 @@ export function KillTheRing() {
             </div>
           </div>
 
-          {/* Mobile graph pill switcher — below main canvas, hidden on sm+ */}
-          <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5">
-            {(['rta', 'geq', 'waterfall'] as GraphView[]).map((graph) => (
-              <button
-                key={graph}
-                onClick={() => setActiveGraph(graph)}
-                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
-                  activeGraph === graph
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                }`}
-              >
-                {graph === 'rta' ? 'RTA' : graph === 'geq' ? 'GEQ' : 'WTF'}
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom Row — the two non-active graphs — desktop/tablet only */}
-          <div className="hidden sm:flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
+          {/* Bottom Row — the two non-active graphs */}
+          <div className="flex gap-1.5 md:gap-3 p-1.5 md:p-3 pt-1 md:pt-1.5 h-40 sm:h-48 md:h-56">
             {smallGraphs.map((graph) => (
               <button
                 key={graph}
                 onClick={() => setActiveGraph(graph)}
                 className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden text-left hover:border-primary/50 transition-colors group"
               >
-                <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 border-b border-border bg-muted/20">
-                  <span className="text-[8px] sm:text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                <div className="flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
+                  <span className="text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
                     {GRAPH_LABELS[graph]}
                   </span>
-                  <span className="text-[7px] sm:text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
+                  <span className="text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
                     click
                   </span>
                 </div>
