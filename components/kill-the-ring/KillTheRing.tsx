@@ -54,23 +54,20 @@ export function KillTheRing() {
           {/* Logo with Design */}
           <div className="flex items-center gap-3 pl-3 border-l border-border/50">
             {/* Circular Icon */}
-            <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="relative w-7 h-7 flex items-center justify-center flex-shrink-0">
               {/* Outer ring */}
-              <div className="absolute inset-0 rounded-full border-2 border-primary/60" />
+              <div className="absolute inset-0 rounded-full border-1.5 border-primary/60" />
               {/* Inner gradient circle */}
-              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-primary/40 to-primary/10" />
+              <div className="absolute inset-1.5 rounded-full bg-gradient-to-br from-primary/40 to-primary/10" />
               {/* Center dot */}
-              <div className="relative w-2 h-2 rounded-full bg-primary" />
+              <div className="relative w-1.5 h-1.5 rounded-full bg-primary" />
             </div>
             
             {/* Brand text */}
             <div className="flex flex-col gap-0.5">
               <div className="leading-tight">
-                <span className="text-sm font-black tracking-tight text-foreground">KILL</span>
-                <span className="text-sm font-black tracking-tight text-foreground ml-1">THE</span>
-              </div>
-              <div>
-                <span className="text-sm font-black tracking-tight text-primary">RING</span>
+                <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-sm font-black tracking-tight text-primary ml-1">RING</span>
               </div>
               <span className="text-[8px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
             </div>
