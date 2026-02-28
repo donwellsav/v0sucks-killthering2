@@ -38,8 +38,6 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
-          // Render grid after resize
-          setTimeout(() => render(), 0)
         }
       }
     })
@@ -110,6 +108,19 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
       ctx.beginPath()
       ctx.moveTo(0, floorY)
       ctx.lineTo(plotWidth, floorY)
+      ctx.stroke()
+      ctx.setLineDash([])
+    }
+
+    // Draw threshold
+    if (spectrum?.effectiveThresholdDb !== undefined) {
+      const threshY = ((RTA_DB_MAX - spectrum.effectiveThresholdDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
+      ctx.strokeStyle = VIZ_COLORS.THRESHOLD
+      ctx.lineWidth = 1
+      ctx.setLineDash([2, 2])
+      ctx.beginPath()
+      ctx.moveTo(0, threshY)
+      ctx.lineTo(plotWidth, threshY)
       ctx.stroke()
       ctx.setLineDash([])
     }
@@ -200,7 +211,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
       // Label
       ctx.fillStyle = color
-      ctx.font = '12px system-ui, sans-serif'
+      ctx.font = '10px system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -209,7 +220,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = '12px system-ui, sans-serif'
+    ctx.font = '10px system-ui, sans-serif'
 
     // Y-axis (dB)
     ctx.textAlign = 'right'

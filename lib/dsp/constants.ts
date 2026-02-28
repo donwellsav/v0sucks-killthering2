@@ -180,7 +180,7 @@ export const DEFAULT_SETTINGS = {
   holdTimeMs: 2000,
   noiseFloorDecay: 0.995,
   peakMergeCents: 50,
-  maxDisplayedIssues: 5,
+  maxDisplayedIssues: 8,
   eqPreset: 'surgical' as const,
   musicAware: false,
   inputGainDb: 12,
