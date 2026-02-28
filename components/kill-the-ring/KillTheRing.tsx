@@ -10,6 +10,7 @@ import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
+import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -128,11 +129,6 @@ export function KillTheRing() {
     updateSettings(newSettings)
     loggerRef.current.logSettingsChanged(newSettings)
   }, [updateSettings])
-
-  const handleResetSettings = () => {
-    resetSettings()
-    logger.logSettingsChanged({ action: 'reset_to_defaults' })
-  }
 
   const inputLevel = spectrum?.peak ?? -60
 
@@ -303,7 +299,10 @@ export function KillTheRing() {
           <SettingsPanel
             settings={settings}
             onSettingsChange={handleSettingsChange}
-            onReset={handleResetSettings}
+            onReset={() => {
+              resetSettings()
+              logger.logSettingsChanged({ action: 'reset_to_defaults' })
+            }}
           />
 
           {/* Mobile: toggle graph vs controls */}
