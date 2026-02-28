@@ -185,8 +185,30 @@ export class AudioAnalyzer {
       return
     }
 
-    // Create or update advisory
+    // Check if this frequency is a duplicate of an existing advisory (within merge tolerance)
+    // If so, skip creating a new advisory - keep the existing one to avoid clutter
     const existingAdvisoryId = this.trackToAdvisoryId.get(track.id)
+    if (!existingAdvisoryId) {
+      const duplicateAdvisory = this.findDuplicateAdvisory(track.trueFrequencyHz, track.id)
+      if (duplicateAdvisory) {
+        // This is a duplicate in a similar frequency range
+        // Keep the existing advisory (typically the louder/more severe one)
+        // unless this new one is more severe
+        const existingUrgency = this.getSeverityUrgency(duplicateAdvisory.severity)
+        const newUrgency = this.getSeverityUrgency(classification.severity)
+        
+        // Only replace if new one is more urgent, or same urgency but louder
+        if (newUrgency <= existingUrgency && track.trueAmplitudeDb <= duplicateAdvisory.trueAmplitudeDb) {
+          return
+        }
+        // Otherwise, remove the old one and continue to create the new one
+        this.advisories.delete(duplicateAdvisory.id)
+        this.trackToAdvisoryId.delete(duplicateAdvisory.trackId)
+        this.callbacks.onAdvisoryCleared?.(duplicateAdvisory.id)
+      }
+    }
+
+    // Create or update advisory
     const advisoryId = existingAdvisoryId ?? generateId()
 
     // track is a raw Track object with trueFrequencyHz, not TrackedPeak with frequency
@@ -318,6 +340,29 @@ export class AudioAnalyzer {
     }
 
     return false
+  }
+
+  /**
+   * Check if a frequency is a duplicate of an existing advisory within the merge tolerance
+   * Uses cents-based comparison (configurable via peakMergeCents setting)
+   * Returns the existing advisory if it's a duplicate (to potentially update it), null otherwise
+   */
+  private findDuplicateAdvisory(freqHz: number, excludeTrackId?: string): Advisory | null {
+    const mergeCents = this.settings.peakMergeCents // Default: 50 cents (~3%)
+    
+    for (const advisory of this.advisories.values()) {
+      // Skip if this is the same track (we handle updates separately)
+      if (excludeTrackId && advisory.trackId === excludeTrackId) continue
+      
+      // Calculate cents difference between frequencies
+      const centsDistance = Math.abs(1200 * Math.log2(freqHz / advisory.trueFrequencyHz))
+      
+      if (centsDistance <= mergeCents) {
+        return advisory
+      }
+    }
+
+    return null
   }
 }
 
