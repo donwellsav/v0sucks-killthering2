@@ -50,6 +50,7 @@ export function KillTheRing() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false) // Default: show controls+issues
+  const [isDesktop, setIsDesktop] = useState(false) // Track viewport size
 
   // Stable ref — never changes reference across renders
   const loggerRef = useRef(getEventLogger())
@@ -87,6 +88,16 @@ export function KillTheRing() {
       document.body.style.overflow = ''
     }
   }, [mobileMenuOpen])
+
+  // Detect desktop viewport
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   // Log when analysis starts; create/end DB session
   useEffect(() => {
@@ -483,7 +494,7 @@ export function KillTheRing() {
         )}
 
         {/* Graph view — shown when mobileShowGraph is true on mobile, always shown on desktop */}
-        {(mobileShowGraph || window.innerWidth >= 1024) && (
+        {(mobileShowGraph || isDesktop) && (
           <>
             {/* Left Sidebar — desktop only, collapsible */}
             {sidebarOpen && (
