@@ -243,7 +243,7 @@ export interface DetectorSettings {
   maxDisplayedIssues: number
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
-  inputGainDb: number // Software gain applied to analysis (-6 to +42 dB)
+  inputGainDb: number // Software gain applied to analysis (-6 to +30 dB)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
 }
 

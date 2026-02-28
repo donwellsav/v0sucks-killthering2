@@ -17,7 +17,7 @@ export function InputMeterSlider({
   onChange,
   level,
   min = -6,
-  max = 42,
+  max = 30,
   fullWidth = false,
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
