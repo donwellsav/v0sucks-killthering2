@@ -206,29 +206,6 @@ export function SettingsPanel({
               </div>
             </Section>
 
-            <Section 
-              title="Input Gain" 
-              tooltip="Digital boost applied before analysis. Increase if your signal is weak, decrease if clipping. Does not affect audio output, only analysis sensitivity."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Boost</span>
-                  <span className="text-xs font-mono">{settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb}dB</span>
-                </div>
-                <Slider
-                  value={[settings.inputGainDb]}
-                  onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
-                  min={-40}
-                  max={40}
-                  step={1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>-40dB</span>
-                  <span>0dB</span>
-                  <span>+40dB</span>
-                </div>
-              </div>
-            </Section>
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-5">
