@@ -42,6 +42,7 @@ const GRAPH_LABELS: Record<GraphView, string> = {
 }
 
 
+const MODE_LABELS: Record<OperationMode, string> = {
   feedbackHunt: 'Feedback Hunt',
   vocalRing:    'Vocal Ring',
   musicAware:   'Music-Aware',
