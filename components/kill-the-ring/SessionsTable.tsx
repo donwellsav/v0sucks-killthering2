@@ -2,8 +2,9 @@
 
 import { useTransition, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2 } from 'lucide-react'
+import { Trash2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import type { Session } from '@/lib/db/sessions'
 
 interface SessionsTableProps {
@@ -109,7 +110,11 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
               key={s.id}
               className={`border-b border-border last:border-0 hover:bg-muted/20 transition-colors group ${i % 2 === 0 ? '' : 'bg-muted/5'}`}
             >
-              <td className="px-4 py-3 font-mono text-foreground/80">{formatDate(s.started_at)}</td>
+              <td className="px-4 py-3 font-mono text-foreground/80">
+                <Link href={`/sessions/${s.id}`} className="hover:text-foreground hover:underline underline-offset-2">
+                  {formatDate(s.started_at)}
+                </Link>
+              </td>
               <td className="px-4 py-3 text-foreground">{MODE_LABELS[s.mode] ?? s.mode}</td>
               <td className="px-4 py-3 font-mono text-muted-foreground">{s.fft_size}</td>
               <td className="px-4 py-3 font-mono text-muted-foreground">{formatDuration(s.started_at, s.ended_at)}</td>
@@ -131,7 +136,12 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
                 )}
               </td>
               <td className="px-2 py-3 text-right">
-                <DeleteButton id={s.id} />
+                <div className="flex items-center justify-end gap-1">
+                  <Button variant="ghost" size="sm" asChild className="h-7 w-7 p-0 text-muted-foreground/40 hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity" aria-label="View session detail">
+                    <Link href={`/sessions/${s.id}`}><ChevronRight className="w-3.5 h-3.5" /></Link>
+                  </Button>
+                  <DeleteButton id={s.id} />
+                </div>
               </td>
             </tr>
           ))}
@@ -143,7 +153,9 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
         {sessions.map((s) => (
           <div key={s.id} className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground">{formatDate(s.started_at)}</span>
+              <Link href={`/sessions/${s.id}`} className="text-xs font-medium text-foreground hover:underline underline-offset-2">
+                {formatDate(s.started_at)}
+              </Link>
               <div className="flex items-center gap-2">
                 {s.ended_at ? (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">Ended</span>

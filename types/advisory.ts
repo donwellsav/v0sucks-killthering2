@@ -246,6 +246,8 @@ export interface DetectorSettings {
   maxDisplayedIssues: number
   eqPreset: 'surgical' | 'heavy'
   musicAware: boolean
+  autoMusicAware: boolean // Auto-switch to music-aware mode based on signal level
+  autoMusicAwareHysteresisDb: number // dB above noise floor to trigger music-aware mode
   inputGainDb: number // Software gain applied to analysis (-40 to +40 dB)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
 }

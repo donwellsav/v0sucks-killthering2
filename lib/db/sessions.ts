@@ -144,3 +144,63 @@ export async function getSessionEvents(sessionId: string): Promise<SessionEventR
   `
   return rows as SessionEventRow[]
 }
+
+// ─── Frequency Histogram ──────────────────────────────────────────────────────
+
+export interface FrequencyBin {
+  bandHz: number
+  count: number
+  maxAmplitude: number
+  severities: Record<string, number>
+}
+
+// ISO 31-band frequencies — mirrors the client constant to avoid a shared import
+const ISO_BANDS = [
+  20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160,
+  200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600,
+  2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000,
+]
+
+function nearestIsoBand(hz: number): number {
+  let closest = ISO_BANDS[0]
+  let closestDist = Math.abs(hz - closest)
+  for (const band of ISO_BANDS) {
+    const dist = Math.abs(hz - band)
+    if (dist < closestDist) {
+      closestDist = dist
+      closest = band
+    }
+  }
+  return closest
+}
+
+export async function getSessionFrequencyStats(sessionId: string): Promise<FrequencyBin[]> {
+  const rows = await sql`
+    SELECT frequency, amplitude, severity
+    FROM session_events
+    WHERE session_id = ${sessionId}
+      AND event_type = 'issue_detected'
+      AND frequency IS NOT NULL
+    ORDER BY frequency ASC
+  `
+
+  const bins = new Map<number, FrequencyBin>()
+
+  for (const row of rows) {
+    const hz = row.frequency as number
+    const amp = (row.amplitude as number) ?? -60
+    const sev = (row.severity as string) ?? 'unknown'
+    const band = nearestIsoBand(hz)
+
+    const existing = bins.get(band)
+    if (existing) {
+      existing.count++
+      if (amp > existing.maxAmplitude) existing.maxAmplitude = amp
+      existing.severities[sev] = (existing.severities[sev] ?? 0) + 1
+    } else {
+      bins.set(band, { bandHz: band, count: 1, maxAmplitude: amp, severities: { [sev]: 1 } })
+    }
+  }
+
+  return Array.from(bins.values()).sort((a, b) => a.bandHz - b.bandHz)
+}
