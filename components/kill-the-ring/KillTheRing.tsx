@@ -1,4 +1,5 @@
 'use client'
+// Kill The Ring — v36 patched
 
 /**
  * Kill The Ring - Real-time feedback detection and EQ advisory

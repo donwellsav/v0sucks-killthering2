@@ -150,30 +150,38 @@ export function InputMeterSlider({
         Gain
       </span>
 
-      {/* Slider track */}
-      <div
-        ref={sliderRef}
-        className={`relative rounded cursor-ew-resize overflow-hidden flex-1 ${compact ? 'h-4' : 'h-5'}`}
-        style={{ touchAction: 'none' }}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        role="slider"
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={value}
-        aria-label="Input gain"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(max, value + 1))
-          if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(min, value - 1))
-        }}
-      >
-        <canvas
-          ref={canvasRef}
-          width={512}
-          height={compact ? 16 : 20}
-          className="w-full h-full"
-        />
+      {/* Slider track + 0dB label */}
+      <div className="relative flex-1 flex flex-col">
+        <div
+          ref={sliderRef}
+          className={`relative rounded cursor-ew-resize overflow-hidden w-full ${compact ? 'h-4' : 'h-5'}`}
+          style={{ touchAction: 'none' }}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          role="slider"
+          aria-valuemin={min}
+          aria-valuemax={max}
+          aria-valuenow={value}
+          aria-label="Input gain"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') onChange(Math.min(max, value + 1))
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') onChange(Math.max(min, value - 1))
+          }}
+        >
+          <canvas
+            ref={canvasRef}
+            width={512}
+            height={compact ? 16 : 20}
+            className="w-full h-full"
+          />
+        </div>
+        {/* 0dB unity label — positioned at the center (50%) of the range */}
+        {!compact && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-none">
+            <span className="text-[8px] text-muted-foreground/60 font-mono leading-none">0</span>
+          </div>
+        )}
       </div>
 
       {/* Clickable dB value — click to type, scroll/+/- to step */}

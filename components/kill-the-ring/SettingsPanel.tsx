@@ -172,13 +172,14 @@ export function SettingsPanel({
                 <Slider
                   value={[settings.inputGainDb]}
                   onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
-                  min={-6}
-                  max={42}
+                  min={-40}
+                  max={40}
                   step={1}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>-6dB</span>
-                  <span>+42dB</span>
+                  <span>-40dB</span>
+                  <span>0dB</span>
+                  <span>+40dB</span>
                 </div>
               </div>
             </Section>
