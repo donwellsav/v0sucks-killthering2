@@ -1,6 +1,8 @@
 'use client'
 
 import { useRef, useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 interface InputMeterSliderProps {
   value: number
@@ -24,7 +26,6 @@ export function InputMeterSlider({
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const sliderRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
-  const [editing, setEditing] = useState(false)
 
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
 
@@ -96,7 +97,6 @@ export function InputMeterSlider({
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (editing) return
     isDragging.current = true
     updateValueFromX(e.clientX)
   }
@@ -109,7 +109,6 @@ export function InputMeterSlider({
   const handleMouseUp = () => { isDragging.current = false }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (editing) return
     isDragging.current = true
     updateValueFromX(e.touches[0].clientX)
   }
@@ -133,12 +132,20 @@ export function InputMeterSlider({
       window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [editing])
+  }, [])
 
-  const commitEdit = (raw: string) => {
-    const parsed = parseInt(raw, 10)
-    if (!isNaN(parsed)) onChange(Math.max(min, Math.min(max, parsed)))
-    setEditing(false)
+  const clampValue = (val: number) => Math.max(min, Math.min(max, val))
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parsed = parseInt(e.target.value, 10)
+    if (!isNaN(parsed)) {
+      onChange(clampValue(parsed))
+    }
+  }
+
+  const handleStepper = (direction: 'up' | 'down') => {
+    const delta = direction === 'up' ? 1 : -1
+    onChange(clampValue(value + delta))
   }
 
   const valueLabel = `${value > 0 ? '+' : ''}${value}dB`
@@ -184,35 +191,44 @@ export function InputMeterSlider({
         )}
       </div>
 
-      {/* Value display — click to edit */}
-      {editing ? (
+      {/* Input + Stepper Controls */}
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Stepper Buttons */}
+        <div className="flex gap-0.5 bg-input rounded border border-border">
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`h-5 w-5 p-0 ${compact ? 'text-[8px]' : 'text-xs'}`}
+            onClick={() => handleStepper('down')}
+            disabled={value <= min}
+            title="Decrease gain by 1dB"
+          >
+            <ChevronDown className="w-3 h-3" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className={`h-5 w-5 p-0 ${compact ? 'text-[8px]' : 'text-xs'}`}
+            onClick={() => handleStepper('up')}
+            disabled={value >= max}
+            title="Increase gain by 1dB"
+          >
+            <ChevronUp className="w-3 h-3" />
+          </Button>
+        </div>
+
+        {/* Text Input */}
         <input
-          autoFocus
-          type="text"
-          defaultValue={String(value)}
-          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[8px] w-9 h-4' : 'text-xs w-12 h-5'}`}
-          onBlur={(e) => commitEdit(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
-            if (e.key === 'Escape') setEditing(false)
-            if (e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(max, value + 1)) }
-            if (e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(min, value - 1)) }
-          }}
+          type="number"
+          value={valueLabel}
+          onChange={handleInputChange}
+          min={min}
+          max={max}
+          step={1}
+          className={`font-mono text-center bg-input border border-border rounded text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring tabular-nums flex-shrink-0 ${compact ? 'text-[8px] w-9 h-4 px-0.5' : 'text-xs w-12 h-5 px-1'}`}
+          title="Enter gain in dB or click stepper buttons"
         />
-      ) : (
-        <button
-          className={`font-mono text-right text-foreground hover:text-primary transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[8px] w-9' : 'text-xs w-12'}`}
-          onClick={() => setEditing(true)}
-          onWheel={(e) => {
-            e.preventDefault()
-            onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
-          }}
-          title="Click to type, scroll to step ±1dB"
-          aria-label={`Input gain ${valueLabel}, click to edit`}
-        >
-          {valueLabel}
-        </button>
-      )}
+      </div>
     </div>
   )
 }
