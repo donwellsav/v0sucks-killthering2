@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import {
@@ -24,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Bot } from 'lucide-react'
 import type { DetectorSettings } from '@/types/advisory'
 
 interface SettingsPanelProps {
@@ -33,11 +34,29 @@ interface SettingsPanelProps {
   onReset: () => void
 }
 
+export interface AgentSettings {
+  model: string
+  temperature: number
+  systemPrompt: string
+}
+
+const DEFAULT_AGENT_SETTINGS: AgentSettings = {
+  model: 'openai/gpt-4o-mini',
+  temperature: 0.3,
+  systemPrompt:
+    'You are a live sound engineer assistant embedded in Kill The Ring, a real-time acoustic feedback detection tool. Interpret detected issues, explain EQ recommendations in plain language, and suggest workflow steps for the engineer.',
+}
+
 export function SettingsPanel({
   settings,
   onSettingsChange,
   onReset,
 }: SettingsPanelProps) {
+  const [agentSettings, setAgentSettings] = useState<AgentSettings>(DEFAULT_AGENT_SETTINGS)
+
+  const updateAgent = (patch: Partial<AgentSettings>) =>
+    setAgentSettings((prev) => ({ ...prev, ...patch }))
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -58,7 +77,7 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="analysis" className="gap-1.5 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
               Analysis
@@ -66,6 +85,10 @@ export function SettingsPanel({
             <TabsTrigger value="display" className="gap-1.5 text-xs">
               <Monitor className="w-3.5 h-3.5" />
               Display
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-1.5 text-xs">
+              <Bot className="w-3.5 h-3.5" />
+              Agent
             </TabsTrigger>
           </TabsList>
 
@@ -236,6 +259,76 @@ export function SettingsPanel({
               </p>
             </div>
           </TabsContent>
+
+          <TabsContent value="agent" className="mt-4 space-y-5">
+            <Section
+              title="Model"
+              tooltip="The AI model used by the assistant. GPT-4o Mini is fast and cost-efficient. GPT-4o offers higher reasoning for complex explanations. Claude Haiku is an Anthropic alternative."
+            >
+              <Select value={agentSettings.model} onValueChange={(v) => updateAgent({ model: v })}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai/gpt-4o-mini">GPT-4o Mini (fast, efficient)</SelectItem>
+                  <SelectItem value="openai/gpt-4o">GPT-4o (high reasoning)</SelectItem>
+                  <SelectItem value="anthropic/claude-haiku-4-5">Claude Haiku (Anthropic)</SelectItem>
+                  <SelectItem value="anthropic/claude-sonnet-4-5">Claude Sonnet (Anthropic)</SelectItem>
+                </SelectContent>
+              </Select>
+            </Section>
+
+            <Section
+              title="Temperature"
+              tooltip="Controls response creativity. 0.0-0.3 for precise, factual EQ advice. 0.5-0.7 for conversational explanations. Higher values may produce less reliable technical recommendations."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Value</span>
+                  <span className="text-xs font-mono">{agentSettings.temperature.toFixed(1)}</span>
+                </div>
+                <Slider
+                  value={[agentSettings.temperature]}
+                  onValueChange={([v]) => updateAgent({ temperature: v })}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Precise</span>
+                  <span>Creative</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="System Prompt"
+              tooltip="Instructions given to the AI before every conversation. Defines its role, tone, and context. Changes take effect on the next message sent."
+            >
+              <textarea
+                value={agentSettings.systemPrompt}
+                onChange={(e) => updateAgent({ systemPrompt: e.target.value })}
+                rows={5}
+                className="w-full rounded-md border border-border bg-input px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none leading-relaxed"
+                placeholder="Describe the assistant's role and behavior..."
+              />
+              <p className="text-[9px] text-muted-foreground">
+                {agentSettings.systemPrompt.length} characters
+              </p>
+            </Section>
+
+            <div className="pt-3 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAgentSettings(DEFAULT_AGENT_SETTINGS)}
+                className="w-full"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                Reset Agent Defaults
+              </Button>
+            </div>
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
@@ -270,3 +363,4 @@ function Section({ title, tooltip, children }: SectionProps) {
     </TooltipProvider>
   )
 }
+
