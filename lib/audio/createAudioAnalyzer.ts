@@ -320,7 +320,7 @@ export class AudioAnalyzer {
     // Check if frequency is within existing issue's bandwidth + margin
     for (const advisory of this.advisories.values()) {
       const freqDiff = Math.abs(freqHz - advisory.trueFrequencyHz)
-      const bandwidth = Math.max(advisory.bandwidthHz * 1.5, rangeHz) // At least 100 Hz or 1.5x bandwidth
+      const bandwidth = Math.max(advisory.bandwidthHz * 1.5, rangeHz)
       if (freqDiff < bandwidth) {
         return true
       }
@@ -330,7 +330,7 @@ export class AudioAnalyzer {
 }
 
 /**
- * Factory function for creating an audio analyzer - v2
+ * Factory function for creating an audio analyzer
  */
 export function createAudioAnalyzer(
   settings?: Partial<DetectorSettings>,
