@@ -516,7 +516,7 @@ export function KillTheRing() {
               >
                 <div className="flex items-center justify-between px-1.5 sm:px-2 py-1 border-b border-border bg-muted/20">
                   <span className="text-[8px] sm:text-[10px] font-medium text-foreground group-hover:text-primary transition-colors truncate">
-                    {GRAPH_LABELS[graph]}
+                    {GRAPH_CHIPS.find((c) => c.value === graph)?.label ?? graph.toUpperCase()}
                   </span>
                   <span className="text-[7px] sm:text-[9px] text-muted-foreground/60 group-hover:text-primary/60 transition-colors whitespace-nowrap ml-1">
                     click
