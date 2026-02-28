@@ -126,19 +126,18 @@ function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
           )}
           {hasEq && onApply && (
             <Button
-              variant={isApplied ? 'ghost' : 'outline'}
+              variant="ghost"
               size="sm"
               onClick={() => !isApplied && onApply(advisory)}
               disabled={isApplied}
               aria-label={isApplied ? 'Cut already applied' : `Apply cut at ${freqStr}Hz`}
-              className={`h-5 px-1.5 text-[9px] font-medium gap-0.5 transition-colors ${
+              className={`h-5 w-5 p-0 transition-colors ${
                 isApplied
-                  ? 'text-primary border-primary/30 cursor-default'
-                  : 'text-muted-foreground hover:text-primary hover:border-primary/60'
+                  ? 'text-primary cursor-default'
+                  : 'text-muted-foreground hover:text-primary'
               }`}
             >
-              <CheckCircle2 className="w-2.5 h-2.5" />
-              {isApplied ? 'Applied' : 'Apply'}
+              <CheckCircle2 className="w-3 h-3" />
             </Button>
           )}
         </div>
