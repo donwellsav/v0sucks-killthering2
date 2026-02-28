@@ -330,7 +330,7 @@ export class AudioAnalyzer {
 }
 
 /**
- * Factory function for creating an audio analyzer
+ * Factory function for creating an audio analyzer - v2
  */
 export function createAudioAnalyzer(
   settings?: Partial<DetectorSettings>,
