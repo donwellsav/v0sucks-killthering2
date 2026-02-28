@@ -15,7 +15,7 @@ import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
-import { Mic, MicOff, HelpCircle, Menu, X } from 'lucide-react'
+import { HelpCircle, Menu, X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -196,15 +196,37 @@ export function KillTheRing() {
       {/* Header */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
 
-        {/* Left: Logo */}
+        {/* Left: Logo — doubles as start/stop button */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
-            <div className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0">
-              <div className="absolute inset-0 rounded-full border border-primary/60" />
-              <svg className="w-4 sm:w-5 h-4 sm:h-5 relative z-10 text-primary" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-            </div>
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={isRunning ? stop : start}
+                    aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+                    className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                  >
+                    {/* Static border ring */}
+                    <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
+                    {/* Pulsing ring — only when running */}
+                    {isRunning && (
+                      <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
+                    )}
+                    <svg
+                      className={`w-4 sm:w-5 h-4 sm:h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/70 hover:text-primary'}`}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {isRunning ? 'Stop analysis' : 'Start analysis'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             <div className="hidden sm:flex flex-col gap-0.5">
               <div className="leading-none">
@@ -216,29 +238,13 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Start + Meter + Mode */}
-        <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap sm:flex-nowrap justify-center flex-1 sm:flex-none min-w-0">
-          <Button
-            onClick={isRunning ? stop : start}
-            variant={isRunning ? 'destructive' : 'default'}
-            size="sm"
-            className="h-7 px-2 sm:px-3 text-xs font-medium flex-shrink-0"
-          >
-            {isRunning ? (
-              <><MicOff className="w-3 sm:w-3.5 h-3 sm:h-3.5 mr-0 sm:mr-1.5" /><span className="hidden sm:inline">Stop</span></>
-            ) : (
-              <><Mic className="w-3 sm:w-3.5 h-3 sm:h-3.5 mr-0 sm:mr-1.5" /><span className="hidden sm:inline">Start</span></>
-            )}
-          </Button>
-
-          {/* Gain meter — desktop only */}
-          <div className="hidden md:block">
-            <InputMeterSlider
-              value={settings.inputGainDb}
-              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-              level={inputLevel}
-            />
-          </div>
+        {/* Center: Gain meter — desktop only */}
+        <div className="hidden md:flex items-center justify-center flex-1 sm:flex-none min-w-0">
+          <InputMeterSlider
+            value={settings.inputGainDb}
+            onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+            level={inputLevel}
+          />
         </div>
 
         {/* Right: Info + Actions + Hamburger */}
