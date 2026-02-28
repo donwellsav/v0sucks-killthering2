@@ -18,7 +18,7 @@ export function HelpMenu() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10">
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
           <HelpCircle className="w-4 h-4" />
           <span className="text-xs">Help</span>
         </Button>

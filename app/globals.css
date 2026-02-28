@@ -3,7 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* KillTheRing2 - Light Blue Theme */
+/* Kill The Ring - Light Blue Theme */
 :root {
   --background: #1a1a1a;
   --foreground: #f0f0f0;
@@ -18,7 +18,7 @@
   --muted: #333333;
   --muted-foreground: #a0a0a0;
   --accent: #3B82F6;
-  --accent-foreground: #0a0a0a;
+  --accent-foreground: #ffffff;
   --destructive: #ff4444;
   --destructive-foreground: #ffffff;
   --border: #2a3a4a;

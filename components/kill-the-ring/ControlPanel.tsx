@@ -43,7 +43,8 @@ export function ControlPanel({
       {/* Start/Stop Button */}
       <Button
         onClick={isRunning ? onStop : onStart}
-        className="w-full h-12 text-base font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
+        variant={isRunning ? 'destructive' : 'default'}
+        className="w-full h-12 text-base font-medium"
       >
         {isRunning ? (
           <>

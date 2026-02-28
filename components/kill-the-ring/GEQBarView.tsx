@@ -130,13 +130,13 @@ export function GEQBarView({ advisories }: GEQBarViewProps) {
 
         // Cut value label
         ctx.fillStyle = recommendation.color
-        ctx.font = 'bold 11px system-ui, sans-serif'
+        ctx.font = 'bold 12px system-ui, sans-serif'
         ctx.textAlign = 'center'
         ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + 12)
 
         // Frequency label for active issue
         ctx.fillStyle = recommendation.color
-        ctx.font = '10px system-ui, sans-serif'
+        ctx.font = '11px system-ui, sans-serif'
         ctx.textAlign = 'center'
         const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
         ctx.fillText(freqLabel, x + barWidth / 2, y - 5)
@@ -152,7 +152,7 @@ export function GEQBarView({ advisories }: GEQBarViewProps) {
 
     // Draw band labels (every 4th band to avoid clutter)
     ctx.fillStyle = '#555'
-    ctx.font = '10px system-ui, sans-serif'
+    ctx.font = '11px system-ui, sans-serif'
     ctx.textAlign = 'center'
 
     for (let i = 0; i < numBands; i += 4) {

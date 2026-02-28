@@ -36,8 +36,6 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
-          // Render on first resize
-          setTimeout(() => render(), 0)
         }
       }
     })
@@ -147,7 +145,7 @@ export function WaterfallCanvas({ spectrum, isRunning }: WaterfallCanvasProps) {
 
     // Time axis (right side)
     ctx.fillStyle = '#555'
-    ctx.font = '11px system-ui, sans-serif'
+    ctx.font = '12px system-ui, sans-serif'
     ctx.textAlign = 'left'
     ctx.fillText('Now', width - padding.right + 3, padding.top + 8)
     ctx.fillText('~5s', width - padding.right + 3, height - padding.bottom - 5)

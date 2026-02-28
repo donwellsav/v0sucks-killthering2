@@ -50,49 +50,38 @@ export function KillTheRing() {
       {/* Header with Controls */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm">
         {/* Left: Logo only */}
-        <div className="flex items-center gap-3 pl-2 border-l border-border">
-          {/* Stylized icon */}
-          <div className="relative w-8 h-8 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/20" />
-            <div className="text-base font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">◎</div>
-          </div>
-          
-          {/* Brand text */}
-          <div className="flex flex-col gap-0">
-            <div className="flex items-baseline gap-1">
-              <span className="text-sm font-black tracking-tighter text-foreground">KILL</span>
-              <span className="text-sm font-black tracking-tighter text-foreground">THE</span>
-              <span className="text-sm font-black tracking-tighter text-blue-400">RING</span>
+        <div className="flex items-center gap-3">
+          {/* Logo with Design */}
+          <div className="flex items-center gap-2.5 pl-3 border-l border-border/50">
+            {/* Speaker Icon with Ring */}
+            <div className="relative w-7 h-7 flex items-center justify-center flex-shrink-0">
+              {/* Outer ring */}
+              <div className="absolute inset-0 rounded-full border-1.5 border-primary/60" />
+              {/* Speaker icon (simplified) */}
+              <svg className="w-4 h-4 relative z-10 text-primary" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
             </div>
-            <span className="text-[9px] text-muted-foreground font-semibold tracking-widest uppercase">Don Wells AV</span>
+            
+            {/* Brand text */}
+            <div className="flex flex-col gap-0.5">
+              <div className="leading-none">
+                <span className="text-sm font-black tracking-tight text-foreground">KILL THE </span>
+                <span className="text-sm font-black tracking-tight text-primary">RING</span>
+              </div>
+              <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
+            </div>
           </div>
         </div>
 
-        {/* Center: Mode + Meter + Start */}
+        {/* Center: Start Button + Gain Meter + Mode */}
         <div className="flex items-center gap-3">
-          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
-            <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
-              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
-              <SelectItem value="musicAware">Music-Aware</SelectItem>
-              <SelectItem value="aggressive">Aggressive</SelectItem>
-              <SelectItem value="calibration">Calibration</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <InputMeterSlider
-            value={settings.inputGainDb}
-            onChange={(v) => updateSettings({ inputGainDb: v })}
-            level={inputLevel}
-          />
-
+          {/* Start Button */}
           <Button
             onClick={isRunning ? stop : start}
+            variant={isRunning ? 'destructive' : 'default'}
             size="sm"
-            className="h-7 px-4 text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-0"
+            className="h-7 px-3 text-xs font-medium"
           >
             {isRunning ? (
               <>
@@ -106,9 +95,35 @@ export function KillTheRing() {
               </>
             )}
           </Button>
+
+          {isRunning && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-[10px] text-primary font-medium">LIVE</span>
+            </div>
+          )}
+
+          <InputMeterSlider
+            value={settings.inputGainDb}
+            onChange={(v) => updateSettings({ inputGainDb: v })}
+            level={inputLevel}
+          />
+
+          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+            <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+              <SelectItem value="musicAware">Music-Aware</SelectItem>
+              <SelectItem value="aggressive">Aggressive</SelectItem>
+              <SelectItem value="calibration">Calibration</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Right: Info + LIVE indicator + Help + Settings */}
+        {/* Right: Info + Settings */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
@@ -118,14 +133,6 @@ export function KillTheRing() {
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
-          
-          {isRunning && (
-            <div className="flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              <span className="text-[10px] text-primary font-medium">LIVE</span>
-            </div>
-          )}
-
           <HelpMenu />
           <SettingsPanel
             settings={settings}

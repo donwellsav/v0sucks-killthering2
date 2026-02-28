@@ -38,8 +38,6 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
-          // Render grid after resize
-          setTimeout(() => render(), 0)
         }
       }
     })
@@ -200,7 +198,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
       // Label
       ctx.fillStyle = color
-      ctx.font = '12px system-ui, sans-serif'
+      ctx.font = '14px system-ui, sans-serif'
       ctx.textAlign = 'center'
       ctx.fillText(formatFrequency(freq), x, y - 10)
     }
@@ -209,7 +207,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning }: SpectrumCanv
 
     // Draw axis labels
     ctx.fillStyle = '#666'
-    ctx.font = '12px system-ui, sans-serif'
+    ctx.font = '13px system-ui, sans-serif'
 
     // Y-axis (dB)
     ctx.textAlign = 'right'
