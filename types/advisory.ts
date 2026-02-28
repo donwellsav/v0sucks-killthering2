@@ -150,6 +150,9 @@ export interface Advisory {
   harmonicityScore: number
   modulationScore: number
   advisory: EQAdvisory
+  // Feedback prediction fields
+  isRunaway?: boolean
+  predictedTimeToClipMs?: number
 }
 
 export interface SpectrumData {
