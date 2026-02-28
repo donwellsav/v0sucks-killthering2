@@ -67,10 +67,22 @@ export function SettingsPanel({
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            Advanced Settings
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Advanced Settings
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onReset}
+              className="h-8 px-2 gap-1.5 text-xs"
+              title="Reset all settings to defaults"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </Button>
+          </div>
           <DialogDescription className="text-xs">
             Analysis engine and display preferences. Detection controls are in the sidebar.
           </DialogDescription>

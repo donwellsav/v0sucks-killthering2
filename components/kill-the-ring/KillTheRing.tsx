@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { HelpCircle, Menu, X, History } from 'lucide-react'
+import { HelpCircle, Menu, X, History, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -471,6 +471,18 @@ export function KillTheRing() {
 
             {/* Detection controls */}
             <div className="border-b border-border p-3 flex-shrink-0 bg-card/50 overflow-y-auto max-h-48">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">Detection</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetSettings}
+                  className="h-6 px-2 text-xs gap-1.5"
+                  title="Reset all settings to defaults"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </Button>
+              </div>
               <DetectionControls />
             </div>
 
