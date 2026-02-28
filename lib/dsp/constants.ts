@@ -193,7 +193,6 @@ export const DEFAULT_SETTINGS = {
   musicAware: false, // Disabled by default for maximum detection
   inputGainDb: 18, // Higher default gain for better signal capture in speech systems
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
-  guiFontSize: 18, // Default GUI text size (12-26px range, 18px center)
 }
 
 // Color palette for visualizations

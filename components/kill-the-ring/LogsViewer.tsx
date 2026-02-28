@@ -124,20 +124,20 @@ export function LogsViewer() {
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
           <DialogTitle>Event Logs</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="events" className="flex flex-col flex-1 min-h-0">
-          <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+        <Tabs defaultValue="events" className="flex flex-col flex-1">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
             <TabsTrigger value="export">Export</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="events" className="flex-1 min-h-0 overflow-hidden flex flex-col mt-2">
-            <div className="flex justify-between items-center mb-3 flex-shrink-0">
+          <TabsContent value="events" className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-3">
               <p className="text-sm text-muted-foreground">
                 {logs.length} total events • {issueLogsCount} detected issues
               </p>
@@ -152,7 +152,7 @@ export function LogsViewer() {
               </Button>
             </div>
 
-            <ScrollArea className="flex-1 min-h-0 border rounded-md p-3">
+            <ScrollArea className="flex-1 border rounded-md p-3">
               <div className="space-y-2">
                 {logs.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No events logged yet</p>
@@ -199,14 +199,34 @@ export function LogsViewer() {
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="statistics" className="flex-1 min-h-0 overflow-y-auto mt-2">
+          <TabsContent value="statistics" className="flex-1 overflow-auto">
             <div className="space-y-4 p-4">
               <div className="grid grid-cols-2 gap-3">
-                <StatCard label="Total Events" value={stats.totalEvents.toString()} icon="📊" />
-                <StatCard label="Issues Detected" value={stats.issuesDetected.toString()} icon="🔊" />
-                <StatCard label="Avg Frequency" value={`${stats.avgFrequency.toFixed(0)} Hz`} icon="📈" />
-                <StatCard label="Avg Amplitude" value={`${stats.avgAmplitude.toFixed(1)} dB`} icon="📉" />
-                <StatCard label="Session Duration" value={formatDuration(stats.sessionDuration)} icon="⏱️" />
+                <StatCard
+                  label="Total Events"
+                  value={stats.totalEvents.toString()}
+                  icon="📊"
+                />
+                <StatCard
+                  label="Issues Detected"
+                  value={stats.issuesDetected.toString()}
+                  icon="🔊"
+                />
+                <StatCard
+                  label="Avg Frequency"
+                  value={`${stats.avgFrequency.toFixed(0)} Hz`}
+                  icon="📈"
+                />
+                <StatCard
+                  label="Avg Amplitude"
+                  value={`${stats.avgAmplitude.toFixed(1)} dB`}
+                  icon="📉"
+                />
+                <StatCard
+                  label="Session Duration"
+                  value={formatDuration(stats.sessionDuration)}
+                  icon="⏱️"
+                />
               </div>
 
               {Object.keys(stats.severities).length > 0 && (
@@ -220,7 +240,9 @@ export function LogsViewer() {
                           <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className="h-full bg-primary"
-                              style={{ width: `${(count / stats.issuesDetected) * 100}%` }}
+                              style={{
+                                width: `${(count / stats.issuesDetected) * 100}%`,
+                              }}
                             />
                           </div>
                           <span className="font-mono w-12 text-right">{count}</span>
@@ -233,7 +255,7 @@ export function LogsViewer() {
             </div>
           </TabsContent>
 
-          <TabsContent value="export" className="flex-1 min-h-0 overflow-y-auto mt-2">
+          <TabsContent value="export" className="flex-1 overflow-auto">
             <div className="space-y-3 p-4">
               <p className="text-sm text-muted-foreground">
                 Export {logs.length} event(s) in your preferred format
@@ -267,8 +289,8 @@ export function LogsViewer() {
               </div>
 
               <div className="border-t pt-3">
-                <p className="text-xs text-muted-foreground">
-                  Tip: Logs are stored in your browser for this session. Export before closing the page to keep them.
+                <p className="text-xs text-muted-foreground mb-2">
+                  💡 Tip: Logs are stored in your browser for this session. Export them before closing the page to keep them.
                 </p>
               </div>
             </div>

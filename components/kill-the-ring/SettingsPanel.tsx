@@ -186,29 +186,6 @@ export function SettingsPanel({
             </Section>
 
             <Section 
-              title="GUI Text Size" 
-              tooltip="Font size for all interface text—headers, labels, buttons, sidebar. Adjust for comfortable reading on your display."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Size</span>
-                  <span className="text-xs font-mono">{settings.guiFontSize}px</span>
-                </div>
-                <Slider
-                  value={[settings.guiFontSize]}
-                  onValueChange={([v]) => onSettingsChange({ guiFontSize: v })}
-                  min={12}
-                  max={26}
-                  step={1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Small</span>
-                  <span>Large</span>
-                </div>
-              </div>
-            </Section>
-
-            <Section 
               title="Max Issues Shown" 
               tooltip="Limits how many feedback issues display at once. Lower for focused work on worst problems, higher for full system overview during calibration."
             >
