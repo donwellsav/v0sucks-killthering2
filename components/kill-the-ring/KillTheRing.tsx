@@ -29,14 +29,6 @@ const GRAPH_LABELS: Record<GraphView, string> = {
   waterfall: 'Waterfall',
 }
 
-const MODE_LABELS: Record<string, string> = {
-  feedbackHunt: 'Feedback Hunt',
-  vocalRing: 'Vocal Ring',
-  musicAware: 'Music-Aware',
-  aggressive: 'Aggressive',
-  calibration: 'Calibration',
-}
-
 export function KillTheRing() {
   const {
     isRunning,
@@ -116,9 +108,19 @@ export function KillTheRing() {
   const DetectionControls = () => (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-3">
-        <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          {MODE_LABELS[settings.mode] ?? settings.mode}
-        </h2>
+        {/* Mode selector */}
+        <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
+          <SelectTrigger className="h-7 w-full text-xs bg-input border-border">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+            <SelectItem value="musicAware">Music-Aware</SelectItem>
+            <SelectItem value="aggressive">Aggressive</SelectItem>
+            <SelectItem value="calibration">Calibration</SelectItem>
+          </SelectContent>
+        </Select>
 
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-xs">
@@ -237,19 +239,6 @@ export function KillTheRing() {
               level={inputLevel}
             />
           </div>
-
-          <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
-            <SelectTrigger className="h-7 w-auto sm:w-44 text-xs bg-input border-border">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
-              <SelectItem value="vocalRing">Vocal Ring</SelectItem>
-              <SelectItem value="musicAware">Music-Aware</SelectItem>
-              <SelectItem value="aggressive">Aggressive</SelectItem>
-              <SelectItem value="calibration">Calibration</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Right: Info + Actions + Hamburger */}
