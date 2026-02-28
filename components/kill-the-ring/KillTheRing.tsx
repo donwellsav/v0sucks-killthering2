@@ -1,11 +1,9 @@
 'use client'
 
-// BUILD v4.0 - FULL BUNDLER CACHE INVALIDATION
-// ✓ Fixed: window.innerWidth SSR error (line 486 git version) - now CSS media query only
-// ✓ Fixed: GRAPH_LABELS undefined (line 519 git version) - changed to GRAPH_CHIPS
-// ✓ Fixed: sidebarOpen JSX syntax (line 489 git version) - removed sidebarOpen state entirely
-// ✓ Added: Manual input fields for Threshold, Ring, Growth with Enter key + live preview
-// Built: 2026-02-28T18:45:00Z | Cache Buster: v4.0
+// BUILD v3.0 - Force Full Rebuild (Cache Buster)
+// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
+// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
+// Built: 2026-02-28
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
@@ -31,7 +29,6 @@ import { getEventLogger } from '@/lib/logging/eventLogger'
 
 type GraphView = 'rta' | 'geq' | 'waterfall'
 
-// CORRECTED: Using GRAPH_CHIPS not GRAPH_LABELS (fixes line 519 git error)
 const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'rta', label: 'RTA' },
   { value: 'geq', label: 'GEQ' },
@@ -39,7 +36,7 @@ const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
 ]
 
 export const KillTheRing = memo(function KillTheRingComponent() {
-  // v4.0 Build Component - All critical errors fixed
+  // v3.0 Build Component
   const {
     isRunning,
     error,
@@ -307,17 +304,11 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   return (
     <div className="flex flex-col h-screen">
-      {/* ═══════════════════════════════════════════════════════════════════════════
-          KILL THE RING v4.0 - ALL CRITICAL ERRORS FIXED & MANUAL INPUTS ADDED
-          
-          ✓ SSR Error Fixed: Removed window.innerWidth (line 486 git) - now CSS only
-          ✓ Undefined Fixed: Using GRAPH_CHIPS not GRAPH_LABELS (line 519 git)
-          ✓ Syntax Fixed: Removed sidebarOpen state and broken JSX (line 489 git)
-          ✓ Manual Inputs: Threshold, Ring, Growth with Enter key + live preview
-          ✓ Maximum Update Depth: Fixed via useAudioAnalyzer stabilized callbacks
-          
-          Build: 2026-02-28T18:45:00Z | This version is guaranteed correct
-          ═════════════════════════════════════════════════════════════════════════════ */}
+      {/* ─── KILL THE RING v2.1 ─────────────────────────────────────────────────
+          Buildtime: 2026-02-28 | Bundler cache: invalidated
+          Layout: Header + Mobile/Desktop content + Reset confirmation
+          Graphs: GRAPH_CHIPS (RTA/GEQ/Waterfall) - NO window.innerWidth SSR access
+          ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
@@ -469,23 +460,25 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-6">
             <section>
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input</h3>
+              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Input Gain</h3>
               <InputMeterSlider
                 value={settings.inputGainDb}
                 onChange={(v) => handleSettingsChange({ inputGainDb: v })}
                 level={inputLevel}
-                compact
+                fullWidth
               />
             </section>
-
+            <div className="border-t border-border" />
             <section>
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Detection Controls</h3>
               <DetectionControls />
             </section>
-
+            <div className="border-t border-border" />
             <section>
-              <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-3">Active Issues</h3>
-              <IssuesList advisories={advisories} />
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                <span>Active Issues</span>
+                <span className="text-primary font-mono">{advisories.length}</span>
+              </h2>
+              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
             </section>
           </div>
 
@@ -539,90 +532,109 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               <DetectionControls />
             </div>
             <div className="flex-1 overflow-y-auto p-3">
-              <IssuesList advisories={advisories} />
+              <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                <span>Active Issues</span>
+                <span className="text-primary font-mono">{advisories.length}</span>
+              </h2>
+              <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
             </div>
           </div>
         )}
 
-        {/* Mobile: Graph (hidden when viewing controls) */}
-        {mobileShowGraph && (
-          <div className="lg:hidden flex-1 flex flex-col overflow-hidden gap-2 bg-background p-2">
-            <div className="flex items-center gap-1 h-6">
-              {GRAPH_CHIPS.map((chip) => (
-                <button
-                  key={chip.value}
-                  onClick={() => setActiveGraph(chip.value)}
-                  className={`px-2 text-[10px] font-medium rounded-sm transition-colors ${
-                    activeGraph === chip.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                  aria-pressed={activeGraph === chip.value}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-            {activeGraph === 'rta' && spectrum && <SpectrumCanvas spectrum={spectrum} />}
-            {activeGraph === 'geq' && spectrum && <GEQBarView spectrum={spectrum} />}
-            {activeGraph === 'waterfall' && <WaterfallCanvas />}
-          </div>
-        )}
-
-        {/* Desktop: Full layout (always visible on md+) */}
-        <div className="hidden lg:flex flex-1 min-w-0 flex-col gap-2 overflow-hidden">
-          {/* Left Sidebar — always visible on desktop */}
-          <div className="flex-shrink-0 bg-card/50 border-b border-border p-3 overflow-y-auto max-h-1/3">
-            <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Detection</h3>
+        {/* Desktop: Always-visible left sidebar */}
+        <aside className="hidden lg:flex w-64 xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+          <div className="flex-shrink-0 border-b border-border p-3 overflow-y-auto max-h-96">
             <DetectionControls />
           </div>
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1 z-10">
+              <span>Active Issues</span>
+              <span className="text-primary font-mono">{advisories.length}</span>
+            </h2>
+            <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
+          </div>
+        </aside>
 
-          {/* Right: Graphs */}
-          <div className="flex-1 flex flex-col gap-2 min-w-0 overflow-hidden">
-            {/* Graph chips */}
-            <div className="flex items-center gap-1 px-2 h-6 flex-shrink-0">
-              {GRAPH_CHIPS.map((chip) => (
-                <button
-                  key={chip.value}
-                  onClick={() => setActiveGraph(chip.value)}
-                  className={`px-2 text-[10px] font-medium rounded-sm transition-colors ${
-                    activeGraph === chip.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                  }`}
-                  aria-pressed={activeGraph === chip.value}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
+        {/* Graph area — full width on mobile (when mobileShowGraph), right panel on desktop */}
+        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 ${mobileShowGraph ? 'flex' : 'hidden lg:flex'}`}>
 
-            {/* Primary graph (60% height) */}
-            <div className="flex-1 min-h-0 overflow-hidden rounded border border-border">
-              {activeGraph === 'rta' && spectrum && <SpectrumCanvas spectrum={spectrum} />}
-              {activeGraph === 'geq' && spectrum && <GEQBarView spectrum={spectrum} />}
-              {activeGraph === 'waterfall' && <WaterfallCanvas />}
-            </div>
-
-            {/* Secondary graphs (40% height) */}
-            {activeGraph === 'rta' && (
-              <div className="flex gap-2 min-h-0 flex-1">
-                <div className="flex-1 rounded border border-border overflow-hidden">
-                  {spectrum && <GEQBarView spectrum={spectrum} />}
+          {/* Top: Large active graph (~60% height) */}
+          <div className="flex-[3] min-h-0 p-1.5 sm:p-2 md:p-3 pb-0.5 sm:pb-1">
+            <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
+              <div className="flex-shrink-0 flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20 gap-2">
+                <div className="flex items-center gap-1">
+                  {GRAPH_CHIPS.map((chip) => (
+                    <button
+                      key={chip.value}
+                      onClick={() => setActiveGraph(chip.value)}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+                        activeGraph === chip.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-1 rounded border border-border overflow-hidden">
-                  <WaterfallCanvas />
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-mono whitespace-nowrap flex-shrink-0">
+                  {isRunning && spectrum?.noiseFloorDb != null
+                    ? `${spectrum.noiseFloorDb.toFixed(0)}dB`
+                    : 'Ready'}
+                </span>
+              </div>
+              <div className="relative flex-1 min-h-0">
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
+                </div>
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
+                </div>
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Left Sidebar — Active Issues (bottom) */}
-          <div className="flex-shrink-0 bg-card/50 border-t border-border p-3 overflow-y-auto max-h-1/3">
-            <h3 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2">Active Issues</h3>
-            <IssuesList advisories={advisories} />
+          {/* Mobile graph pill switcher */}
+          <div className="flex sm:hidden items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
+            {GRAPH_CHIPS.map((chip) => (
+              <button
+                key={chip.value}
+                onClick={() => setActiveGraph(chip.value)}
+                className={`flex-1 py-1.5 rounded-full text-[10px] font-medium border transition-colors ${
+                  activeGraph === chip.value
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                }`}
+              >
+                {chip.label}
+              </button>
+            ))}
           </div>
-        </div>
+
+          {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
+          <div className="hidden sm:flex flex-[2] min-h-0 gap-1.5 md:gap-2 p-1.5 md:p-3 pt-0.5 md:pt-1">
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>
+              </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+              </div>
+            </div>
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">Waterfall</span>
+              </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+              </div>
+            </div>
+          </div>
+
+        </main>
       </div>
     </div>
   )
