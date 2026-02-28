@@ -73,7 +73,7 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Center: Mode + Gain Meter */}
+        {/* Center: Mode + Gain Meter + Start Button */}
         <div className="flex items-center gap-4">
           <Select value={settings.mode} onValueChange={(v) => handleModeChange(v as OperationMode)}>
             <SelectTrigger className="h-7 w-36 text-xs bg-input border-border">
@@ -93,10 +93,7 @@ export function KillTheRing() {
             onChange={(v) => updateSettings({ inputGainDb: v })}
             level={inputLevel}
           />
-        </div>
 
-        {/* Right: Start Button + Info + Settings */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Button
             onClick={isRunning ? stop : start}
             variant={isRunning ? 'destructive' : 'default'}
@@ -122,7 +119,10 @@ export function KillTheRing() {
               <span className="text-[10px] text-primary font-medium">LIVE</span>
             </div>
           )}
+        </div>
 
+        {/* Right: Info + Settings */}
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="font-mono text-[10px]">
             {fftSize}pt @ {(sampleRate / 1000).toFixed(1)}kHz
           </span>
