@@ -467,7 +467,7 @@ export function KillTheRing() {
           </div>
         </div>
 
-        {/* Desktop layout: Sidebar on left (controls + issues + GEQ + Waterfall), main graph area on right */}
+        {/* Desktop layout: Sidebar on left (controls + issues), main graph area on right */}
         {/* Left Sidebar — always visible on desktop */}
         <aside className="hidden lg:flex w-80 xl:w-96 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           {/* Detection controls — top section */}
@@ -475,36 +475,13 @@ export function KillTheRing() {
             <DetectionControls />
           </div>
 
-          {/* Active issues — middle section */}
-          <div className="flex-1 min-h-0 border-b border-border overflow-y-auto p-3">
-            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1">
+          {/* Active issues — expands to fill remaining space */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-3">
+            <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between sticky top-0 bg-card/50 py-1 z-10">
               <span>Active Issues</span>
               <span className="text-primary font-mono">{advisories.length}</span>
             </h2>
             <IssuesList advisories={advisories} maxIssues={settings.maxDisplayedIssues} />
-          </div>
-
-          {/* GEQ + Waterfall — bottom section (always visible) */}
-          <div className="flex-1 min-h-0 flex flex-col gap-1 p-2 overflow-y-auto">
-            {/* GEQ graph */}
-            <div className="flex-1 min-h-0 bg-card/60 rounded border border-border overflow-hidden flex flex-col">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 text-[8px] font-medium text-muted-foreground">
-                GEQ
-              </div>
-              <div className="flex-1 min-h-0 pointer-events-none">
-                <GEQBarView advisories={advisories} graphFontSize={Math.max(11, settings.graphFontSize - 4)} />
-              </div>
-            </div>
-
-            {/* Waterfall graph */}
-            <div className="flex-1 min-h-0 bg-card/60 rounded border border-border overflow-hidden flex flex-col">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 text-[8px] font-medium text-muted-foreground">
-                Waterfall
-              </div>
-              <div className="flex-1 min-h-0 pointer-events-none">
-                <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(11, settings.graphFontSize - 4)} />
-              </div>
-            </div>
           </div>
         </aside>
 
