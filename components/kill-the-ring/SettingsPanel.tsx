@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { NumericSliderInput } from './NumericSliderInput'
+import { Slider } from '@/components/ui/slider'
 import {
   Select,
   SelectContent,
@@ -119,45 +119,70 @@ export function SettingsPanel({
               title="Spectrum Smoothing" 
               tooltip="Averages spectral frames to reduce visual noise. 0-30% for detailed analysis, 50-70% for general use, 80%+ for presentation. Lower values show faster transients but more jitter."
             >
-              <NumericSliderInput
-                value={settings.smoothingTimeConstant}
-                onChange={(v) => onSettingsChange({ smoothingTimeConstant: v })}
-                min={0}
-                max={0.95}
-                step={0.05}
-                label="Amount"
-                format={(v) => (v * 100).toFixed(0) + '%'}
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Amount</span>
+                  <span className="text-xs font-mono">{(settings.smoothingTimeConstant * 100).toFixed(0)}%</span>
+                </div>
+                <Slider
+                  value={[settings.smoothingTimeConstant]}
+                  onValueChange={([v]) => onSettingsChange({ smoothingTimeConstant: v })}
+                  min={0}
+                  max={0.95}
+                  step={0.05}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Raw</span>
+                  <span>Smooth</span>
+                </div>
+              </div>
             </Section>
 
             <Section 
               title="Hold Time" 
               tooltip="How long detected issues stay visible after disappearing from spectrum. Longer times help reference issues while making EQ cuts. 1-2s for fast workflow, 3-4s for careful tuning."
             >
-              <NumericSliderInput
-                value={settings.holdTimeMs}
-                onChange={(v) => onSettingsChange({ holdTimeMs: v })}
-                min={500}
-                max={5000}
-                step={250}
-                label="Duration"
-                format={(v) => (v / 1000).toFixed(1) + 's'}
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Duration</span>
+                  <span className="text-xs font-mono">{(settings.holdTimeMs / 1000).toFixed(1)}s</span>
+                </div>
+                <Slider
+                  value={[settings.holdTimeMs]}
+                  onValueChange={([v]) => onSettingsChange({ holdTimeMs: v })}
+                  min={500}
+                  max={5000}
+                  step={250}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Quick</span>
+                  <span>Long Hold</span>
+                </div>
+              </div>
             </Section>
 
             <Section 
               title="Input Gain" 
               tooltip="Digital boost applied before analysis. Increase if your signal is weak, decrease if clipping. Does not affect audio output, only analysis sensitivity."
             >
-              <NumericSliderInput
-                value={settings.inputGainDb}
-                onChange={(v) => onSettingsChange({ inputGainDb: v })}
-                min={-40}
-                max={40}
-                step={1}
-                label="Boost"
-                format={(v) => (v > 0 ? '+' : '') + v + 'dB'}
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Boost</span>
+                  <span className="text-xs font-mono">{settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb}dB</span>
+                </div>
+                <Slider
+                  value={[settings.inputGainDb]}
+                  onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
+                  min={-40}
+                  max={40}
+                  step={1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>-40dB</span>
+                  <span>0dB</span>
+                  <span>+40dB</span>
+                </div>
+              </div>
             </Section>
           </TabsContent>
 
@@ -166,29 +191,46 @@ export function SettingsPanel({
               title="Graph Label Size" 
               tooltip="Font size for frequency, dB, and annotation labels inside the RTA, GEQ, and Waterfall graphs. Increase for high-DPI displays or viewing from a distance."
             >
-              <NumericSliderInput
-                value={settings.graphFontSize}
-                onChange={(v) => onSettingsChange({ graphFontSize: v })}
-                min={8}
-                max={26}
-                step={1}
-                label="Size"
-                format={(v) => v + 'px'}
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Size</span>
+                  <span className="text-xs font-mono">{settings.graphFontSize}px</span>
+                </div>
+                <Slider
+                  value={[settings.graphFontSize]}
+                  onValueChange={([v]) => onSettingsChange({ graphFontSize: v })}
+                  min={8}
+                  max={26}
+                  step={1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Small</span>
+                  <span>Large</span>
+                </div>
+              </div>
             </Section>
 
             <Section 
               title="Max Issues Shown" 
               tooltip="Limits how many feedback issues display at once. Default is 6 for focused work on worst problems; increase up to 12 for full system overview during calibration."
             >
-              <NumericSliderInput
-                value={settings.maxDisplayedIssues}
-                onChange={(v) => onSettingsChange({ maxDisplayedIssues: v })}
-                min={3}
-                max={12}
-                step={1}
-                label="Limit"
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Limit</span>
+                  <span className="text-xs font-mono">{settings.maxDisplayedIssues}</span>
+                </div>
+                <Slider
+                  value={[settings.maxDisplayedIssues]}
+                  onValueChange={([v]) => onSettingsChange({ maxDisplayedIssues: v })}
+                  min={3}
+                  max={12}
+                  step={1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Focused</span>
+                  <span>All Issues</span>
+                </div>
+              </div>
             </Section>
 
             <Section 
@@ -247,15 +289,23 @@ export function SettingsPanel({
               title="Temperature"
               tooltip="Controls response creativity. 0.0-0.3 for precise, factual EQ advice. 0.5-0.7 for conversational explanations. Higher values may produce less reliable technical recommendations."
             >
-              <NumericSliderInput
-                value={agentSettings.temperature}
-                onChange={(v) => updateAgent({ temperature: v })}
-                min={0}
-                max={1}
-                step={0.1}
-                label="Value"
-                format={(v) => v.toFixed(1)}
-              />
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Value</span>
+                  <span className="text-xs font-mono">{agentSettings.temperature.toFixed(1)}</span>
+                </div>
+                <Slider
+                  value={[agentSettings.temperature]}
+                  onValueChange={([v]) => updateAgent({ temperature: v })}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Precise</span>
+                  <span>Creative</span>
+                </div>
+              </div>
             </Section>
 
             <Section

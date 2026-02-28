@@ -15,11 +15,11 @@ import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
-import { NumericSliderInput } from './NumericSliderInput'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { LogsViewer } from './LogsViewer'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { HelpCircle, Menu, X, History, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
@@ -155,71 +155,68 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </Select>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">Threshold</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
-                Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Threshold</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
           </div>
-          <NumericSliderInput
-            value={settings.feedbackThresholdDb}
-            onChange={(v) => handleSettingsChange({ feedbackThresholdDb: v })}
-            min={2}
-            max={20}
-            step={1}
-            format={(v) => v + 'dB'}
-            compact
+          <Slider
+            value={[settings.feedbackThresholdDb]}
+            onValueChange={([v]) => handleSettingsChange({ feedbackThresholdDb: v })}
+            min={2} max={20} step={1}
           />
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">Ring</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
-                Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Ring</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.ringThresholdDb}dB</span>
           </div>
-          <NumericSliderInput
-            value={settings.ringThresholdDb}
-            onChange={(v) => handleSettingsChange({ ringThresholdDb: v })}
-            min={1}
-            max={12}
-            step={0.5}
-            format={(v) => v + 'dB'}
-            compact
+          <Slider
+            value={[settings.ringThresholdDb]}
+            onValueChange={([v]) => handleSettingsChange({ ringThresholdDb: v })}
+            min={1} max={12} step={0.5}
           />
         </div>
 
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">Growth</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
-                How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
-              </TooltipContent>
-            </Tooltip>
+          <div className="flex justify-between items-center text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Growth</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
           </div>
-          <NumericSliderInput
-            value={settings.growthRateThreshold}
-            onChange={(v) => handleSettingsChange({ growthRateThreshold: v })}
-            min={0.5}
-            max={8}
-            step={0.5}
-            format={(v) => v.toFixed(1) + 'dB/s'}
-            compact
+          <Slider
+            value={[settings.growthRateThreshold]}
+            onValueChange={([v]) => handleSettingsChange({ growthRateThreshold: v })}
+            min={0.5} max={8} step={0.5}
           />
         </div>
       </div>

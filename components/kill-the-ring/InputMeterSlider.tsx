@@ -43,8 +43,8 @@ export function InputMeterSlider({
 
     const meterWidth = w * normalizedLevel
     const gradient = ctx.createLinearGradient(0, 0, w, 0)
-    gradient.addColorStop(0, '#3B82F6')
-    gradient.addColorStop(0.6, '#3B82F6')
+    gradient.addColorStop(0, '#22c55e')
+    gradient.addColorStop(0.6, '#22c55e')
     gradient.addColorStop(0.8, '#eab308')
     gradient.addColorStop(0.95, '#ef4444')
     gradient.addColorStop(1, '#ef4444')
@@ -145,6 +145,11 @@ export function InputMeterSlider({
 
   return (
     <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
+      {/* Label */}
+      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+        Gain
+      </span>
+
       {/* Slider track + 0dB label */}
       <div className="relative flex-1 flex flex-col">
         <div
