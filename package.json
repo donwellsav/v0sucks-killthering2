@@ -1,17 +1,22 @@
 {
-  "name": "my-project",
-  "version": "0.1.0",
+  "name": "killthering",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "export": "NEXT_ELECTRON_BUILD=1 next build",
+    "electron:dev": "electron electron/main.js",
+    "electron:build:win": "npm run export && electron-builder --win",
+    "electron:build:mac": "npm run export && electron-builder --mac",
+    "electron:build:linux": "npm run export && electron-builder --linux",
+    "electron:build:all": "npm run export && electron-builder --win --mac --linux"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@neondatabase/serverless": "^1.0.2",
-    "next-pwa": "^5.6.0",
     "@radix-ui/react-accordion": "1.2.12",
     "@radix-ui/react-alert-dialog": "1.1.15",
     "@radix-ui/react-aspect-ratio": "1.1.8",
@@ -72,3 +77,4 @@
     "typescript": "5.7.3"
   }
 }
+
