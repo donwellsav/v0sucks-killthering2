@@ -219,7 +219,7 @@ export function getSeverityText(severity: SeverityLevel): string {
     case 'RUNAWAY': return 'RUNAWAY'
     case 'GROWING': return 'Growing'
     case 'RESONANCE': return 'Resonance'
-    case 'POSSIBLE_RING': return 'Possible Ring'
+    case 'POSSIBLE_RING': return 'Ring'
     case 'WHISTLE': return 'Whistle'
     case 'INSTRUMENT': return 'Instrument'
     default: return 'Unknown'
