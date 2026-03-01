@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { listSessions } from '@/lib/db/sessions'
 import { SessionsTable } from '@/components/kill-the-ring/SessionsTable'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, AlertCircle } from 'lucide-react'
+import { ArrowLeft, AlertCircle, WifiOff } from 'lucide-react'
 
 export const metadata = {
   title: 'Session History — Kill The Ring',
@@ -12,11 +12,22 @@ export const metadata = {
 export default async function SessionsPage() {
   let sessions: Awaited<ReturnType<typeof listSessions>> = []
   let dbError = false
+  let isOffline = false
 
   try {
     sessions = await listSessions(50)
-  } catch {
+  } catch (err) {
     dbError = true
+    // Detect network-level failures (fetch failed, ENOTFOUND, etc.)
+    const msg = err instanceof Error ? err.message.toLowerCase() : ''
+    if (
+      msg.includes('fetch failed') ||
+      msg.includes('enotfound') ||
+      msg.includes('network') ||
+      msg.includes('econnrefused')
+    ) {
+      isOffline = true
+    }
   }
 
   return (
@@ -47,14 +58,29 @@ export default async function SessionsPage() {
       <main className="flex-1 p-4 sm:p-6 max-w-5xl mx-auto w-full">
         {dbError ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <AlertCircle className="w-8 h-8 text-destructive/60" />
-            <p className="text-sm font-medium text-foreground">Could not load sessions</p>
-            <p className="text-xs text-muted-foreground max-w-sm">
-              The database is temporarily unavailable. Check your Neon connection and try again.
-            </p>
-            <Button asChild size="sm" variant="outline" className="mt-2">
-              <Link href="/sessions">Retry</Link>
-            </Button>
+            {isOffline ? (
+              <>
+                <WifiOff className="w-8 h-8 text-muted-foreground/60" />
+                <p className="text-sm font-medium text-foreground">You are offline</p>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  Session history requires a network connection. The detector works fully offline — export your logs from Settings before closing.
+                </p>
+                <Button asChild size="sm" variant="outline" className="mt-2">
+                  <Link href="/">Back to Detector</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-8 h-8 text-destructive/60" />
+                <p className="text-sm font-medium text-foreground">Could not load sessions</p>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  The database is temporarily unavailable. Check your Neon connection and try again.
+                </p>
+                <Button asChild size="sm" variant="outline" className="mt-2">
+                  <Link href="/sessions">Retry</Link>
+                </Button>
+              </>
+            )}
           </div>
         ) : (
           <>
