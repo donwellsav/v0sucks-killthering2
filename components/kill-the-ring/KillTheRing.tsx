@@ -232,15 +232,17 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         {/* Auto Music-Aware */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-[10px]">
-            <span className="text-muted-foreground">Auto Music-Aware</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
-                Automatically activates music-aware mode when signal rises {settings.autoMusicAwareHysteresisDb}dB above the noise floor (band is playing).
-              </TooltipContent>
-            </Tooltip>
+              <span className="text-muted-foreground">Auto Music-Aware</span>
+              {settings.showTooltips && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[200px] text-xs">
+                    Automatically activates music-aware mode when signal rises {settings.autoMusicAwareHysteresisDb}dB above the noise floor (band is playing).
+                  </TooltipContent>
+                </Tooltip>
+              )}
             {settings.autoMusicAware && (
               <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium border ${
                 settings.musicAware
@@ -269,14 +271,16 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Threshold</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
-                  Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
-                </TooltipContent>
-              </Tooltip>
+              {settings.showTooltips && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[200px] text-xs">
+                    Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <span className="font-mono">{settings.feedbackThresholdDb}dB</span>
           </div>
@@ -291,14 +295,16 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Ring</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
-                  Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
-                </TooltipContent>
-              </Tooltip>
+              {settings.showTooltips && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[200px] text-xs">
+                    Resonance detection. 2-4dB for calibration, 5-7dB normal, 8+dB during shows.
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <span className="font-mono">{settings.ringThresholdDb}dB</span>
           </div>
@@ -313,14 +319,16 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex justify-between items-center text-xs">
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Growth</span>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
-                  How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
-                </TooltipContent>
-              </Tooltip>
+              {settings.showTooltips && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="w-3 h-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[200px] text-xs">
+                    How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <span className="font-mono">{settings.growthRateThreshold.toFixed(1)}dB/s</span>
           </div>
@@ -385,14 +393,9 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         </div>
 
-        {/* Center: Gain slider — styled section container */}
+        {/* Center: Gain slider */}
         <div className="hidden md:flex items-center flex-1 min-w-0 px-4">
           <div className="flex-1 flex flex-col gap-2 min-w-0">
-            {/* Section label */}
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-              Input Gain
-            </div>
-            {/* Gain control */}
             <InputMeterSlider
               value={settings.inputGainDb}
               onChange={(v) => handleSettingsChange({ inputGainDb: v })}
