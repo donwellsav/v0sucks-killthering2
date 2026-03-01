@@ -61,29 +61,6 @@ export function InputMeterSlider({
     ctx.lineTo(zeroPos, h)
     ctx.stroke()
     ctx.setLineDash([])
-
-    // Gain marker
-    const gainPos = ((value - min) / (max - min)) * w
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(gainPos, 0)
-    ctx.lineTo(gainPos, h)
-    ctx.stroke()
-
-    ctx.fillStyle = '#fff'
-    ctx.beginPath()
-    ctx.moveTo(gainPos - 4, 0)
-    ctx.lineTo(gainPos + 4, 0)
-    ctx.lineTo(gainPos, 5)
-    ctx.closePath()
-    ctx.fill()
-    ctx.beginPath()
-    ctx.moveTo(gainPos - 4, h)
-    ctx.lineTo(gainPos + 4, h)
-    ctx.lineTo(gainPos, h - 5)
-    ctx.closePath()
-    ctx.fill()
   }, [normalizedLevel, value, min, max])
 
   const updateValueFromX = (clientX: number) => {
@@ -170,6 +147,12 @@ export function InputMeterSlider({
             width={512}
             height={compact ? 16 : 20}
             className="w-full h-full"
+          />
+          {/* Gain thumb — white circle matching shadcn Slider thumb */}
+          <div
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-5 rounded-full border-2 border-background bg-white shadow-md ring-offset-background transition-[box-shadow] hover:ring-4 hover:ring-ring/50 focus-visible:ring-4 focus-visible:ring-ring/50 pointer-events-none"
+            style={{ left: `${((value - min) / (max - min)) * 100}%` }}
+            aria-hidden="true"
           />
         </div>
         {/* 0dB unity label — positioned at the center (50%) of the range */}
