@@ -150,7 +150,7 @@ export function InputMeterSlider({
           />
           {/* Gain thumb — white circle matching shadcn Slider thumb */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-5 rounded-full border-2 border-background bg-white shadow-md ring-offset-background transition-[box-shadow] hover:ring-4 hover:ring-ring/50 focus-visible:ring-4 focus-visible:ring-ring/50 pointer-events-none"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-7 rounded-full border-2 border-background bg-white shadow-md ring-offset-background transition-[box-shadow] hover:ring-4 hover:ring-ring/50 focus-visible:ring-4 focus-visible:ring-ring/50 pointer-events-none"
             style={{ left: `${((value - min) / (max - min)) * 100}%` }}
             aria-hidden="true"
           />
