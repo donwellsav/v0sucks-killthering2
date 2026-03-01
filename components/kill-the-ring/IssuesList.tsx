@@ -2,6 +2,7 @@
 
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
+import { getSeverityText } from '@/lib/dsp/classifier'
 import { AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -121,7 +122,7 @@ function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
             className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
             style={{ backgroundColor: severityColor, color: '#000' }}
           >
-            {advisory.severity}
+            {getSeverityText(advisory.severity)}
           </span>
           {hasEq && onApply && (
             <TooltipProvider delayDuration={300}>
