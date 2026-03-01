@@ -1,10 +1,5 @@
-import dynamic from 'next/dynamic'
-
-const KillTheRing = dynamic(
-  () => import('@/components/kill-the-ring/KillTheRing').then((m) => m.KillTheRing),
-  { ssr: false }
-)
+import { KillTheRingClient } from '@/components/kill-the-ring/KillTheRingClient'
 
 export default function Page() {
-  return <KillTheRing />
+  return <KillTheRingClient />
 }
