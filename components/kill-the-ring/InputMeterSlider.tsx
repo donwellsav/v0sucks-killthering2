@@ -145,10 +145,6 @@ export function InputMeterSlider({
 
   return (
     <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
-      {/* Label */}
-      <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-        Gain
-      </span>
 
       {/* Slider track + 0dB label */}
       <div className="relative flex-1 flex flex-col">

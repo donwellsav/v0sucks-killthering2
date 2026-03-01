@@ -204,6 +204,7 @@ export const DEFAULT_SETTINGS = {
   inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
+  showTooltips: true, // Show help tooltips throughout the UI (disable for experienced engineers)
 }
 
 // Frequency range presets — quick switching for different use cases

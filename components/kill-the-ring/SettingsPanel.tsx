@@ -118,6 +118,7 @@ export function SettingsPanel({
           <TabsContent value="analysis" className="mt-4 space-y-5">
             <Section 
               title="FFT Size" 
+              showTooltip={settings.showTooltips}
               tooltip="Controls frequency resolution vs response time. Higher FFT = better precision for low frequencies but slower updates. 4096 for fast response, 8192 for balanced PA use, 16384 for precise low-end analysis."
             >
               <Select
@@ -139,6 +140,7 @@ export function SettingsPanel({
 
             <Section 
               title="Spectrum Smoothing" 
+              showTooltip={settings.showTooltips}
               tooltip="Averages spectral frames to reduce visual noise. 0-30% for detailed analysis, 50-70% for general use, 80%+ for presentation. Lower values show faster transients but more jitter."
             >
               <div className="space-y-2">
@@ -162,6 +164,7 @@ export function SettingsPanel({
 
             <Section 
               title="Hold Time" 
+              showTooltip={settings.showTooltips}
               tooltip="How long detected issues stay visible after disappearing from spectrum. Longer times help reference issues while making EQ cuts. 1-2s for fast workflow, 3-4s for careful tuning."
             >
               <div className="space-y-2">
@@ -185,6 +188,7 @@ export function SettingsPanel({
 
             <Section
               title="Harmonic Tolerance"
+              showTooltip={settings.showTooltips}
               tooltip="Cents window used when matching overtones and sub-harmonics. Tighten for calibration in controlled rooms (25–35¢). Widen for live performance with reverb or temperature drift (65–100¢). Default 50¢ = half a semitone."
             >
               <div className="space-y-2">
@@ -206,34 +210,33 @@ export function SettingsPanel({
               </div>
             </Section>
 
-            <Section 
-              title="Input Gain" 
-              tooltip="Digital boost applied before analysis. Increase if your signal is weak, decrease if clipping. Does not affect audio output, only analysis sensitivity."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Boost</span>
-                  <span className="text-xs font-mono">{settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb}dB</span>
-                </div>
-                <Slider
-                  value={[settings.inputGainDb]}
-                  onValueChange={([v]) => onSettingsChange({ inputGainDb: v })}
-                  min={-40}
-                  max={40}
-                  step={1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>-40dB</span>
-                  <span>0dB</span>
-                  <span>+40dB</span>
-                </div>
-              </div>
-            </Section>
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-5">
+            <Section
+              title="Tooltips"
+              showTooltip={settings.showTooltips}
+              tooltip="Show contextual help on sliders and controls. Disable once you know the system."
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Show help tooltips</span>
+                <button
+                  role="switch"
+                  aria-checked={settings.showTooltips}
+                  onClick={() => onSettingsChange({ showTooltips: !settings.showTooltips })}
+                  className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    settings.showTooltips ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+                    settings.showTooltips ? 'translate-x-3.5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </Section>
             <Section 
               title="Graph Label Size" 
+              showTooltip={settings.showTooltips}
               tooltip="Font size for frequency, dB, and annotation labels inside the RTA, GEQ, and Waterfall graphs. Increase for high-DPI displays or viewing from a distance."
             >
               <div className="space-y-2">
@@ -257,6 +260,7 @@ export function SettingsPanel({
 
             <Section 
               title="Max Issues Shown" 
+              showTooltip={settings.showTooltips}
               tooltip="Limits how many feedback issues display at once. Default is 6 for focused work on worst problems; increase up to 12 for full system overview during calibration."
             >
               <div className="space-y-2">
@@ -280,6 +284,7 @@ export function SettingsPanel({
 
             <Section 
               title="EQ Recommendation Style" 
+              showTooltip={settings.showTooltips}
               tooltip="Surgical: narrow Q (8-16), deep cuts for precise feedback removal. Heavy: wider Q (2-4), moderate cuts for broader tonal shaping and room mode control."
             >
               <Select
@@ -366,16 +371,17 @@ export function SettingsPanel({
 interface SectionProps {
   title: string
   tooltip?: string
+  showTooltip?: boolean
   children: React.ReactNode
 }
 
-function Section({ title, tooltip, children }: SectionProps) {
+function Section({ title, tooltip, showTooltip = true, children }: SectionProps) {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <h3 className="text-sm font-medium text-foreground">{title}</h3>
-          {tooltip && (
+          {tooltip && showTooltip && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help" />
