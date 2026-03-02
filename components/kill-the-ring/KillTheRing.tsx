@@ -255,8 +255,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                         onClick={start}
                         className="absolute inset-0 flex items-center justify-center cursor-pointer"
                       >
-                        <span className="text-sm font-black animate-flash-slow whitespace-nowrap">
-                          KILL
+                        <span className="text-base font-black animate-flash-slow whitespace-nowrap text-white">
+                          START
                         </span>
                       </div>
                     )}
