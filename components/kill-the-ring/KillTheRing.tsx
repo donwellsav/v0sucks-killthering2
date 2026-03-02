@@ -199,6 +199,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   // Track feedback history for heatmap and MSD trend visualization
   const { feedbackHistory, msdHistory } = useFeedbackHistory(advisories)
 
+  // Stable refs so SettingsPanel/SessionRecorder don't re-render every audio frame
+  const spectrumRef = useRef(spectrum)
+  useEffect(() => { spectrumRef.current = spectrum }, [spectrum])
+  const advisoriesRef = useRef(advisories)
+  useEffect(() => { advisoriesRef.current = advisories }, [advisories])
+
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
     updateSettings({
@@ -329,8 +335,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               resetSettings()
               logger.logSettingsChanged({ action: 'reset_to_defaults' })
             }}
-            spectrum={spectrum}
-            advisories={advisories}
             isRunning={isRunning}
           />
 

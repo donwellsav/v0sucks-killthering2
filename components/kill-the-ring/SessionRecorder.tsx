@@ -33,10 +33,10 @@ interface SessionRecording {
 }
 
 export interface SessionRecorderContentProps {
-  spectrum: SpectrumData | null
-  advisories: Advisory[]
+  spectrum?: SpectrumData | null
+  advisories?: Advisory[]
   isRunning: boolean
-  settings: Record<string, unknown>
+  settings?: Record<string, unknown>
   onPlaybackFrame?: (frame: RecordedFrame) => void
 }
 
@@ -44,10 +44,10 @@ const MAX_RECORDING_DURATION = 5 * 60 * 1000
 const RECORDING_INTERVAL = 100
 
 export function SessionRecorderContent({
-  spectrum,
-  advisories,
+  spectrum = null,
+  advisories = [],
   isRunning,
-  settings,
+  settings = {},
   onPlaybackFrame,
 }: SessionRecorderContentProps) {
   const [isRecording, setIsRecording] = useState(false)

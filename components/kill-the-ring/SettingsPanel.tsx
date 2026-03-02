@@ -34,7 +34,7 @@ import { SessionRecorderContent } from './SessionRecorder'
 import { ParametricEQExportContent } from './ParametricEQExport'
 import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
 import { ALGORITHM_MODES } from '@/lib/dsp/constants'
-import type { AlgorithmMode, SpectrumData, Advisory } from '@/types/advisory'
+import type { AlgorithmMode } from '@/types/advisory'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -42,9 +42,6 @@ interface SettingsPanelProps {
   settings: DetectorSettings
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
   onReset: () => void
-  // Passed through for inline Record and EQ Export tabs
-  spectrum?: SpectrumData | null
-  advisories?: Advisory[]
   isRunning?: boolean
 }
 
@@ -52,8 +49,6 @@ export function SettingsPanel({
   settings,
   onSettingsChange,
   onReset,
-  spectrum = null,
-  advisories = [],
   isRunning = false,
 }: SettingsPanelProps) {
   // Settings panel state
@@ -730,8 +725,6 @@ export function SettingsPanel({
             <div className="space-y-2">
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Session Recorder</p>
               <SessionRecorderContent
-                spectrum={spectrum}
-                advisories={advisories}
                 isRunning={isRunning}
                 settings={settings as Record<string, unknown>}
               />

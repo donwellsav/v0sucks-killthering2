@@ -1,5 +1,5 @@
 'use client'
-// Fixed: single definitions only (no duplicates)
+// v3 — no duplicate definitions; Speech preset included
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
