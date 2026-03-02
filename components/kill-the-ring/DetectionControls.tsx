@@ -21,10 +21,10 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
 
         {/* Mode select */}
         <Select value={settings.mode} onValueChange={(v) => onModeChange(v as OperationMode)}>
-          <SelectTrigger className="h-5 w-full text-[10px] bg-input border-border px-2">
+          <SelectTrigger className="h-5 w-full bg-input border-border px-2">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent size="compact" className="text-[10px]">
+          <SelectContent size="compact">
             <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
             <SelectItem value="vocalRing">Vocal Ring</SelectItem>
             <SelectItem value="musicAware">Music-Aware</SelectItem>
