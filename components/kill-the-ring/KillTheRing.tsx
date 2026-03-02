@@ -1,8 +1,9 @@
 'use client'
 
-// BUILD v23-clean - Reverted to clean baseline
-// No problematic components (FrequencyBandControls, MicPresets, etc.)
-// Built: 2026-03-02
+// BUILD v3.0 - Force Full Rebuild (Cache Buster)
+// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
+// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
+// Built: 2026-02-28
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
@@ -18,7 +19,6 @@ import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
-import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Menu, X, RotateCcw } from 'lucide-react'
@@ -246,17 +246,17 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 >
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
-                {!isRunning && (
-                  <div 
-                    className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-                    style={{ translateY: 'calc(100% + 12px)' }}
-                  >
-                    <span className="font-black whitespace-nowrap text-white leading-none" style={{ fontSize: '13px' }}>
-                      START
-                    </span>
-                  </div>
-                )}
               </button>
+              {!isRunning && (
+                <div 
+                  onClick={start}
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                >
+                  <span className="text-base font-black animate-flash-slow whitespace-nowrap text-white">
+                    START
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col justify-center gap-[3px]">
@@ -460,21 +460,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               Done
             </Button>
           </div>
-        </div>
-      )}
-
-      {/* ── Algorithm Status Bar (when enabled) ─────────────────── */}
-      {settings.showAlgorithmScores && (
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm">
-          <AlgorithmStatusBar
-            algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
-            contentType={spectrum?.contentType}
-            msdFrameCount={spectrum?.msdFrameCount}
-            isCompressed={spectrum?.isCompressed}
-            compressionRatio={spectrum?.compressionRatio}
-            isRunning={isRunning}
-            showDetailed
-          />
         </div>
       )}
 
