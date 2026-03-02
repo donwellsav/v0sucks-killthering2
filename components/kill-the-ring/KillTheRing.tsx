@@ -244,10 +244,20 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         </div>
 
-        {/* Desktop: Streamlined logo + action icons */}
-        <div className="hidden landscape:flex items-center justify-between px-4 h-14">
-          {/* Logo wordmark */}
-          <div className="flex items-center gap-0">
+        {/* Desktop: Gain slider + logo + action icons */}
+        <div className="hidden landscape:flex items-center gap-4 px-4 h-14">
+          {/* Left: Gain slider */}
+          <div className="flex items-center flex-1 min-w-0 max-w-xs">
+            <InputMeterSlider
+              value={settings.inputGainDb}
+              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+              level={inputLevel}
+              fullWidth
+            />
+          </div>
+
+          {/* Center: Logo wordmark */}
+          <div className="flex items-center gap-0 flex-1 justify-center">
             <div className="flex flex-col justify-center gap-0">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
@@ -259,8 +269,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </div>
           </div>
 
-          {/* Desktop action icons */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* Right: Action icons */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-1 justify-end">
             {noiseFloorDb !== null && (
               <span className="font-mono text-[10px] text-muted-foreground">
                 Floor: {noiseFloorDb.toFixed(0)}dB
