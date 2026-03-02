@@ -1,6 +1,7 @@
 'use client'
 
 // Help menu for Kill The Ring application
+// Updated with advanced algorithm documentation from DAFx-16, DBX, and KU Leuven research
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,7 +35,7 @@ export function HelpMenu() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="controls">Controls</TabsTrigger>
             <TabsTrigger value="modes">Modes</TabsTrigger>
-            <TabsTrigger value="readings">Readings</TabsTrigger>
+            <TabsTrigger value="algorithms">Algorithms</TabsTrigger>
           </TabsList>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tips">Tips</TabsTrigger>
@@ -47,33 +48,45 @@ export function HelpMenu() {
           <TabsContent value="overview" className="mt-4 space-y-4">
             <Section title="What is Kill The Ring?">
               <p>
-                Kill The Ring is a real-time acoustic feedback detection tool for live sound engineers.
-                It analyzes audio input to identify feedback frequencies, resonant rings, and other
-                problematic tones, then provides specific EQ recommendations to address them.
-                Default settings are optimized for corporate/conference PA systems with a vocal focus (200Hz–8kHz).
+                Kill The Ring is a real-time acoustic feedback detection and analysis tool for professional live sound engineers.
+                It uses multiple detection algorithms based on peer-reviewed acoustic research to identify feedback frequencies, 
+                resonant rings, and problematic tones with high accuracy and minimal false positives.
+              </p>
+              <p className="mt-2">
+                The system provides specific EQ recommendations and tracks algorithm confidence scores to help you make 
+                informed decisions during live events.
               </p>
             </Section>
 
             <Section title="Quick Start">
               <ol className="list-decimal list-inside space-y-2">
-                <li>Look for the flashing <strong>START</strong> text over the speaker button in the header — click it to begin monitoring</li>
-                <li>Before analysis starts, the RTA graph shows a placeholder image with "Press Start to begin analysis"</li>
+                <li>Click the flashing <strong>START</strong> speaker button in the header to begin monitoring</li>
                 <li>Detected issues appear in the <strong>Active Issues</strong> sidebar, sorted by frequency</li>
-                <li>Each issue card shows frequency, pitch, and recommended GEQ/PEQ cuts</li>
-                <li>Tap <strong>Apply</strong> on a card to log the cut — it moves to the <strong>EQ Notepad</strong> tab</li>
-                <li>Use the <strong>EQ Notepad</strong> to copy all applied cuts as formatted text</li>
-                <li>Use the <strong>Logs</strong> panel to export full session data for reference</li>
-                <li>Review past sessions from the <strong>Sessions</strong> page with per-session frequency histograms</li>
+                <li>Each issue card shows frequency, pitch, severity, and recommended GEQ/PEQ cuts</li>
+                <li>Tap <strong>Apply</strong> on a card to log the cut to the <strong>EQ Notepad</strong> tab</li>
+                <li>Use the <strong>Algo</strong> tab in Settings to tune advanced detection algorithms</li>
+                <li>Enable <strong>Show Algorithm Scores</strong> to see real-time MSD, Phase, and Compression status</li>
+                <li>Export session logs for post-event analysis</li>
               </ol>
+            </Section>
+
+            <Section title="Key Features">
+              <ul className="space-y-2">
+                <li><strong>Multi-Algorithm Detection:</strong> MSD, Phase Coherence, Spectral Flatness, and Comb Pattern analysis working together</li>
+                <li><strong>Compression Detection:</strong> Automatically adapts thresholds for dynamically compressed content</li>
+                <li><strong>Content-Aware:</strong> Detects speech vs music vs compressed audio and adjusts sensitivity</li>
+                <li><strong>Comb Pattern Prediction:</strong> Identifies feedback acoustic paths and predicts future feedback frequencies</li>
+                <li><strong>Real-Time Algorithm Status:</strong> See exactly what each algorithm is detecting</li>
+              </ul>
             </Section>
 
             <Section title="Display Areas">
               <ul className="space-y-2">
-                <li><strong>Large Panel (top):</strong> The selected graph enlarged for detail. Use the dropdown in the panel header to switch between RTA Spectrum, 31-Band GEQ, and Waterfall. Click any small panel below to enlarge it.</li>
-                <li><strong>Small Panels (bottom row):</strong> The two non-active graphs, live and clickable. Click to swap into the large view.</li>
-                <li><strong>Left Sidebar — Issues tab:</strong> Active detected issues with Apply buttons. RUNAWAY issues pulse red.</li>
-                <li><strong>Left Sidebar — EQ Notepad tab:</strong> Accumulates cuts you have applied. Copy button exports all cuts as text for pasting into console notes.</li>
-                <li><strong>Waterfall time axis:</strong> Y-axis shows real elapsed seconds, auto-scaling to the history depth.</li>
+                <li><strong>Large Panel (top):</strong> Selected graph enlarged for detail. Switch between RTA Spectrum, 31-Band GEQ, and Waterfall.</li>
+                <li><strong>Small Panels (bottom row):</strong> The two non-active graphs, live and clickable.</li>
+                <li><strong>Left Sidebar - Issues tab:</strong> Active detected issues with Apply buttons. RUNAWAY issues pulse red.</li>
+                <li><strong>Left Sidebar - EQ Notepad tab:</strong> Accumulates applied cuts for easy reference and export.</li>
+                <li><strong>Algorithm Status Bar:</strong> Shows current algorithm mode, content type, MSD buffer status, and compression detection (enable in Settings).</li>
               </ul>
             </Section>
           </TabsContent>
@@ -83,70 +96,46 @@ export function HelpMenu() {
             <Section title="Header Controls">
               <ul className="space-y-3">
                 <li>
-                  <strong>Start / Stop (Speaker Button):</strong> The speaker icon button with a flashing white "START" overlay begins or pauses audio analysis. The LIVE indicator appears while running. Once started, the placeholder image disappears and the real-time spectrum is shown.
+                  <strong>Start / Stop (Speaker Button):</strong> Begin or pause audio analysis. The LIVE indicator appears while running.
                 </li>
                 <li>
-                  <strong>Input Gain (meter slider):</strong> Digital boost applied before analysis (+0 to +30 dB). Increase if feedback is not being detected; reduce if clipping. Does not affect audio output.
+                  <strong>Input Gain (meter slider):</strong> Digital boost applied before analysis (-40 to +40 dB, default +15 dB). Increase if feedback is not being detected; reduce if clipping.
                 </li>
                 <li>
-                  <strong>Mode:</strong> Detection sensitivity preset. Default is <strong>Feedback Hunt</strong>. See the Modes tab for details.
+                  <strong>Mode:</strong> Detection sensitivity preset. Default is <strong>Feedback Hunt</strong>.
                 </li>
                 <li>
-                  <strong>Logs:</strong> Opens the session log viewer with CSV, JSON, and plain text export.
-                </li>
-                <li>
-                  <strong>Sessions:</strong> Navigate to the Sessions page to view frequency histograms and stats for all past sessions.
-                </li>
-                <li>
-                  <strong>Settings:</strong> Advanced analysis and display options (FFT size, smoothing, hold time, EQ style). Detection controls are in the sidebar, not here.
+                  <strong>Logs / Sessions / Settings:</strong> Access session data, history, and configuration.
                 </li>
               </ul>
             </Section>
 
-            <Section title="Sidebar — Detection Controls">
-              <p className="mb-2">These controls are the primary real-time tuning tools. They live in the top half of the left sidebar:</p>
+            <Section title="Sidebar - Detection Controls">
+              <p className="mb-2">Primary real-time tuning tools in the left sidebar:</p>
               <ul className="space-y-2">
-                <li><strong>Mode dropdown:</strong> Sets the detection sensitivity preset (Feedback Hunt, Aggressive, Vocal Ring, Music-Aware, Calibration).</li>
-                <li><strong>Freq Range chips:</strong> Four preset buttons — <em>Vocal</em> (200–8kHz), <em>Monitor</em> (300–3kHz), <em>Full</em> (20–20kHz), <em>Sub</em> (20–250Hz). Instantly updates the analysis frequency window.</li>
-                <li><strong>Auto Music-Aware toggle:</strong> When enabled, automatically switches to music-aware mode when the signal rises above the noise floor by the configured hysteresis amount (default: 15 dB). A Speech/Music pill shows the current state. This adapts sensitivity as the band starts and stops playing.</li>
-                <li><strong>Threshold:</strong> Primary sensitivity. 4–8 dB for aggressive detection, 10–14 dB balanced, 16+ dB conservative. Default: 8 dB.</li>
-                <li><strong>Ring:</strong> Resonance detection sensitivity. 2–4 dB for calibration, 5–7 dB normal use, 8+ dB during shows. Default: 5 dB.</li>
-                <li><strong>Growth:</strong> How fast a frequency must grow (dB/s) to be flagged. 0.5–1 dB/s catches feedback early, 3+ dB/s only runaway. Default: 2 dB/s.</li>
+                <li><strong>Mode dropdown:</strong> Sets detection sensitivity preset.</li>
+                <li><strong>Freq Range chips:</strong> Four presets - Vocal (200-8kHz), Monitor (300-3kHz), Full (20-20kHz), Sub (20-250Hz).</li>
+                <li><strong>Auto Music-Aware toggle:</strong> Automatically switches sensitivity when the band starts/stops playing.</li>
+                <li><strong>Threshold:</strong> Primary sensitivity (4-8 dB aggressive, 10-14 dB balanced, 16+ dB conservative).</li>
+                <li><strong>Ring:</strong> Resonance detection sensitivity (2-4 dB calibration, 5-7 dB normal, 8+ dB shows).</li>
+                <li><strong>Growth:</strong> Amplitude growth rate threshold (0.5-1 dB/s catches early, 3+ dB/s only runaway).</li>
               </ul>
             </Section>
 
-            <Section title="Sidebar — Issues Tab">
+            <Section title="Settings Panel Tabs">
               <ul className="space-y-2">
-                <li>Lists all currently detected issues sorted by frequency (low to high).</li>
-                <li>Each card shows the frequency, musical pitch, GEQ band + cut depth, and PEQ Q + gain.</li>
-                <li>RUNAWAY issues pulse red with a dB/s velocity counter and predicted time to clip.</li>
-                <li><strong>Apply button:</strong> Tap to confirm you have applied the cut. The card fades and the cut logs to the EQ Notepad tab.</li>
+                <li><strong>Analysis tab:</strong> FFT Size, Spectrum Smoothing, Hold Time, Confidence Threshold, Room Acoustics.</li>
+                <li><strong>Algo tab:</strong> Algorithm Mode, MSD History Buffer, Phase Coherence Threshold, Fusion Threshold, Compression Detection, Comb Pattern Detection, Algorithm Score Display.</li>
+                <li><strong>Display tab:</strong> Max Issues Shown, Graph Label Size, EQ Recommendation Style.</li>
+                <li><strong>Export tab:</strong> Session log export in CSV, JSON, or plain text formats.</li>
               </ul>
             </Section>
 
-            <Section title="Sidebar — EQ Notepad Tab">
+            <Section title="EQ Recommendations">
               <ul className="space-y-2">
-                <li>Accumulates all cuts you have marked as applied during the session.</li>
-                <li><strong>Copy:</strong> Copies all cuts as formatted text (frequency, GEQ, PEQ) for pasting into console notes or a text editor.</li>
-                <li>Hover over a cut row to reveal the remove button (trash icon).</li>
-                <li>Clear button removes all cuts at once.</li>
-              </ul>
-            </Section>
-
-            <Section title="Settings Panel (gear icon)">
-              <p className="mb-2">Advanced settings split into two tabs:</p>
-              <ul className="space-y-2">
-                <li><strong>Analysis tab:</strong> FFT Size (resolution vs. speed trade-off), Spectrum Smoothing, Hold Time (how long issues stay visible), Input Gain.</li>
-                <li><strong>Display tab:</strong> Max Issues Shown (default 6 — focus on worst problems, adjustable to 12), Graph Label Size, EQ Recommendation Style (Surgical = narrow Q / deep cuts, Heavy = wide Q / moderate cuts).</li>
-                <li><strong>Reset to PA Defaults:</strong> Restores all settings to Feedback Hunt defaults optimized for corporate/conference PA systems.</li>
-              </ul>
-            </Section>
-
-            <Section title="Graph Switcher">
-              <ul className="space-y-2">
-                <li>The large panel header has a <strong>dropdown</strong> to select which graph is enlarged: RTA Spectrum, 31-Band GEQ, or Waterfall.</li>
-                <li>The two remaining graphs appear in the bottom row, still live.</li>
-                <li>Clicking a small panel also swaps it to the large view with a crossfade transition.</li>
+                <li><strong>GEQ:</strong> Nearest ISO 31-band center frequency with suggested cut depth.</li>
+                <li><strong>PEQ:</strong> Precise frequency, Q value, and gain for parametric EQ.</li>
+                <li><strong>EQ Style:</strong> Surgical (narrow Q, deep cuts) vs Heavy (wide Q, moderate cuts).</li>
               </ul>
             </Section>
           </TabsContent>
@@ -156,42 +145,31 @@ export function HelpMenu() {
             <Section title="Operation Modes">
               <ul className="space-y-3">
                 <li>
-                  <strong>Feedback Hunt (Default):</strong> Balanced PA mode. Threshold 8 dB, Ring 5 dB, Growth 2 dB/s. Good general sensitivity with fewer false positives — the recommended starting point.
+                  <strong>Feedback Hunt (Default):</strong> Balanced PA mode. Threshold 8 dB, Ring 4 dB, Growth 1.5 dB/s. Good general sensitivity with fewer false positives.
                 </li>
                 <li>
-                  <strong>Aggressive:</strong> Maximum sensitivity for system calibration and ring-out. Threshold 6 dB, Ring 3 dB, Growth 1 dB/s. Catches feedback early before it becomes audible.
+                  <strong>Aggressive:</strong> Maximum sensitivity for system calibration. Threshold 6 dB, Ring 3 dB, Growth 1 dB/s.
                 </li>
                 <li>
-                  <strong>Vocal Ring:</strong> Tuned for speech frequencies (200 Hz–8 kHz). Threshold 6 dB, Ring 4 dB, Growth 1.5 dB/s. Use when fine-tuning monitor mixes or tracking subtle vocal ring-outs.
+                  <strong>Vocal Ring:</strong> Tuned for speech frequencies (200 Hz-8 kHz). Threshold 6 dB, Ring 4 dB, Growth 1.5 dB/s.
                 </li>
                 <li>
-                  <strong>Music-Aware:</strong> Reduced sensitivity to avoid false positives from sustained musical notes. Threshold 12 dB, Ring 7 dB, Growth 3 dB/s, music filter enabled. Use during performance. Can also be triggered automatically via the <em>Auto Music-Aware</em> toggle in the sidebar.
+                  <strong>Music-Aware:</strong> Reduced sensitivity for performance. Threshold 12 dB, Ring 5 dB, Growth 3 dB/s, music filter enabled.
                 </li>
                 <li>
-                  <strong>Calibration:</strong> Ultra-sensitive for initial system setup and ringing out monitors. Threshold 4 dB, Ring 2 dB, Growth 0.5 dB/s. Use with pink noise or slow gain sweeps.
+                  <strong>Calibration:</strong> Ultra-sensitive for initial setup. Threshold 4 dB, Ring 4 dB, Growth 0.5 dB/s.
                 </li>
               </ul>
             </Section>
 
             <Section title="Auto Music-Aware">
               <p className="mb-2">
-                The <strong>Auto Music-Aware</strong> toggle in the sidebar automatically switches sensitivity based on signal level — no manual mode change required during a show:
+                The <strong>Auto Music-Aware</strong> toggle automatically switches sensitivity based on signal level:
               </p>
               <ul className="space-y-2">
-                <li>When signal rises more than <strong>15 dB above the noise floor</strong>, the system enters music-aware mode (band is playing).</li>
-                <li>When signal drops back below that threshold for 1 second, it returns to the current base mode (band has stopped).</li>
-                <li>A <strong>Speech / Music</strong> pill next to the toggle shows the current automatic state.</li>
-                <li>The 15 dB hysteresis value can be adjusted in Settings.</li>
-              </ul>
-            </Section>
-
-            <Section title="Frequency Range Presets">
-              <p className="mb-2">Four quick-switch range chips narrow or widen the detection window:</p>
-              <ul className="space-y-2">
-                <li><strong>Vocal</strong> — 200 Hz – 8 kHz. Default. Speech PA and vocal monitors.</li>
-                <li><strong>Monitor</strong> — 300 Hz – 3 kHz. Focused on the core speech intelligibility band. Tightest window, fewest distractions.</li>
-                <li><strong>Full</strong> — 20 Hz – 20 kHz. Full-range system calibration. Catches sub-bass rumble and high-frequency feedback.</li>
-                <li><strong>Sub</strong> — 20 Hz – 250 Hz. Low-frequency subwoofer monitoring only.</li>
+                <li>When signal rises 15 dB above noise floor, enters music-aware mode</li>
+                <li>When signal drops back, returns to base mode after 1 second</li>
+                <li>A Speech/Music pill shows the current automatic state</li>
               </ul>
             </Section>
 
@@ -201,47 +179,111 @@ export function HelpMenu() {
                 <li>Initial system setup / ring-out: <strong>Calibration</strong> or <strong>Aggressive</strong></li>
                 <li>Monitor tuning: <strong>Vocal Ring</strong></li>
                 <li>During live performance: <strong>Music-Aware</strong> or enable <strong>Auto Music-Aware</strong></li>
-                <li>Full system analysis: <strong>Feedback Hunt</strong> + <em>Full</em> freq range</li>
               </ul>
             </Section>
           </TabsContent>
 
-          {/* READINGS */}
-          <TabsContent value="readings" className="mt-4 space-y-4">
-            <Section title="Issue Card Details">
-              <ul className="space-y-2">
-                <li><strong>Frequency (Hz):</strong> The detected problem frequency</li>
-                <li><strong>Pitch:</strong> Musical note equivalent (e.g., A4, C#3)</li>
-                <li><strong>Level (dB):</strong> Amplitude of the detected peak</li>
-                <li><strong>Q:</strong> Estimated bandwidth/sharpness of the resonance</li>
-                <li><strong>Growth (dB/s):</strong> Rate of amplitude change — positive means building feedback</li>
+          {/* ALGORITHMS - NEW TAB */}
+          <TabsContent value="algorithms" className="mt-4 space-y-4">
+            <Section title="Advanced Detection System">
+              <p>
+                Kill The Ring uses multiple detection algorithms from peer-reviewed acoustic research. 
+                Each algorithm detects different characteristics of feedback, and they vote together 
+                for maximum accuracy and minimal false positives.
+              </p>
+            </Section>
+
+            <Section title="MSD - Magnitude Slope Deviation">
+              <p className="mb-2">
+                From the <strong>DAFx-16 paper</strong>. The key insight: feedback amplitude grows 
+                <strong> linearly in dB scale</strong> over time, meaning its second derivative is near zero.
+              </p>
+              <ul className="space-y-1">
+                <li><strong>Speech accuracy:</strong> 100% with just 7 frames (~160ms)</li>
+                <li><strong>Classical music:</strong> 100% with 13 frames (~300ms)</li>
+                <li><strong>Rock/compressed:</strong> Requires compression detection assistance</li>
+              </ul>
+              <p className="mt-2 text-xs">
+                Low MSD = likely feedback. High MSD = likely music (amplitude varies).
+              </p>
+            </Section>
+
+            <Section title="Phase Coherence Analysis">
+              <p className="mb-2">
+                From <strong>Nyquist stability theory</strong>. True feedback maintains constant phase 
+                relationships across consecutive frames because it's a pure regenerative tone. 
+                Music has random phase variations.
+              </p>
+              <ul className="space-y-1">
+                <li><strong>High coherence (&gt;0.85):</strong> Likely feedback (phase-locked)</li>
+                <li><strong>Medium coherence (0.65-0.85):</strong> Uncertain</li>
+                <li><strong>Low coherence (&lt;0.65):</strong> Likely music (random phase)</li>
               </ul>
             </Section>
 
-            <Section title="EQ Recommendations">
-              <ul className="space-y-2">
-                <li><strong>GEQ:</strong> Nearest ISO 31-band center frequency and suggested cut depth. Apply to your graphic EQ.</li>
-                <li><strong>PEQ:</strong> Precise frequency, Q value, and gain for parametric EQ. Filter types: bell (standard), notch (very narrow peaks).</li>
-                <li><strong>EQ Style:</strong> Surgical uses narrow Q (8–16) with deeper cuts. Heavy uses wider Q (2–4) with moderate cuts. Configurable in Settings.</li>
+            <Section title="Spectral Flatness + Kurtosis">
+              <p className="mb-2">
+                Feedback is a <strong>near-pure tone</strong> with very low spectral flatness around the 
+                frequency. The amplitude distribution also has high kurtosis (very peaky, not gaussian).
+              </p>
+              <ul className="space-y-1">
+                <li><strong>Spectral Flatness &lt;0.05:</strong> Pure tone (feedback)</li>
+                <li><strong>Kurtosis &gt;10:</strong> Strongly peaked distribution</li>
+                <li><strong>Combined:</strong> High confidence feedback indicator</li>
               </ul>
             </Section>
 
-            <Section title="Severity Levels">
-              <ul className="space-y-2">
-                <li><strong className="text-red-500">RUNAWAY:</strong> Active feedback rapidly increasing — address immediately</li>
-                <li><strong className="text-orange-500">GROWING:</strong> Feedback building but not yet critical</li>
-                <li><strong className="text-yellow-500">RESONANCE:</strong> Stable resonant peak that could become feedback</li>
-                <li><strong className="text-purple-500">RING:</strong> Subtle ring that may need attention</li>
-                <li><strong className="text-cyan-500">WHISTLE:</strong> Detected whistle or sibilance</li>
-                <li><strong className="text-green-500">INSTRUMENT:</strong> Likely musical content, not feedback</li>
+            <Section title="Comb Filter Pattern Detection">
+              <p className="mb-2">
+                From the <strong>DBX paper</strong>. Multiple feedback frequencies appear at 
+                <strong> regular intervals</strong> due to the round-trip acoustic delay path.
+              </p>
+              <ul className="space-y-1">
+                <li><strong>Frequency spacing:</strong> f_n = n * c / (2 * d) where d = path length</li>
+                <li><strong>Pattern detection:</strong> Finds common frequency spacing between peaks</li>
+                <li><strong>Prediction:</strong> Calculates where future feedback will occur</li>
+              </ul>
+              <p className="mt-2 text-xs">
+                When a comb pattern is detected, the system can predict the next feedback frequencies 
+                before they become audible.
+              </p>
+            </Section>
+
+            <Section title="Compression Detection">
+              <p className="mb-2">
+                The DAFx-16 research found that <strong>dynamically compressed content</strong> (rock/pop music) 
+                causes false positives because sustained notes look like early feedback. 
+                Compression detection identifies this and adjusts thresholds.
+              </p>
+              <ul className="space-y-1">
+                <li><strong>Crest Factor:</strong> Peak-to-RMS ratio. Normal: 12 dB. Compressed: &lt;6 dB</li>
+                <li><strong>Dynamic Range:</strong> Normal: &gt;20 dB. Compressed: &lt;8 dB</li>
+                <li><strong>Adaptation:</strong> When compressed content detected, phase coherence gets more weight</li>
               </ul>
             </Section>
 
-            <Section title="Header Status Indicators">
+            <Section title="Algorithm Fusion">
+              <p className="mb-2">
+                All algorithms vote together with content-aware weighting:
+              </p>
+              <ul className="space-y-1">
+                <li><strong>Speech:</strong> MSD 45%, Phase 25%, Spectral 15%, Comb 5%, Legacy 10%</li>
+                <li><strong>Music:</strong> MSD 20%, Phase 40%, Spectral 15%, Comb 10%, Legacy 15%</li>
+                <li><strong>Compressed:</strong> MSD 15%, Phase 45%, Spectral 20%, Comb 10%, Legacy 10%</li>
+              </ul>
+              <p className="mt-2 text-xs">
+                The system automatically detects content type and applies appropriate weights.
+              </p>
+            </Section>
+
+            <Section title="Algorithm Settings (Algo Tab)">
               <ul className="space-y-2">
-                <li><strong>FFT pt @ kHz:</strong> Current FFT size and sample rate (e.g., 8192pt @ 48.0kHz)</li>
-                <li><strong>Floor: dB:</strong> Adaptive noise floor — issues must exceed this to be detected</li>
-                <li><strong>LIVE pulse:</strong> Confirms analysis is actively running</li>
+                <li><strong>Algorithm Mode:</strong> Auto, MSD Only, Phase Only, Combined (MSD+Phase), or All</li>
+                <li><strong>MSD History Buffer:</strong> Number of frames (7-50). More = accurate but slower</li>
+                <li><strong>Phase Coherence Threshold:</strong> 40-95%. Higher = stricter, fewer false positives</li>
+                <li><strong>Fusion Feedback Threshold:</strong> 40-90%. Combined probability needed for positive detection</li>
+                <li><strong>Compression Detection:</strong> Enable/disable adaptive threshold adjustment</li>
+                <li><strong>Comb Pattern Detection:</strong> Enable/disable acoustic path identification</li>
               </ul>
             </Section>
           </TabsContent>
@@ -250,47 +292,44 @@ export function HelpMenu() {
           <TabsContent value="tips" className="mt-4 space-y-4">
             <Section title="Workflow Best Practices">
               <ol className="list-decimal list-inside space-y-2">
-                <li>Start with <strong>Calibration</strong> mode during initial system setup and ring-out</li>
-                <li>Switch to <strong>Feedback Hunt</strong> for general PA monitoring (the default balanced mode)</li>
-                <li>Ring out monitors one at a time, addressing the worst frequencies first</li>
-                <li>Tap <strong>Apply</strong> on each card as you make the cut — the EQ Notepad tracks your work</li>
-                <li>Apply cuts conservatively — start with 3 dB and increase only if needed</li>
-                <li>Enable <strong>Auto Music-Aware</strong> so sensitivity adjusts automatically when the band plays</li>
-                <li>Use <strong>PEQ</strong> recommendations for surgical cuts; <strong>GEQ</strong> for broader room resonances</li>
-                <li>Use the <strong>EQ Notepad Copy</strong> button to paste all applied cuts into your console notes</li>
-                <li>Export logs after the session so you have a record of every detected frequency</li>
-                <li>Review the <strong>Sessions</strong> page frequency histogram to spot venue resonances across multiple gigs</li>
+                <li>Start with <strong>Calibration</strong> mode during initial system setup</li>
+                <li>Enable <strong>Show Algorithm Scores</strong> to see what each algorithm is detecting</li>
+                <li>Watch the <strong>MSD frame count</strong> - wait for 15+ frames before trusting results</li>
+                <li>If you see <strong>COMPRESSED</strong> in the status bar, phase coherence is most reliable</li>
+                <li>Use <strong>Comb Pattern</strong> predictions to preemptively address upcoming feedback frequencies</li>
+                <li>Switch to <strong>Feedback Hunt</strong> for general PA monitoring</li>
+                <li>Enable <strong>Auto Music-Aware</strong> so sensitivity adjusts automatically during shows</li>
+                <li>Apply cuts conservatively - start with 3 dB and increase only if needed</li>
               </ol>
             </Section>
 
             <Section title="Getting Better Results">
               <ul className="space-y-2">
-                <li><strong>Position matters:</strong> Place your analysis mic where feedback occurs — at the monitor or near the PA</li>
-                <li><strong>Gain staging:</strong> Ensure the signal is strong but not clipping. Adjust Input Gain in the header.</li>
-                <li><strong>Start quiet:</strong> Begin with lower system gain and slowly increase while monitoring</li>
-                <li><strong>One change at a time:</strong> Apply one EQ cut, then observe before making more changes</li>
-                <li><strong>Watch Growth:</strong> Positive dB/s values mean action is needed before the feedback builds</li>
-                <li><strong>Use Hold Time:</strong> Increase to 3–5 s in Settings when making reference cuts so issues stay visible</li>
-                <li><strong>Freq Range presets:</strong> Switch to <em>Full</em> for initial calibration, then narrow to <em>Vocal</em> during the show</li>
+                <li><strong>Position matters:</strong> Place your analysis mic where feedback occurs</li>
+                <li><strong>Gain staging:</strong> Ensure signal is strong but not clipping (default +15 dB)</li>
+                <li><strong>Increase MSD frames:</strong> For compressed music, try 30-50 frames</li>
+                <li><strong>Lower Phase threshold:</strong> For noisy environments, try 65-70%</li>
+                <li><strong>Watch Content Type:</strong> The auto-detected type tells you which algorithms are most reliable</li>
+              </ul>
+            </Section>
+
+            <Section title="Understanding Algorithm Scores">
+              <ul className="space-y-2">
+                <li><strong>MSD HIGH:</strong> Second derivative near zero - strong feedback indicator</li>
+                <li><strong>Phase LOCKED:</strong> Consistent phase relationship - strong feedback indicator</li>
+                <li><strong>Spectral PURE:</strong> Very low flatness - single tone present</li>
+                <li><strong>Comb PATTERN:</strong> Regular frequency spacing - feedback loop identified</li>
+                <li><strong>COMPRESSED:</strong> Dynamic compression detected - phase is most reliable</li>
               </ul>
             </Section>
 
             <Section title="Common Feedback Frequency Ranges">
               <ul className="space-y-2">
-                <li><strong>200–500 Hz:</strong> Muddy buildup, boxy vocals, room modes (vocal focus lower range)</li>
-                <li><strong>500 Hz–1 kHz:</strong> Nasal/honky tones, vocal feedback zone</li>
-                <li><strong>1–3 kHz:</strong> Presence/intelligibility range, harsh feedback</li>
-                <li><strong>3–6 kHz:</strong> Sibilance, cymbal harshness, piercing feedback</li>
-                <li><strong>6–8 kHz:</strong> Air/brightness, high-frequency ringing (vocal focus upper range)</li>
-              </ul>
-            </Section>
-
-            <Section title="EQ Cut Guidelines">
-              <ul className="space-y-2">
-                <li><strong>Narrow Q (8–16):</strong> Isolated feedback — surgical removal with minimal tonal impact</li>
-                <li><strong>Medium Q (2–4):</strong> Resonant room modes — broader control</li>
-                <li><strong>Wide Q (0.5–1):</strong> Tonal shaping — affects overall character</li>
-                <li><strong>Rule of thumb:</strong> Start with half the recommended cut depth, then adjust</li>
+                <li><strong>200-500 Hz:</strong> Muddy buildup, boxy vocals, room modes</li>
+                <li><strong>500 Hz-1 kHz:</strong> Nasal/honky tones, vocal feedback zone</li>
+                <li><strong>1-3 kHz:</strong> Presence/intelligibility range, harsh feedback</li>
+                <li><strong>3-6 kHz:</strong> Sibilance, cymbal harshness, piercing feedback</li>
+                <li><strong>6-8 kHz:</strong> Air/brightness, high-frequency ringing</li>
               </ul>
             </Section>
           </TabsContent>
@@ -299,8 +338,8 @@ export function HelpMenu() {
           <TabsContent value="troubleshoot" className="mt-4 space-y-4">
             <Section title="No Audio Input">
               <ul className="space-y-2">
-                <li>Check browser microphone permissions (camera/mic icon in the address bar)</li>
-                <li>Ensure the correct input device is selected in your system audio settings</li>
+                <li>Check browser microphone permissions (camera/mic icon in address bar)</li>
+                <li>Ensure correct input device is selected in system audio settings</li>
                 <li>Try refreshing the page and granting permissions again</li>
                 <li>Microphone access requires HTTPS in most browsers</li>
               </ul>
@@ -309,32 +348,44 @@ export function HelpMenu() {
             <Section title="Too Many False Positives">
               <ul className="space-y-2">
                 <li>Switch to <strong>Music-Aware</strong> mode during performance</li>
-                <li>Raise <strong>Threshold</strong> in the sidebar (try 10–14 dB)</li>
-                <li>Raise <strong>Ring</strong> sensitivity (try 6–8 dB)</li>
-                <li>Raise <strong>Growth</strong> rate (try 2–3 dB/s)</li>
+                <li>In the <strong>Algo tab</strong>: Raise Phase Coherence Threshold to 80-85%</li>
+                <li>In the <strong>Algo tab</strong>: Raise Fusion Feedback Threshold to 75-85%</li>
+                <li>Increase <strong>MSD History Buffer</strong> to 30-50 frames for compressed music</li>
+                <li>Enable <strong>Compression Detection</strong> for rock/pop content</li>
+                <li>Raise <strong>Threshold</strong> in sidebar (try 10-14 dB)</li>
               </ul>
             </Section>
 
             <Section title="Missing Feedback Detection">
               <ul className="space-y-2">
-                <li>Lower <strong>Threshold</strong> in the sidebar (try 4–6 dB)</li>
-                <li>Increase <strong>Input Gain</strong> in the header if the signal level is low</li>
+                <li>Lower <strong>Threshold</strong> in sidebar (try 4-6 dB)</li>
+                <li>Increase <strong>Input Gain</strong> if signal level is low</li>
                 <li>Switch to <strong>Aggressive</strong> or <strong>Calibration</strong> mode</li>
-                <li>Increase <strong>FFT Size</strong> to 16384 in Settings for better low-frequency resolution</li>
+                <li>In the <strong>Algo tab</strong>: Lower Phase Coherence Threshold to 60-65%</li>
+                <li>In the <strong>Algo tab</strong>: Lower Fusion Feedback Threshold to 50-55%</li>
+                <li>Increase <strong>FFT Size</strong> to 16384 for better low-frequency resolution</li>
+              </ul>
+            </Section>
+
+            <Section title="Compressed Music False Positives">
+              <p className="mb-2">
+                Dynamically compressed music (rock, pop, EDM) can trigger false positives because 
+                sustained notes have flat amplitude curves similar to early feedback.
+              </p>
+              <ul className="space-y-2">
+                <li>Enable <strong>Compression Detection</strong> in the Algo tab</li>
+                <li>Increase <strong>MSD History Buffer</strong> to 40-50 frames</li>
+                <li>Watch the Algorithm Status Bar - when it shows COMPRESSED, phase coherence is most reliable</li>
+                <li>Use <strong>Phase Only</strong> algorithm mode for heavily compressed content</li>
               </ul>
             </Section>
 
             <Section title="Slow or Laggy Display">
               <ul className="space-y-2">
-                <li>Reduce <strong>FFT Size</strong> to 4096 in Settings for faster processing</li>
-                <li>Increase <strong>Spectrum Smoothing</strong> to reduce visual noise load</li>
+                <li>Reduce <strong>FFT Size</strong> to 4096 in Settings</li>
+                <li>Reduce <strong>MSD History Buffer</strong> to 15-20 frames</li>
+                <li>Disable <strong>Show Algorithm Scores</strong> and <strong>Show Phase Display</strong></li>
                 <li>Close other browser tabs to free CPU resources</li>
-              </ul>
-            </Section>
-
-            <Section title="Issues Disappearing Too Quickly">
-              <ul className="space-y-2">
-                <li>Increase <strong>Hold Time</strong> in Settings (default: 3 s, try 4–5 s for reference cuts)</li>
               </ul>
             </Section>
           </TabsContent>
@@ -343,40 +394,46 @@ export function HelpMenu() {
           <TabsContent value="technical" className="mt-4 space-y-4">
             <Section title="Analysis Engine">
               <ul className="space-y-2">
-                <li><strong>FFT Analysis:</strong> Fast Fourier Transform via Web Audio API. Default 8192 bins at 48 kHz = ~5.9 Hz resolution.</li>
-                <li><strong>Peak Detection:</strong> Identifies local maxima exceeding the adaptive noise floor and detection threshold</li>
-                <li><strong>Track Persistence:</strong> Peaks are tracked across frames to distinguish sustained feedback from transients. Association tolerance: 50 cents.</li>
-                <li><strong>Harmonic Filtering:</strong> Suppresses harmonics (up to 8th) of detected fundamentals to reduce clutter</li>
-                <li><strong>Duplicate Merging:</strong> Peaks within 50 cents are merged to prevent redundant advisories</li>
+                <li><strong>FFT Analysis:</strong> Fast Fourier Transform via Web Audio API. Default 8192 bins at 48 kHz = ~5.9 Hz resolution</li>
+                <li><strong>Peak Detection:</strong> Local maxima exceeding adaptive noise floor and detection threshold</li>
+                <li><strong>Track Persistence:</strong> Peaks tracked across frames to distinguish sustained feedback from transients (50 cents tolerance)</li>
+                <li><strong>Harmonic Filtering:</strong> Suppresses harmonics (up to 8th) of detected fundamentals</li>
+                <li><strong>Algorithm Fusion:</strong> MSD, Phase, Spectral, and Comb algorithms vote with content-aware weighting</li>
               </ul>
             </Section>
 
-            <Section title="Default Configuration (PA-Optimised)">
+            <Section title="Default Configuration">
               <ul className="space-y-2">
                 <li><strong>Mode:</strong> Feedback Hunt</li>
-                <li><strong>Frequency range:</strong> 200 Hz – 8 kHz (vocal-focused)</li>
+                <li><strong>Frequency range:</strong> 200 Hz - 8 kHz (vocal-focused)</li>
                 <li><strong>Feedback threshold:</strong> 8 dB</li>
-                <li><strong>Ring threshold:</strong> 5 dB</li>
-                <li><strong>Growth rate:</strong> 2 dB/s</li>
+                <li><strong>Ring threshold:</strong> 4 dB</li>
+                <li><strong>Growth rate:</strong> 1.5 dB/s</li>
                 <li><strong>FFT size:</strong> 8192</li>
                 <li><strong>Smoothing:</strong> 60%</li>
                 <li><strong>Hold time:</strong> 3 s</li>
-                <li><strong>Input gain:</strong> +18 dB</li>
-                <li><strong>EQ style:</strong> Surgical</li>
+                <li><strong>Input gain:</strong> +15 dB</li>
+                <li><strong>Confidence threshold:</strong> 40%</li>
+                <li><strong>Algorithm mode:</strong> Combined (MSD + Phase)</li>
+                <li><strong>MSD min frames:</strong> 15</li>
+                <li><strong>Phase coherence threshold:</strong> 75%</li>
+                <li><strong>Fusion feedback threshold:</strong> 65%</li>
               </ul>
             </Section>
 
-            <Section title="Detection Algorithm">
+            <Section title="Severity Levels">
               <ul className="space-y-2">
-                <li><strong>Growth Rate:</strong> Amplitude change over time (dB/s). Runaway threshold: 8 dB/s, Growing: 2 dB/s.</li>
-                <li><strong>Q Estimation:</strong> Derived from peak width at −3 dB points</li>
-                <li><strong>Noise Floor:</strong> Adaptive measurement using lower percentile of spectral energy</li>
-                <li><strong>Classification:</strong> Weighted scoring across stability, harmonicity, modulation, sideband noise, and growth rate</li>
+                <li><strong className="text-red-500">RUNAWAY:</strong> Active feedback rapidly increasing - address immediately</li>
+                <li><strong className="text-orange-500">GROWING:</strong> Feedback building but not yet critical</li>
+                <li><strong className="text-yellow-500">RESONANCE:</strong> Stable resonant peak that could become feedback</li>
+                <li><strong className="text-purple-500">RING:</strong> Subtle ring that may need attention</li>
+                <li><strong className="text-cyan-500">WHISTLE:</strong> Detected whistle or sibilance</li>
+                <li><strong className="text-green-500">INSTRUMENT:</strong> Likely musical content, not feedback</li>
               </ul>
             </Section>
 
             <Section title="GEQ Band Mapping">
-              <p className="mb-2">Detected frequencies map to the nearest ISO 31-band center frequency:</p>
+              <p className="mb-2">Detected frequencies map to nearest ISO 31-band center frequency:</p>
               <p className="text-xs font-mono bg-muted p-2 rounded leading-relaxed">
                 20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1k, 1.25k, 1.6k, 2k, 2.5k, 3.15k, 4k, 5k, 6.3k, 8k, 10k, 12.5k, 16k, 20k Hz
               </p>
@@ -394,201 +451,205 @@ export function HelpMenu() {
 
           {/* THE MATH - Deep dive into algorithms */}
           <TabsContent value="math" className="mt-4 space-y-4">
-            <Section title="FFT & Spectral Analysis">
+            <Section title="FFT and Spectral Analysis">
               <p className="mb-2">
-                The core analysis uses the <strong>Fast Fourier Transform</strong> to decompose the time-domain audio signal into frequency bins. Given an FFT size of <em>N</em> and sample rate <em>fs</em>:
+                The core analysis uses the <strong>Fast Fourier Transform</strong> to decompose audio into frequency bins:
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>Frequency resolution: <strong>Δf = fs / N</strong></p>
-                <p>At 8192pt @ 48kHz: Δf = 48000 / 8192 ≈ <strong>5.86 Hz/bin</strong></p>
-                <p>Bin → Hz conversion: <strong>f = bin × (fs / N)</strong></p>
+                <p>Frequency resolution: <strong>df = fs / N</strong></p>
+                <p>At 8192pt @ 48kHz: df = 48000 / 8192 = <strong>5.86 Hz/bin</strong></p>
+                <p>Bin to Hz: <strong>f = bin * (fs / N)</strong></p>
               </div>
               <p className="mt-2 text-xs">
-                Quadratic interpolation refines peak frequency beyond bin resolution using the classic 3-point parabolic fit on the log-magnitude spectrum (Grandke, 1983):
+                Quadratic interpolation refines peak frequency beyond bin resolution (Grandke, 1983):
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs">
-                <p>δ = 0.5 × (y[k-1] - y[k+1]) / (y[k-1] - 2×y[k] + y[k+1])</p>
-                <p>True frequency: <strong>f_true = (k + δ) × Δf</strong></p>
+                <p>d = 0.5 * (y[k-1] - y[k+1]) / (y[k-1] - 2*y[k] + y[k+1])</p>
+                <p>True frequency: <strong>f_true = (k + d) * df</strong></p>
               </div>
             </Section>
 
-            <Section title="Peak Detection & Prominence">
+            <Section title="MSD Algorithm (DAFx-16)">
               <p className="mb-2">
-                A bin is a candidate peak if it's a <strong>local maximum</strong> (higher than both immediate neighbors) AND exceeds the effective threshold. Prominence is computed using neighborhood averaging with Blackman window exclusion:
+                The <strong>Magnitude Slope Deviation</strong> algorithm exploits the fact that feedback 
+                grows exponentially, which appears <strong>linear in dB scale</strong>:
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>Neighborhood span: ±nb bins (default nb = 8)</p>
-                <p>Exclusion zone: ±2 bins around peak (Blackman mainlobe)</p>
-                <p>Average power: P_avg = Σ power[i] / count (excluding ±2 bins)</p>
-                <p>Prominence (dB): <strong>P = 10 × log10(power[peak]) - 10 × log10(P_avg)</strong></p>
+                <p>Feedback amplitude: A(t) = A0 * e^(a*t)</p>
+                <p>In dB: L(t) = L0 + (20*a/ln(10)) * t <strong>(linear!)</strong></p>
+                <p>Second derivative: <strong>d2L/dt2 = 0</strong> for feedback</p>
               </div>
               <p className="mt-2 text-xs">
-                Peaks must exceed the <strong>prominenceDb</strong> threshold (default 6 dB) above the neighborhood average to be flagged.
+                The MSD is calculated as the sum of squared second derivatives over N frames:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p><strong>MSD(k,m) = SUM[n] |G''(k,n)|^2</strong></p>
+                <p>Where G''(k,n) = second derivative of dB magnitude at bin k, frame n</p>
+                <p>Feedback: MSD &lt; 0.5 dB^2/frame^2</p>
+                <p>Music: MSD &gt;&gt; 0.5 dB^2/frame^2</p>
+              </div>
+              <p className="mt-2 text-xs">
+                The "Summing MSD" method is <strong>140x more computationally efficient</strong> than 
+                the original algorithm while maintaining 100% accuracy for speech and classical music.
               </p>
             </Section>
 
-            <Section title="A-Weighting (IEC 61672-1)">
+            <Section title="Phase Coherence (Nyquist Criterion)">
               <p className="mb-2">
-                Optional A-weighting emphasizes frequencies where human hearing is most sensitive (2–5 kHz), matching perceived loudness. The transfer function:
+                True feedback occurs when the <strong>Nyquist stability criterion</strong> is met:
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>R_A(f) = (12194² × f⁴) / [(f² + 20.6²)(f² + 12194²) × √((f² + 107.7²)(f² + 737.9²))]</p>
-                <p>A(f) = 20 × log10(R_A(f)) + 2.0 dB</p>
+                <p>Magnitude condition: |G(w)*F(w)| &gt; 1</p>
+                <p>Phase condition: <strong>angle(G(w)*F(w)) = n * 2*pi</strong></p>
               </div>
               <p className="mt-2 text-xs">
-                Constants: C1=20.6, C2=107.7, C3=737.9, C4=12194 Hz per IEC/CD 1672.
+                This means feedback maintains constant phase relationships. Phase coherence measures this:
               </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p><strong>C(k) = |1/N * SUM[n] e^(j*dPhi(k,n))|</strong></p>
+                <p>Where dPhi(k,n) = phase difference between frames at bin k</p>
+                <p>Feedback: C &gt; 0.85 (phase-locked)</p>
+                <p>Music: C &lt; 0.65 (random phase)</p>
+              </div>
+            </Section>
+
+            <Section title="Spectral Flatness (Wiener Entropy)">
+              <p className="mb-2">
+                Measures how tone-like vs noise-like a signal is:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p><strong>SF = geometric_mean(X) / arithmetic_mean(X)</strong></p>
+                <p>SF = (PROD[k] X(k))^(1/N) / (1/N * SUM[k] X(k))</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Interpretation:
+              </p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li>SF = 0: Pure tone (single frequency = <strong>feedback</strong>)</li>
+                <li>SF = 1: White noise (flat spectrum)</li>
+                <li>SF &lt; 0.05: Very tonal (likely feedback)</li>
+                <li>SF &gt; 0.15: Broadband (likely music/speech)</li>
+              </ul>
+            </Section>
+
+            <Section title="Kurtosis">
+              <p className="mb-2">
+                Measures the "peakiness" of the amplitude distribution:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p><strong>K = E[(X-u)^4] / (E[(X-u)^2])^2 - 3</strong></p>
+                <p>Gaussian noise: K = 0</p>
+                <p>Pure tone (feedback): K &gt; 10</p>
+              </div>
+            </Section>
+
+            <Section title="Comb Filter Pattern (DBX)">
+              <p className="mb-2">
+                Feedback from a single acoustic path creates peaks at <strong>regularly spaced frequencies</strong>:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p><strong>f_n = n * c / (2 * d)</strong></p>
+                <p>Where: c = speed of sound (343 m/s), d = path length</p>
+                <p>Spacing: <strong>df = c / (2 * d)</strong></p>
+              </div>
+              <p className="mt-2 text-xs">
+                Detection algorithm:
+              </p>
+              <ol className="text-xs mt-1 space-y-1 list-decimal list-inside">
+                <li>Find all detected peak frequencies</li>
+                <li>Calculate spacing between all pairs</li>
+                <li>Find greatest common divisor (GCD) of spacings</li>
+                <li>If 3+ peaks match GCD pattern within 5% tolerance, flag as comb</li>
+                <li>Calculate predicted future frequencies: f_pred = n * df</li>
+              </ol>
+            </Section>
+
+            <Section title="Compression Detection">
+              <p className="mb-2">
+                Dynamically compressed content is detected via <strong>crest factor</strong> and <strong>dynamic range</strong>:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p><strong>Crest Factor = Peak_dB - RMS_dB</strong></p>
+                <p>Normal audio: CF = 10-15 dB</p>
+                <p>Compressed: CF &lt; 6 dB</p>
+                <p><strong>Dynamic Range = Max_dB - Min_dB</strong> (over window)</p>
+                <p>Normal: DR &gt; 20 dB</p>
+                <p>Compressed: DR &lt; 8 dB</p>
+              </div>
+              <p className="mt-2 text-xs">
+                When compression is detected, MSD reliability drops (sustained notes look like feedback), 
+                so phase coherence gets more weight in the fusion algorithm.
+              </p>
+            </Section>
+
+            <Section title="Algorithm Fusion">
+              <p className="mb-2">
+                All algorithms vote together with content-aware weighting:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p><strong>P_feedback = w1*S_msd + w2*S_phase + w3*S_spectral + w4*S_comb + w5*S_legacy</strong></p>
+              </div>
+              <p className="mt-2 text-xs">Default weights by content type:</p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1 mt-2">
+                <p>Speech: [0.45, 0.25, 0.15, 0.05, 0.10]</p>
+                <p>Music: [0.20, 0.40, 0.15, 0.10, 0.15]</p>
+                <p>Compressed: [0.15, 0.45, 0.20, 0.10, 0.10]</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Verdict thresholds:
+              </p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li><strong>FEEDBACK:</strong> P &gt; threshold AND confidence &gt; 0.7</li>
+                <li><strong>POSSIBLE:</strong> P &gt; threshold * 0.7</li>
+                <li><strong>NOT_FEEDBACK:</strong> P &lt; threshold * 0.5 AND confidence &gt; 0.7</li>
+                <li><strong>UNCERTAIN:</strong> Otherwise</li>
+              </ul>
             </Section>
 
             <Section title="Schroeder Frequency (Hopkins, 2007)">
               <p className="mb-2">
-                Below the <strong>Schroeder frequency</strong>, individual room modes dominate and statistical analysis breaks down. From <em>Sound Insulation</em> (Carl Hopkins, 2007), Eq. 1.111:
+                Below the <strong>Schroeder frequency</strong>, individual room modes dominate:
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs">
-                <p><strong>f_S = 2000 × √(T / V)</strong></p>
+                <p><strong>f_S = 2000 * sqrt(T / V)</strong></p>
                 <p>T = RT60 reverberation time (seconds)</p>
-                <p>V = room volume (m³)</p>
+                <p>V = room volume (m^3)</p>
               </div>
               <p className="mt-2 text-xs">
-                Example: Conference room with T=0.7s, V=250m³ → f_S ≈ 106 Hz. Below this, peaks are likely room modes rather than feedback.
+                Example: Conference room T=0.7s, V=250m^3 gives f_S = 106 Hz. Below this, peaks are likely room modes.
               </p>
-            </Section>
-
-            <Section title="Modal Overlap Factor (Hopkins, 2007)">
-              <p className="mb-2">
-                The <strong>modal overlap factor</strong> indicates whether a resonance is isolated (feedback-like) or diffuse (room noise). From textbook Section 1.2.6.7:
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>Classic: M = f × η × n (modal density × loss factor)</p>
-                <p>Simplified for single peaks: <strong>M ≈ 1/Q</strong></p>
-              </div>
-              <p className="mt-2 text-xs">Interpretation based on textbook Fig 1.23:</p>
-              <ul className="text-xs mt-1 space-y-1">
-                <li><strong>M &lt; 0.03 (Q &gt; 33):</strong> Isolated peak — high feedback risk</li>
-                <li><strong>M ≈ 0.1 (Q ≈ 10):</strong> Moderate resonance — possible feedback</li>
-                <li><strong>M &gt; 0.33 (Q &lt; 3):</strong> Diffuse field — unlikely feedback</li>
-              </ul>
             </Section>
 
             <Section title="Q Factor Estimation">
               <p className="mb-2">
-                Q (quality factor) measures resonance sharpness. Estimated from the −3 dB bandwidth:
+                Q measures resonance sharpness, estimated from -3 dB bandwidth:
               </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p><strong>Q = f_center / Δf_3dB</strong></p>
-                <p>Where Δf_3dB = frequency span where amplitude drops 3 dB from peak</p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p><strong>Q = f_center / df_3dB</strong></p>
+                <p>High Q (&gt;40): Narrow resonance = likely feedback</p>
+                <p>Low Q (&lt;4): Broad peak = room mode or instrument</p>
               </div>
-              <p className="mt-2 text-xs">
-                High Q (&gt;40) = narrow resonance = likely feedback. Low Q (&lt;4) = broad peak = room mode or instrument.
-              </p>
             </Section>
 
-            <Section title="Growth Rate & Velocity Tracking">
+            <Section title="A-Weighting (IEC 61672-1)">
               <p className="mb-2">
-                Feedback builds exponentially. The <strong>instantaneous velocity</strong> tracks frame-to-frame amplitude change:
+                Optional A-weighting emphasizes frequencies where human hearing is most sensitive:
               </p>
               <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>v_inst = (dB_now - dB_prev) / Δt</p>
-                <p>Smoothed via EMA: v = α × v_inst + (1-α) × v_prev</p>
+                <p>R_A(f) = (12194^2 * f^4) / [(f^2 + 20.6^2)(f^2 + 12194^2) * sqrt((f^2 + 107.7^2)(f^2 + 737.9^2))]</p>
+                <p>A(f) = 20 * log10(R_A(f)) + 2.0 dB</p>
               </div>
-              <p className="mt-2 text-xs">Thresholds (configurable):</p>
-              <ul className="text-xs mt-1 space-y-1">
-                <li><strong>RUNAWAY:</strong> v ≥ 8 dB/s — immediate action required</li>
-                <li><strong>GROWING:</strong> v ≥ 2 dB/s — building, act soon</li>
-                <li><strong>RESONANCE:</strong> v &lt; 2 dB/s — stable resonance</li>
-              </ul>
-            </Section>
-
-            <Section title="Cumulative Growth Analysis">
-              <p className="mb-2">
-                Some feedback builds slowly over seconds. <strong>Cumulative growth</strong> catches this even when instantaneous velocity is low:
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>ΔdB_total = dB_now - dB_onset</p>
-                <p>v_avg = ΔdB_total / (t_now - t_onset)</p>
-              </div>
-              <p className="mt-2 text-xs">Thresholds:</p>
-              <ul className="text-xs mt-1 space-y-1">
-                <li><strong>+3 dB:</strong> Building — early warning</li>
-                <li><strong>+6 dB:</strong> Growing — act soon</li>
-                <li><strong>+10 dB:</strong> Runaway — critical</li>
-              </ul>
-            </Section>
-
-            <Section title="Harmonic Detection (Cents-Based)">
-              <p className="mb-2">
-                To suppress harmonics of detected fundamentals, we use <strong>musically-uniform cents tolerance</strong> rather than percentage (which is too coarse at high frequencies):
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>cents = 1200 × log2(f_actual / f_expected)</p>
-                <p>Tolerance: ±50 cents (half a semitone)</p>
-                <p>Check harmonics k = 2 through 8 of each active fundamental</p>
-              </div>
-              <p className="mt-2 text-xs">
-                If a new peak is within 50 cents of k × f_fundamental, it's flagged as a harmonic and suppressed from the issue list.
-              </p>
-            </Section>
-
-            <Section title="Classification Model">
-              <p className="mb-2">
-                A <strong>weighted Bayesian classifier</strong> distinguishes feedback, whistle, and instrument based on extracted features:
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-2">
-                <p><strong>Features & Weights:</strong></p>
-                <p>• Pitch stability (&lt;12 cents std) → +0.30 P(feedback)</p>
-                <p>• Harmonicity (&gt;0.65) → +0.25 P(instrument)</p>
-                <p>• Vibrato/modulation (&gt;0.45) → +0.20 P(whistle)</p>
-                <p>• Breath noise sidebands → +0.10 P(whistle)</p>
-                <p>• Growth rate (&gt;4 dB/s) → +0.25 P(feedback)</p>
-                <p>• High Q (&gt;40) → +0.15 P(feedback)</p>
-                <p>• Modal overlap boost → ±0.15 P(feedback)</p>
-              </div>
-              <p className="mt-2 text-xs">
-                Probabilities are normalized: P_total = P(feedback) + P(whistle) + P(instrument). Confidence = max(P) after normalization.
-              </p>
-            </Section>
-
-            <Section title="Vibrato Detection for Whistle Discrimination">
-              <p className="mb-2">
-                Human whistle has characteristic 4–8 Hz vibrato; feedback is rock-steady. Detection via zero-crossing rate of frequency deviation:
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>f_deviation[i] = f[i] - f_mean</p>
-                <p>Zero crossings = count(sign changes)</p>
-                <p>Vibrato rate ≈ zero_crossings / (2 × duration_sec)</p>
-                <p>Vibrato depth (cents) = 1200 × log2((μ + σ) / (μ - σ))</p>
-              </div>
-              <p className="mt-2 text-xs">
-                Match criteria: Rate 4–8 Hz, Depth 20–100 cents. Strong match → +0.3–0.5 P(whistle).
-              </p>
-            </Section>
-
-            <Section title="Confidence Calibration">
-              <p className="mb-2">
-                Raw probabilities are calibrated using modal overlap and cumulative growth to produce a well-calibrated confidence score:
-              </p>
-              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
-                <p>P_adjusted = P_feedback + modal_boost + cumulative_boost</p>
-                <p>Confidence = max(P_adjusted, P_whistle, P_instrument)</p>
-              </div>
-              <p className="mt-2 text-xs">Labels:</p>
-              <ul className="text-xs mt-1 space-y-1">
-                <li><strong>≥85%:</strong> VERY_HIGH — high certainty</li>
-                <li><strong>70–84%:</strong> HIGH — likely correct</li>
-                <li><strong>55–69%:</strong> MEDIUM — probable</li>
-                <li><strong>&lt;55%:</strong> LOW — uncertain</li>
-              </ul>
-              <p className="mt-2 text-xs">
-                Default confidence threshold: 55% (aggressive). Peaks below this are filtered out unless severity is RUNAWAY or GROWING.
-              </p>
             </Section>
 
             <Section title="References">
               <ul className="text-xs space-y-1">
-                <li>Hopkins, C. (2007). <em>Sound Insulation</em>. Butterworth-Heinemann. ISBN: 978-0750665261</li>
-                <li>Grandke, T. (1983). Interpolation algorithms for discrete Fourier transforms. <em>IEEE Trans. Instrum. Meas.</em>, 32(2), 350-355.</li>
-                <li>IEC 61672-1:2013. Electroacoustics — Sound level meters — Part 1: Specifications.</li>
-                <li>Schroeder, M.R. (1996). The "Schroeder frequency" revisited. <em>J. Acoust. Soc. Am.</em>, 99(5), 3240-3241.</li>
+                <li><strong>DAFx-16:</strong> Magnitude Slope Deviation algorithm for feedback detection. 140x efficiency improvement.</li>
+                <li><strong>DBX:</strong> Comb filter pattern analysis for feedback suppression systems.</li>
+                <li><strong>KU Leuven (2025):</strong> 2-channel AFC algorithm with PEM framework for acoustic feedback control.</li>
+                <li>Hopkins, C. (2007). <em>Sound Insulation</em>. Butterworth-Heinemann. Schroeder frequency, modal analysis.</li>
+                <li>Grandke, T. (1983). Interpolation algorithms for discrete Fourier transforms. <em>IEEE Trans. Instrum. Meas.</em></li>
+                <li>IEC 61672-1:2013. Electroacoustics - Sound level meters - Part 1: Specifications.</li>
+                <li>Nyquist, H. (1932). Regeneration theory. <em>Bell System Technical Journal</em>.</li>
               </ul>
             </Section>
           </TabsContent>
