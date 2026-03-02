@@ -27,9 +27,7 @@ import {
 } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu } from 'lucide-react'
-import { ALGORITHM_MODES } from '@/lib/dsp/constants'
-import type { AlgorithmMode } from '@/types/advisory'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2 } from 'lucide-react'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -97,21 +95,18 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="analysis" className="gap-1.5 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Analysis</span>
+              Analysis
             </TabsTrigger>
-            <TabsTrigger value="algorithms" className="gap-1 text-xs px-2">
-              <Cpu className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Algo</span>
-            </TabsTrigger>
-            <TabsTrigger value="display" className="gap-1 text-xs px-2">
+            <TabsTrigger value="display" className="gap-1.5 text-xs">
               <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Display</span>
+              Display
             </TabsTrigger>
-            <TabsTrigger value="export" className="gap-1 text-xs px-2">
+            <TabsTrigger value="export" className="gap-1.5 text-xs">
               <Download className="w-3.5 h-3.5" />
+              Export
               {issueLogs.length > 0 && (
                 <span className="ml-1 px-1 py-px bg-primary/20 text-primary text-[9px] rounded-full font-medium leading-none">
                   {issueLogs.length}
@@ -245,10 +240,10 @@ export function SettingsPanel({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Min. Confidence</span>
-                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.40) * 100)}%</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.55) * 100)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.confidenceThreshold ?? 0.40) * 100]}
+                  value={[(settings.confidenceThreshold ?? 0.55) * 100]}
                   onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
                   min={40}
                   max={90}
@@ -363,227 +358,6 @@ export function SettingsPanel({
               </div>
             </Section>
 
-          </TabsContent>
-
-          {/* ==================== ALGORITHMS TAB ==================== */}
-          <TabsContent value="algorithms" className="mt-4 space-y-5">
-            <div className="bg-primary/5 border border-primary/20 rounded-md p-3 mb-4">
-              <p className="text-xs text-primary font-medium">Advanced Detection Algorithms</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Based on DAFx-16, DBX, and KU Leuven research. These algorithms dramatically reduce false positives and improve detection accuracy.
-              </p>
-            </div>
-
-            <Section
-              title="Algorithm Mode"
-              showTooltip={settings.showTooltips}
-              tooltip="Select which detection algorithms to use. 'MSD' (Magnitude Slope Deviation) is recommended - 100% accuracy for speech per DAFx-16. Note: Phase coherence is disabled (Web Audio API limitation)."
-            >
-              <div className="space-y-2">
-                {(Object.keys(ALGORITHM_MODES) as AlgorithmMode[]).map((mode) => {
-                  const info = ALGORITHM_MODES[mode]
-                  const isSelected = (settings.algorithmMode ?? 'msd') === mode
-                  return (
-                    <button
-                      key={mode}
-                      onClick={() => onSettingsChange({ algorithmMode: mode })}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-md text-left transition-colors ${
-                        isSelected
-                          ? 'bg-primary/20 border border-primary/50 text-primary'
-                          : 'bg-muted/50 border border-transparent hover:bg-muted'
-                      }`}
-                    >
-                      <div>
-                        <span className="text-xs font-medium">{info.label}</span>
-                        <p className="text-[9px] text-muted-foreground">{info.description}</p>
-                      </div>
-                      {isSelected && (
-                        <span className="text-[9px] font-medium text-primary">ACTIVE</span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </Section>
-
-            <Section
-              title="MSD History Buffer"
-              showTooltip={settings.showTooltips}
-              tooltip="Number of frames for Magnitude Slope Deviation analysis. More frames = higher accuracy but slower detection. 7-15 for speech, 15-30 for music, 30+ for compressed content."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Frames</span>
-                  <span className="text-xs font-mono">{settings.msdMinFrames ?? 7}</span>
-                </div>
-                <Slider
-                  value={[settings.msdMinFrames ?? 7]}
-                  onValueChange={([v]) => onSettingsChange({ msdMinFrames: v })}
-                  min={7}
-                  max={50}
-                  step={1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Fast (speech)</span>
-                  <span>Accurate (music)</span>
-                </div>
-              </div>
-            </Section>
-
-            {/* Phase Coherence Section - DISABLED
-                Web Audio API AnalyserNode.getFloatFrequencyData() only returns magnitude, not phase.
-                The phase buffer exists but is never populated. Kept for future AudioWorklet implementation.
-            */}
-            <Section
-              title="Phase Coherence (Disabled)"
-              showTooltip={settings.showTooltips}
-              tooltip="DISABLED: Web Audio API doesn't provide phase data. This feature requires AudioWorklet implementation for future support."
-            >
-              <div className="space-y-2 opacity-50 pointer-events-none">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Threshold</span>
-                  <span className="text-xs font-mono">{((settings.phaseCoherenceThreshold ?? 0.75) * 100).toFixed(0)}%</span>
-                </div>
-                <Slider
-                  value={[(settings.phaseCoherenceThreshold ?? 0.75) * 100]}
-                  onValueChange={([v]) => onSettingsChange({ phaseCoherenceThreshold: v / 100 })}
-                  min={40}
-                  max={95}
-                  step={5}
-                  disabled
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Not Available</span>
-                  <span>Web Audio API Limitation</span>
-                </div>
-              </div>
-            </Section>
-
-            <Section
-              title="Fusion Feedback Threshold"
-              showTooltip={settings.showTooltips}
-              tooltip="Combined algorithm probability threshold for positive feedback detection. Lower = more alerts, Higher = fewer but more confident alerts."
-            >
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Threshold</span>
-                  <span className="text-xs font-mono">{((settings.fusionFeedbackThreshold ?? 0.55) * 100).toFixed(0)}%</span>
-                </div>
-                <Slider
-                  value={[(settings.fusionFeedbackThreshold ?? 0.55) * 100]}
-                  onValueChange={([v]) => onSettingsChange({ fusionFeedbackThreshold: v / 100 })}
-                  min={40}
-                  max={90}
-                  step={5}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Catch all</span>
-                  <span>High confidence</span>
-                </div>
-              </div>
-            </Section>
-
-            <Section
-              title="Detection Features"
-              showTooltip={settings.showTooltips}
-              tooltip="Enable/disable specific detection features. Compression detection adapts thresholds for dynamically compressed content. Comb pattern identifies feedback from acoustic paths."
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-foreground">Compression Detection</span>
-                    <p className="text-[9px] text-muted-foreground">Adapts thresholds for compressed music</p>
-                  </div>
-                  <button
-                    role="switch"
-                    aria-checked={settings.enableCompressionDetection ?? true}
-                    onClick={() => onSettingsChange({ enableCompressionDetection: !(settings.enableCompressionDetection ?? true) })}
-                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                      (settings.enableCompressionDetection ?? true) ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                      (settings.enableCompressionDetection ?? true) ? 'translate-x-3.5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-foreground">Comb Pattern Detection</span>
-                    <p className="text-[9px] text-muted-foreground">Identifies feedback acoustic paths</p>
-                  </div>
-                  <button
-                    role="switch"
-                    aria-checked={settings.enableCombPatternDetection ?? true}
-                    onClick={() => onSettingsChange({ enableCombPatternDetection: !(settings.enableCombPatternDetection ?? true) })}
-                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                      (settings.enableCombPatternDetection ?? true) ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                      (settings.enableCombPatternDetection ?? true) ? 'translate-x-3.5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </Section>
-
-            <Section
-              title="Display Options"
-              showTooltip={settings.showTooltips}
-              tooltip="Show detailed algorithm scores and phase visualization in the UI. Useful for debugging and understanding detection decisions."
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-foreground">Show Algorithm Scores</span>
-                    <p className="text-[9px] text-muted-foreground">Display MSD, Phase, Spectral scores</p>
-                  </div>
-                  <button
-                    role="switch"
-                    aria-checked={settings.showAlgorithmScores ?? false}
-                    onClick={() => onSettingsChange({ showAlgorithmScores: !(settings.showAlgorithmScores ?? false) })}
-                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                      (settings.showAlgorithmScores ?? false) ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                      (settings.showAlgorithmScores ?? false) ? 'translate-x-3.5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-foreground">Show Phase Display</span>
-                    <p className="text-[9px] text-muted-foreground">Visualize phase coherence</p>
-                  </div>
-                  <button
-                    role="switch"
-                    aria-checked={settings.showPhaseDisplay ?? false}
-                    onClick={() => onSettingsChange({ showPhaseDisplay: !(settings.showPhaseDisplay ?? false) })}
-                    className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors ${
-                      (settings.showPhaseDisplay ?? false) ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  >
-                    <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
-                      (settings.showPhaseDisplay ?? false) ? 'translate-x-3.5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </Section>
-
-            <div className="bg-muted/50 rounded-md p-3 text-[10px] text-muted-foreground">
-              <p className="font-medium text-foreground mb-1">Algorithm Summary:</p>
-              <ul className="space-y-1">
-                <li><strong>MSD</strong>: Magnitude Slope Deviation - feedback grows linearly in dB</li>
-                <li><strong>Phase</strong>: Phase coherence - feedback maintains constant phase</li>
-                <li><strong>Spectral</strong>: Flatness + kurtosis - feedback is a pure tone</li>
-                <li><strong>Comb</strong>: Pattern detection - feedback occurs at regular intervals</li>
-              </ul>
-            </div>
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-5">
