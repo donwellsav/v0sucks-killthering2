@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
 import type { Advisory } from '@/types/advisory'
@@ -11,374 +12,238 @@ type ExportFormat = 'json' | 'csv' | 'waves' | 'protools' | 'smaart'
 
 interface EQBand {
   frequency: number
-  gain: number // Always negative for cuts
-  q: number // Q factor
-  type: 'peaking' | 'notch' | 'highpass' | 'lowpass'
+  gain: number
+  q: number
+  type: 'peaking' | 'notch'
 }
 
 interface ParametricEQExportProps {
-  /** Current active advisories */
   advisories: Advisory[]
-  /** Historical feedback frequencies with counts */
   feedbackHistory?: Map<number, { count: number; maxSeverity: string }>
-  /** Callback when EQ bands are generated */
-  onEQGenerated?: (bands: EQBand[]) => void
-  className?: string
 }
 
-// Q factor presets based on bandwidth
-const Q_PRESETS = {
-  narrow: 10, // Very narrow notch
-  medium: 5,  // Standard feedback cut
-  wide: 2,    // Broader cut
-}
-
-// Cut depth presets
-const CUT_PRESETS = {
-  light: -3,
-  moderate: -6,
-  aggressive: -10,
-  full: -15,
-}
-
-/**
- * Generates and exports parametric EQ settings based on detected feedback frequencies.
- * Supports multiple export formats for various digital mixers and DAWs.
- */
-export function ParametricEQExport({
-  advisories,
-  feedbackHistory,
-  onEQGenerated,
-  className,
-}: ParametricEQExportProps) {
-  const [qFactor, setQFactor] = useState<number>(Q_PRESETS.medium)
-  const [cutDepth, setCutDepth] = useState<number>(CUT_PRESETS.moderate)
+export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQExportProps) {
+  const [open, setOpen] = useState(false)
+  const [qFactor, setQFactor] = useState(5)
+  const [cutDepth, setCutDepth] = useState(-6)
   const [includeHistorical, setIncludeHistorical] = useState(true)
   const [maxBands, setMaxBands] = useState(8)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('json')
+  const [copied, setCopied] = useState(false)
 
-  // Generate EQ bands from advisories and history
-  const eqBands = useMemo(() => {
-    const bands: Map<number, EQBand> = new Map()
+  const eqBands = useMemo<EQBand[]>(() => {
+    const bands = new Map<number, EQBand>()
 
-    // Add current advisories
-    for (const advisory of advisories) {
-      const freq = Math.round(advisory.trueFrequencyHz)
-      
-      // Adjust cut depth based on severity
+    for (const a of advisories) {
+      const freq = Math.round(a.trueFrequencyHz)
       let depth = cutDepth
-      if (advisory.severity === 'critical') depth = Math.min(depth, CUT_PRESETS.full)
-      else if (advisory.severity === 'high') depth = Math.min(depth, CUT_PRESETS.aggressive)
-      
-      bands.set(freq, {
-        frequency: freq,
-        gain: depth,
-        q: qFactor,
-        type: qFactor >= 8 ? 'notch' : 'peaking',
-      })
+      if (a.severity === 'critical') depth = Math.min(depth, -15)
+      else if (a.severity === 'high') depth = Math.min(depth, -10)
+      bands.set(freq, { frequency: freq, gain: depth, q: qFactor, type: qFactor >= 8 ? 'notch' : 'peaking' })
     }
 
-    // Add historical frequencies if enabled
     if (includeHistorical && feedbackHistory) {
       for (const [freq, data] of feedbackHistory) {
-        if (bands.has(freq)) continue // Skip if already from live advisories
-        
-        // Only include frequently triggered frequencies
-        if (data.count < 3) continue
-        
-        // Adjust depth based on historical severity
-        let depth = cutDepth + 2 // Slightly less aggressive for historical
-        if (data.maxSeverity === 'critical') depth = Math.min(depth, CUT_PRESETS.aggressive)
-        
+        if (bands.has(freq) || data.count < 3) continue
         bands.set(freq, {
           frequency: Math.round(freq),
-          gain: depth,
-          q: qFactor * 0.8, // Slightly wider Q for historical
+          gain: cutDepth + 2,
+          q: qFactor * 0.8,
           type: 'peaking',
         })
       }
     }
 
-    // Sort by frequency and limit to maxBands
-    return Array.from(bands.values())
-      .sort((a, b) => a.frequency - b.frequency)
-      .slice(0, maxBands)
+    return Array.from(bands.values()).sort((a, b) => a.frequency - b.frequency).slice(0, maxBands)
   }, [advisories, feedbackHistory, qFactor, cutDepth, includeHistorical, maxBands])
 
-  // Export functions for different formats
-  const exportJSON = useCallback(() => {
-    return JSON.stringify({
-      format: 'Kill The Ring Parametric EQ Export',
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      bands: eqBands,
-      settings: {
-        qFactor,
-        cutDepth,
-        includeHistorical,
-      },
-    }, null, 2)
-  }, [eqBands, qFactor, cutDepth, includeHistorical])
-
-  const exportCSV = useCallback(() => {
-    const header = 'Band,Frequency (Hz),Gain (dB),Q Factor,Type'
-    const rows = eqBands.map((band, i) => 
-      `${i + 1},${band.frequency},${band.gain.toFixed(1)},${band.q.toFixed(1)},${band.type}`
-    )
-    return [header, ...rows].join('\n')
-  }, [eqBands])
-
-  const exportWaves = useCallback(() => {
-    // Waves Q10/Q6 preset format (simplified)
-    return JSON.stringify({
-      plugin: 'Q10',
-      bands: eqBands.map((band, i) => ({
-        band: i + 1,
-        enabled: true,
-        frequency: band.frequency,
-        gain: band.gain,
-        q: band.q,
-        shape: band.type === 'notch' ? 'bell' : 'bell',
-      })),
-    }, null, 2)
-  }, [eqBands])
-
-  const exportProTools = useCallback(() => {
-    // Pro Tools EQ3/EQ7 style text format
-    const lines = [
-      '# Pro Tools Parametric EQ Settings',
-      `# Exported from Kill The Ring on ${new Date().toISOString()}`,
-      '#',
-    ]
-    eqBands.forEach((band, i) => {
-      lines.push(`Band ${i + 1}: ${band.frequency} Hz, ${band.gain.toFixed(1)} dB, Q=${band.q.toFixed(1)}`)
-    })
-    return lines.join('\n')
-  }, [eqBands])
-
-  const exportSmaart = useCallback(() => {
-    // Smaart-style frequency list
-    const lines = [
-      '# Smaart Feedback Frequency List',
-      `# Exported ${new Date().toISOString()}`,
-      '# Frequency (Hz), Recommended Cut (dB)',
-    ]
-    eqBands.forEach((band) => {
-      lines.push(`${band.frequency}, ${band.gain.toFixed(1)}`)
-    })
-    return lines.join('\n')
-  }, [eqBands])
-
-  // Download export file
-  const downloadExport = useCallback(() => {
-    let content: string
-    let filename: string
-    let mimeType: string
-
-    switch (exportFormat) {
-      case 'csv':
-        content = exportCSV()
-        filename = 'feedback_eq_cuts.csv'
-        mimeType = 'text/csv'
-        break
-      case 'waves':
-        content = exportWaves()
-        filename = 'feedback_eq_waves.json'
-        mimeType = 'application/json'
-        break
-      case 'protools':
-        content = exportProTools()
-        filename = 'feedback_eq_protools.txt'
-        mimeType = 'text/plain'
-        break
-      case 'smaart':
-        content = exportSmaart()
-        filename = 'feedback_frequencies_smaart.txt'
-        mimeType = 'text/plain'
-        break
-      default:
-        content = exportJSON()
-        filename = 'feedback_eq_export.json'
-        mimeType = 'application/json'
+  const buildContent = useCallback((fmt: ExportFormat): { content: string; filename: string; mime: string } => {
+    switch (fmt) {
+      case 'csv': return {
+        content: ['Band,Frequency (Hz),Gain (dB),Q Factor,Type',
+          ...eqBands.map((b, i) => `${i + 1},${b.frequency},${b.gain.toFixed(1)},${b.q.toFixed(1)},${b.type}`)
+        ].join('\n'),
+        filename: 'feedback_eq_cuts.csv',
+        mime: 'text/csv',
+      }
+      case 'waves': return {
+        content: JSON.stringify({ plugin: 'Q10', bands: eqBands.map((b, i) => ({ band: i + 1, enabled: true, frequency: b.frequency, gain: b.gain, q: b.q })) }, null, 2),
+        filename: 'feedback_eq_waves.json',
+        mime: 'application/json',
+      }
+      case 'protools': return {
+        content: ['# Pro Tools Parametric EQ Settings', `# Exported ${new Date().toISOString()}`, '',
+          ...eqBands.map((b, i) => `Band ${i + 1}: ${b.frequency} Hz, ${b.gain.toFixed(1)} dB, Q=${b.q.toFixed(1)}`)
+        ].join('\n'),
+        filename: 'feedback_eq_protools.txt',
+        mime: 'text/plain',
+      }
+      case 'smaart': return {
+        content: ['# Smaart Feedback Frequency List', `# Exported ${new Date().toISOString()}`, '# Frequency (Hz), Recommended Cut (dB)',
+          ...eqBands.map(b => `${b.frequency}, ${b.gain.toFixed(1)}`)
+        ].join('\n'),
+        filename: 'feedback_frequencies_smaart.txt',
+        mime: 'text/plain',
+      }
+      default: return {
+        content: JSON.stringify({ format: 'Kill The Ring EQ Export', version: '1.0', exportedAt: new Date().toISOString(), bands: eqBands }, null, 2),
+        filename: 'feedback_eq_export.json',
+        mime: 'application/json',
+      }
     }
+  }, [eqBands])
 
-    const blob = new Blob([content], { type: mimeType })
-    const url = URL.createObjectURL(blob)
+  const handleDownload = useCallback(() => {
+    const { content, filename, mime } = buildContent(exportFormat)
+    const url = URL.createObjectURL(new Blob([content], { type: mime }))
     const a = document.createElement('a')
     a.href = url
     a.download = filename
     a.click()
     URL.revokeObjectURL(url)
+  }, [buildContent, exportFormat])
 
-    // Notify parent
-    if (onEQGenerated) {
-      onEQGenerated(eqBands)
-    }
-  }, [exportFormat, exportCSV, exportWaves, exportProTools, exportSmaart, exportJSON, eqBands, onEQGenerated])
+  const handleCopy = useCallback(() => {
+    const { content } = buildContent(exportFormat)
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }, [buildContent, exportFormat])
 
-  // Copy to clipboard
-  const copyToClipboard = useCallback(() => {
-    let content: string
-    switch (exportFormat) {
-      case 'csv': content = exportCSV(); break
-      case 'waves': content = exportWaves(); break
-      case 'protools': content = exportProTools(); break
-      case 'smaart': content = exportSmaart(); break
-      default: content = exportJSON()
-    }
-    navigator.clipboard.writeText(content)
-  }, [exportFormat, exportCSV, exportWaves, exportProTools, exportSmaart, exportJSON])
+  const FORMAT_INFO: Record<ExportFormat, string> = {
+    json: 'Universal JSON with full metadata',
+    csv: 'Spreadsheet-compatible CSV',
+    waves: 'Waves Q10/Q6 plugin preset',
+    protools: 'Pro Tools text format',
+    smaart: 'Smaart frequency list',
+  }
 
   return (
-    <div className={cn('space-y-4', className)}>
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-        Parametric EQ Export
-      </div>
-
-      {/* EQ Band preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span>Generated Bands ({eqBands.length}/{maxBands})</span>
-          <span className="text-muted-foreground font-mono">Q={qFactor.toFixed(1)}</span>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
-          {eqBands.map((band, i) => (
-            <div
-              key={band.frequency}
-              className="p-1.5 rounded bg-muted/50 text-[10px] flex justify-between items-center"
-            >
-              <span className="font-mono">{formatFrequency(band.frequency)}</span>
-              <span className={cn(
-                'font-mono',
-                band.gain <= -10 ? 'text-red-500' : band.gain <= -6 ? 'text-orange-500' : 'text-yellow-500'
-              )}>
-                {band.gain.toFixed(0)} dB
-              </span>
-            </div>
-          ))}
-          {eqBands.length === 0 && (
-            <div className="col-span-2 p-3 text-center text-muted-foreground text-xs">
-              No feedback frequencies detected
-            </div>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          suppressHydrationWarning
+          variant="ghost"
+          size="sm"
+          className={cn(
+            'gap-1.5 text-muted-foreground hover:text-foreground',
+            advisories.length > 0 && 'text-primary/80 hover:text-primary'
           )}
-        </div>
-      </div>
+          aria-label="Export EQ"
+          title="Export Parametric EQ"
+        >
+          {/* Download icon */}
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span className="hidden sm:inline text-xs">EQ</span>
+          {advisories.length > 0 && (
+            <span className="hidden sm:inline bg-primary/20 text-primary text-[9px] px-1 rounded-full">
+              {advisories.length}
+            </span>
+          )}
+        </Button>
+      </DialogTrigger>
 
-      {/* Settings */}
-      <div className="space-y-3">
-        {/* Q Factor */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px]">
-            <span>Q Factor (Bandwidth)</span>
-            <span className="font-mono">{qFactor.toFixed(1)}</span>
-          </div>
-          <Slider
-            value={[qFactor]}
-            onValueChange={([v]) => setQFactor(v)}
-            min={1}
-            max={15}
-            step={0.5}
-          />
-          <div className="flex justify-between text-[9px] text-muted-foreground">
-            <span>Wide</span>
-            <span>Narrow</span>
-          </div>
-        </div>
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle className="text-base">Parametric EQ Export</DialogTitle>
+        </DialogHeader>
 
-        {/* Cut Depth */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px]">
-            <span>Cut Depth</span>
-            <span className="font-mono">{cutDepth} dB</span>
-          </div>
-          <Slider
-            value={[Math.abs(cutDepth)]}
-            onValueChange={([v]) => setCutDepth(-v)}
-            min={1}
-            max={18}
-            step={1}
-          />
-        </div>
-
-        {/* Max Bands */}
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-[10px]">
-            <span>Max Bands</span>
-            <span className="font-mono">{maxBands}</span>
-          </div>
-          <Slider
-            value={[maxBands]}
-            onValueChange={([v]) => setMaxBands(v)}
-            min={1}
-            max={16}
-            step={1}
-          />
-        </div>
-
-        {/* Include historical */}
-        <label className="flex items-center gap-2 text-[10px]">
-          <input
-            type="checkbox"
-            checked={includeHistorical}
-            onChange={(e) => setIncludeHistorical(e.target.checked)}
-            className="rounded"
-          />
-          <span>Include historical frequencies</span>
-        </label>
-      </div>
-
-      {/* Export format */}
-      <div className="space-y-2">
-        <div className="text-[10px] text-muted-foreground">Export Format</div>
-        <div className="grid grid-cols-3 gap-1">
-          {(['json', 'csv', 'waves', 'protools', 'smaart'] as ExportFormat[]).map((format) => (
-            <button
-              key={format}
-              onClick={() => setExportFormat(format)}
-              className={cn(
-                'px-2 py-1 rounded text-[9px] font-medium border transition-colors',
-                exportFormat === format
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border hover:border-primary/50'
+        <div className="space-y-5 mt-2">
+          {/* Band preview */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium">Generated Bands ({eqBands.length} / {maxBands})</span>
+              <span className="text-muted-foreground font-mono">Q = {qFactor.toFixed(1)}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
+              {eqBands.map(band => (
+                <div key={band.frequency} className="p-1.5 rounded bg-muted/50 text-[10px] flex justify-between items-center gap-1">
+                  <span className="font-mono">{formatFrequency(band.frequency)}</span>
+                  <span className={cn('font-mono font-semibold',
+                    band.gain <= -10 ? 'text-destructive' : band.gain <= -6 ? 'text-orange-500' : 'text-yellow-500'
+                  )}>
+                    {band.gain.toFixed(0)} dB
+                  </span>
+                </div>
+              ))}
+              {eqBands.length === 0 && (
+                <div className="col-span-2 py-4 text-center text-muted-foreground text-xs">
+                  No feedback frequencies detected yet
+                </div>
               )}
-            >
-              {format.toUpperCase()}
-            </button>
-          ))}
+            </div>
+          </div>
+
+          {/* Settings */}
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span>Q Factor (bandwidth)</span>
+                <span className="font-mono text-muted-foreground">{qFactor.toFixed(1)}</span>
+              </div>
+              <Slider value={[qFactor]} onValueChange={([v]) => setQFactor(v)} min={1} max={15} step={0.5} />
+              <div className="flex justify-between text-[9px] text-muted-foreground"><span>Wide</span><span>Narrow</span></div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span>Cut Depth</span>
+                <span className="font-mono text-muted-foreground">{cutDepth} dB</span>
+              </div>
+              <Slider value={[Math.abs(cutDepth)]} onValueChange={([v]) => setCutDepth(-v)} min={1} max={18} step={1} />
+              <div className="flex justify-between text-[9px] text-muted-foreground"><span>Gentle</span><span>Deep</span></div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between text-xs">
+                <span>Max Bands</span>
+                <span className="font-mono text-muted-foreground">{maxBands}</span>
+              </div>
+              <Slider value={[maxBands]} onValueChange={([v]) => setMaxBands(v)} min={1} max={16} step={1} />
+            </div>
+
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" checked={includeHistorical} onChange={e => setIncludeHistorical(e.target.checked)} className="rounded" />
+              <span>Include historical frequencies (3+ detections)</span>
+            </label>
+          </div>
+
+          {/* Format selector */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Export Format</p>
+            <div className="grid grid-cols-5 gap-1">
+              {(['json', 'csv', 'waves', 'protools', 'smaart'] as ExportFormat[]).map(fmt => (
+                <button
+                  key={fmt}
+                  onClick={() => setExportFormat(fmt)}
+                  className={cn(
+                    'py-1 rounded text-[9px] font-medium border transition-colors',
+                    exportFormat === fmt ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  {fmt === 'protools' ? 'PT' : fmt.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-muted-foreground">{FORMAT_INFO[exportFormat]}</p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Button variant="default" size="sm" className="flex-1 h-9" onClick={handleDownload} disabled={eqBands.length === 0}>
+              Download
+            </Button>
+            <Button variant="outline" size="sm" className="h-9 px-4" onClick={handleCopy} disabled={eqBands.length === 0}>
+              {copied ? 'Copied!' : 'Copy'}
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* Export buttons */}
-      <div className="flex gap-2">
-        <Button
-          variant="default"
-          size="sm"
-          className="flex-1 h-8"
-          onClick={downloadExport}
-          disabled={eqBands.length === 0}
-        >
-          Download
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-8"
-          onClick={copyToClipboard}
-          disabled={eqBands.length === 0}
-        >
-          Copy
-        </Button>
-      </div>
-
-      {/* Format info */}
-      <div className="text-[9px] text-muted-foreground">
-        {exportFormat === 'json' && 'Universal JSON format with full metadata'}
-        {exportFormat === 'csv' && 'Spreadsheet-compatible CSV format'}
-        {exportFormat === 'waves' && 'Waves Q10/Q6 plugin preset format'}
-        {exportFormat === 'protools' && 'Pro Tools text format for manual entry'}
-        {exportFormat === 'smaart' && 'Smaart-compatible frequency list'}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
