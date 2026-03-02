@@ -264,7 +264,10 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
             priority
             sizes="100vw"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center gap-3">
+            <span className="px-4 py-2 rounded-md bg-black/60 text-sm text-neutral-300 font-medium tracking-wide backdrop-blur-sm">
+              Press Start to begin analysis
+            </span>
             <span className="px-4 py-2 rounded-md bg-black/60 text-sm text-neutral-300 font-medium tracking-wide backdrop-blur-sm">
               Press Start to begin analysis
             </span>
