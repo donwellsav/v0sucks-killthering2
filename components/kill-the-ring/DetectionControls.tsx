@@ -69,7 +69,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
                       <div className="text-[10px] text-muted-foreground truncate">{info.desc}</div>
                     </div>
                     <div className="text-[9px] font-mono text-muted-foreground flex-shrink-0 ml-2">
-                      {modeSettings.feedbackThresholdDb}/{modeSettings.ringThresholdDb}/{modeSettings.growthRateThreshold}
+                      {modeSettings.feedbackThreshold}/{modeSettings.ringThreshold}/{modeSettings.growthRateThreshold}
                     </div>
                   </button>
                 )
