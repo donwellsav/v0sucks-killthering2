@@ -113,7 +113,7 @@ export function SettingsPanel({
               <Monitor className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Display</span>
             </TabsTrigger>
-<TabsTrigger value="tools" className="gap-1 text-xs px-2">
+            <TabsTrigger value="tools" className="gap-1 text-xs px-2">
               <Mic className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Tools</span>
             </TabsTrigger>
