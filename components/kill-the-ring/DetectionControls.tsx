@@ -24,12 +24,12 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           <SelectTrigger className="h-5 w-full text-[10px] bg-input border-border px-2">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="text-[10px] !p-0.5">
-            <SelectItem value="feedbackHunt" className="!py-0.5">Feedback Hunt</SelectItem>
-            <SelectItem value="vocalRing" className="!py-0.5">Vocal Ring</SelectItem>
-            <SelectItem value="musicAware" className="!py-0.5">Music-Aware</SelectItem>
-            <SelectItem value="aggressive" className="!py-0.5">Aggressive</SelectItem>
-            <SelectItem value="calibration" className="!py-0.5">Calibration</SelectItem>
+          <SelectContent className="text-[10px] !p-0 [&_[role=option]]:!py-1 [&_[data-radix-select-viewport]]:!p-0.5">
+            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing">Vocal Ring</SelectItem>
+            <SelectItem value="musicAware">Music-Aware</SelectItem>
+            <SelectItem value="aggressive">Aggressive</SelectItem>
+            <SelectItem value="calibration">Calibration</SelectItem>
           </SelectContent>
         </Select>
 
