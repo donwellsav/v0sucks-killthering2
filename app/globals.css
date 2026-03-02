@@ -96,15 +96,19 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
+@layer components {
+  @keyframes flash-red {
+    0%, 100% {
+      opacity: 1;
+      color: #dc2626;
+    }
+    50% {
+      opacity: 0.2;
+      color: #dc2626;
+    }
   }
-  body {
-    @apply text-foreground;
-    font-size: 18px;
-    background: linear-gradient(160deg, #0d0d0d 0%, #1a1a1a 25%, #2a2a2a 50%, #1f1f1f 75%, #141414 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
+
+  .animate-flash-red {
+    animation: flash-red 1.5s ease-in-out infinite;
   }
 }
