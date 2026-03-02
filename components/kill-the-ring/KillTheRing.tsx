@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
         {/* Row 1: Gain slider + Logo wordmark (right-aligned, leaves room for button) */}
-        <div className="flex items-stretch justify-between pr-14 px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        <div className="flex items-stretch justify-between pl-14 px-2 sm:px-4 gap-2 sm:gap-4 h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
@@ -231,7 +231,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Logo wordmark — right-aligned */}
-          <div className="flex items-center ml-auto gap-0">
+          <div className="flex items-center mr-auto gap-0">
             <div className="flex flex-col justify-center gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
@@ -245,7 +245,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         {/* Row 2: Action icons (leaves room for button) */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 pr-14 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-end gap-1 sm:gap-2 pl-14 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
@@ -304,14 +304,14 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </Button>
         </div>
 
-        {/* Full-height start/stop button — spans both rows, flush right */}
+        {/* Full-height start/stop button — spans both rows, flush left */}
         <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={isRunning ? stop : start}
                 aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                className="absolute right-0 top-0 bottom-0 w-14 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset border-l border-border/50"
+                className="absolute left-0 top-0 bottom-0 w-14 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset border-r border-border/50"
               >
                 <div className={`absolute inset-[6px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                 {isRunning && (
