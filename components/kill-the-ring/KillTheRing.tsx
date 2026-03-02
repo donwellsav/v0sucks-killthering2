@@ -311,7 +311,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               <button
                 onClick={isRunning ? stop : start}
                 aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
+                className="absolute left-2 top-0 bottom-0 aspect-square flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
               >
                 <div className={`absolute inset-[6px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                 {isRunning && (
