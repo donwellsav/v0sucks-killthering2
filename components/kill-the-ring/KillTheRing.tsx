@@ -336,6 +336,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               logger.logSettingsChanged({ action: 'reset_to_defaults' })
             }}
             isRunning={isRunning}
+            advisories={advisories}
           />
 
           {/* Mobile: toggle graph vs controls */}

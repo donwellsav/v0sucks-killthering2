@@ -34,7 +34,7 @@ import { SessionRecorderContent } from './SessionRecorder'
 import { ParametricEQExportContent } from './ParametricEQExport'
 import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
 import { ALGORITHM_MODES } from '@/lib/dsp/constants'
-import type { AlgorithmMode } from '@/types/advisory'
+import type { AlgorithmMode, Advisory } from '@/types/advisory'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -43,6 +43,7 @@ interface SettingsPanelProps {
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
   onReset: () => void
   isRunning?: boolean
+  advisories?: Advisory[]
 }
 
 export function SettingsPanel({
@@ -50,6 +51,7 @@ export function SettingsPanel({
   onSettingsChange,
   onReset,
   isRunning = false,
+  advisories = [],
 }: SettingsPanelProps) {
   // Settings panel state
   const [logs, setLogs] = useState<LogEntry[]>([])
