@@ -3,21 +3,21 @@
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { AnalysisConfig } from '@/types/advisory'
+import type { DetectorSettings } from '@/types/advisory'
 
 type Slot = 'A' | 'B'
 
 interface SavedConfig {
   name: string
-  settings: Partial<AnalysisConfig>
+  settings: Partial<DetectorSettings>
   savedAt: number
 }
 
 interface ABComparisonProps {
   /** Current active settings */
-  currentSettings: AnalysisConfig
+  currentSettings: DetectorSettings
   /** Callback when switching to a saved config */
-  onApplySettings: (settings: Partial<AnalysisConfig>) => void
+  onApplySettings: (settings: Partial<DetectorSettings>) => void
   className?: string
 }
 
