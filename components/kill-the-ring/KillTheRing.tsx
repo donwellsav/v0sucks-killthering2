@@ -245,9 +245,10 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </TooltipProvider>
 
           <div className="hidden sm:flex flex-col justify-center gap-0.5">
-            <span className="text-sm font-black tracking-tight leading-none text-foreground">
-              KILL THE <span className="text-sm font-black tracking-tight leading-none text-primary">RING</span>
-            </span>
+            <div className="flex items-baseline gap-0 leading-none">
+              <span className="text-sm font-black tracking-tight text-foreground">KILL THE </span>
+              <span className="text-sm font-black tracking-tight text-primary">RING</span>
+            </div>
             <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
               Don Wells AV
             </span>
