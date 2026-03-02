@@ -16,9 +16,9 @@ interface DetectionControlsProps {
 export function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
 
-        {/* Freq range pills — single row */}
+        {/* Freq range pills — single scrollable row, no wrapping */}
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           {FREQ_RANGE_PRESETS.map((preset) => {
             const isActive =
@@ -28,7 +28,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               <button
                 key={preset.label}
                 onClick={() => onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency })}
-                className={`px-1.5 py-0 rounded text-xs font-medium border transition-colors leading-5 whitespace-nowrap flex-shrink-0 ${
+                className={`px-1.5 py-px rounded text-xs font-medium border transition-colors whitespace-nowrap flex-shrink-0 leading-4 ${
                   isActive
                     ? 'bg-primary/15 text-primary border-primary/40'
                     : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
@@ -56,7 +56,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               </Tooltip>
             )}
             {settings.autoMusicAware && (
-              <span className={`px-1.5 py-px rounded text-[11px] font-medium border ${
+              <span className={`px-1 py-px rounded text-[11px] font-medium border leading-4 ${
                 settings.musicAware
                   ? 'bg-primary/10 border-primary/40 text-primary'
                   : 'bg-muted border-border text-muted-foreground'
@@ -81,7 +81,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
         </div>
 
         {/* Sliders — label · track · value on one line each */}
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           <SliderRow
             label="Threshold"
             value={`${settings.feedbackThresholdDb}dB`}
@@ -127,13 +127,13 @@ interface SliderRowProps {
 function SliderRow({ label, value, tooltip, min, max, step, sliderValue, onChange }: SliderRowProps) {
   return (
     <div className="flex items-center gap-2">
-      {/* Fixed-width label */}
-      <div className="flex items-center gap-1.5 w-14 flex-shrink-0">
+      {/* Fixed-width label — as narrow as possible */}
+      <div className="flex items-center gap-1 w-12 flex-shrink-0">
         <span className="text-xs text-muted-foreground">{label}</span>
         {tooltip && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help" />
+              <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help flex-shrink-0" />
             </TooltipTrigger>
             <TooltipContent side="right" className="max-w-[200px] text-xs">
               {tooltip}
@@ -141,16 +141,16 @@ function SliderRow({ label, value, tooltip, min, max, step, sliderValue, onChang
           </Tooltip>
         )}
       </div>
-      {/* Slider fills remaining space */}
-      <div className="flex-1">
+      {/* Slider fills all remaining space */}
+      <div className="flex-1 min-w-0">
         <Slider
           value={[sliderValue]}
           onValueChange={([v]) => onChange(v)}
           min={min} max={max} step={step}
         />
       </div>
-      {/* Fixed-width mono value */}
-      <span className="text-xs font-mono text-foreground tabular-nums text-right w-12 flex-shrink-0">
+      {/* Fixed-width right-aligned value */}
+      <span className="text-xs font-mono text-foreground tabular-nums text-right w-10 flex-shrink-0">
         {value}
       </span>
     </div>
