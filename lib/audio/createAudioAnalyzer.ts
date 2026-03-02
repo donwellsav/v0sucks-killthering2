@@ -160,6 +160,12 @@ export class AudioAnalyzer {
           fftSize: state.fftSize,
           timestamp,
           peak,
+          // Advanced algorithm state (from DAFx-16, DBX, KU Leuven research)
+          algorithmMode: state.algorithmMode,
+          contentType: state.contentType,
+          msdFrameCount: state.msdFrameCount,
+          isCompressed: state.isCompressed,
+          compressionRatio: state.compressionRatio,
         }
 
         this.callbacks.onSpectrum?.(spectrumData)

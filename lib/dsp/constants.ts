@@ -278,14 +278,14 @@ export const OPERATION_MODES = {
 // Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
 // AGGRESSIVE DETECTION - better to have false positives than miss real feedback!
 export const DEFAULT_SETTINGS = {
-  mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
+  mode: 'vocalRing' as const, // Vocal Ring - optimized for speech/vocal feedback detection
   fftSize: 8192 as const, // Good frequency resolution for accurate detection
-  smoothingTimeConstant: 0.5, // Faster response for quick detection
-  minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble)
-  maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 6, // AGGRESSIVE - catch feedback early, before it's dangerous
-  ringThresholdDb: 4, // AGGRESSIVE - catch resonances before they become feedback
-  growthRateThreshold: 1.5, // FAST - detect growing peaks quickly
+  smoothingTimeConstant: 0.4, // Faster response for quick detection (lowered from 0.5)
+  minFrequency: 150, // Lowered from 200Hz to catch male vocal fundamental
+  maxFrequency: 10000, // Raised from 8kHz to catch sibilance/high harmonics
+  feedbackThresholdDb: 4, // MORE AGGRESSIVE - catch feedback very early (lowered from 6)
+  ringThresholdDb: 3, // MORE AGGRESSIVE - catch resonances before they become feedback (lowered from 4)
+  growthRateThreshold: 1.2, // FASTER - detect growing peaks more quickly (lowered from 1.5)
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic environments
   peakMergeCents: 50,
@@ -294,18 +294,30 @@ export const DEFAULT_SETTINGS = {
   musicAware: false, // Disabled - no music in corporate/conference
   autoMusicAware: false, // Auto music-aware mode off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
-  inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
+  inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes speech frequencies (2-5kHz)
   // Confidence filtering - LOW threshold, better false positives than missing real feedback
-  confidenceThreshold: 0.55, // 55% - aggressive, show more alerts
+  confidenceThreshold: 0.40, // 40% - very aggressive, surface almost everything
   // Room acoustics - defaults to medium conference room
   roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
   roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)
   // Room preset identifier
   roomPreset: 'medium' as const, // Default to medium conference room
+  
+  // ==================== ADVANCED ALGORITHM SETTINGS ====================
+  // Based on DAFx-16, DBX, and KU Leuven research papers
+  // NOTE: Phase coherence is DISABLED - Web Audio API doesn't provide phase data
+  algorithmMode: 'msd' as const, // MSD only - phase disabled (no data from AnalyserNode)
+  msdMinFrames: 7, // Optimized for speech - 100% accuracy per DAFx-16 (lowered from 15)
+  phaseCoherenceThreshold: 0.75, // Kept for future use if phase is implemented
+  enableCompressionDetection: true, // Detect compressed content for adaptive thresholds
+  enableCombPatternDetection: true, // Detect feedback patterns from DBX research
+  fusionFeedbackThreshold: 0.55, // MORE AGGRESSIVE - lower threshold for more detections (lowered from 0.65)
+  showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
+  showPhaseDisplay: false, // Hide phase visualization by default (phase is disabled anyway)
 }
 
 // Room size presets for quick switching in corporate/conference environments
@@ -371,4 +383,105 @@ export const VIZ_COLORS = {
   THRESHOLD: '#3b82f6', // blue-500
   SPECTRUM: '#10b981', // emerald-500
   PEAK_MARKER: '#f59e0b', // amber-500
+  // Advanced algorithm colors
+  MSD_HIGH: '#22c55e', // green-500 (likely feedback)
+  MSD_LOW: '#6b7280', // gray-500 (not feedback)
+  PHASE_COHERENT: '#3b82f6', // blue-500 (high coherence)
+  PHASE_RANDOM: '#9ca3af', // gray-400 (low coherence)
+  COMPRESSION: '#f59e0b', // amber-500 (compression detected)
+  COMB_PATTERN: '#8b5cf6', // violet-500 (comb pattern)
+} as const
+
+// ============================================================================
+// ADVANCED ALGORITHM CONSTANTS (from academic research)
+// ============================================================================
+
+// MSD (Magnitude Slope Deviation) from DAFx-16 paper
+export const MSD_SETTINGS = {
+  /** Default MSD threshold (dB²/frame²) - values below indicate feedback */
+  THRESHOLD: 0.5,
+  /** Minimum frames for speech detection (100% accuracy per paper) */
+  MIN_FRAMES_SPEECH: 7,
+  /** Minimum frames for classical music (100% accuracy per paper) */
+  MIN_FRAMES_MUSIC: 13,
+  /** Minimum frames for rock/pop (22% accuracy - use with compression detection) */
+  MIN_FRAMES_ROCK: 50,
+  /** Default minimum frames */
+  DEFAULT_MIN_FRAMES: 15,
+  /** Maximum frames (balance accuracy vs latency) */
+  MAX_FRAMES: 50,
+} as const
+
+// Phase coherence from KU Leuven/Nyquist analysis
+export const PHASE_SETTINGS = {
+  /** High coherence indicates feedback (pure tone maintains phase) */
+  HIGH_COHERENCE: 0.85,
+  /** Medium coherence is uncertain */
+  MEDIUM_COHERENCE: 0.65,
+  /** Low coherence indicates music/noise */
+  LOW_COHERENCE: 0.4,
+  /** Minimum samples for reliable analysis */
+  MIN_SAMPLES: 5,
+  /** Default threshold for detection */
+  DEFAULT_THRESHOLD: 0.75,
+} as const
+
+// Spectral flatness thresholds
+export const SPECTRAL_FLATNESS_SETTINGS = {
+  /** Pure tone (feedback) has very low flatness */
+  PURE_TONE: 0.05,
+  /** Speech has moderate flatness */
+  SPEECH: 0.15,
+  /** Music has higher flatness */
+  MUSIC: 0.3,
+  /** High kurtosis indicates peaky distribution */
+  HIGH_KURTOSIS: 10,
+  /** Bandwidth around peak to analyze (bins) */
+  ANALYSIS_BANDWIDTH: 10,
+} as const
+
+// Comb filter pattern detection from DBX paper
+export const COMB_PATTERN_SETTINGS = {
+  /** Speed of sound (m/s) */
+  SPEED_OF_SOUND: 343,
+  /** Minimum peaks to establish pattern */
+  MIN_PEAKS: 3,
+  /** Tolerance for frequency spacing (fraction) */
+  SPACING_TOLERANCE: 0.05,
+  /** Maximum path length (meters) */
+  MAX_PATH_LENGTH: 50,
+} as const
+
+// Compression detection thresholds
+export const COMPRESSION_SETTINGS = {
+  /** Normal crest factor for uncompressed audio (dB) */
+  NORMAL_CREST_FACTOR: 12,
+  /** Heavy compression crest factor (dB) */
+  COMPRESSED_CREST_FACTOR: 6,
+  /** Minimum dynamic range for detection (dB) */
+  MIN_DYNAMIC_RANGE: 20,
+  /** Compressed dynamic range (dB) */
+  COMPRESSED_DYNAMIC_RANGE: 8,
+} as const
+
+// Algorithm fusion weights
+export const FUSION_WEIGHTS = {
+  /** Default weights (balanced) */
+  DEFAULT: { msd: 0.35, phase: 0.30, spectral: 0.15, comb: 0.10, existing: 0.10 },
+  /** Speech-optimized (MSD is most reliable) */
+  SPEECH: { msd: 0.45, phase: 0.25, spectral: 0.15, comb: 0.05, existing: 0.10 },
+  /** Music-optimized (phase is more reliable) */
+  MUSIC: { msd: 0.20, phase: 0.40, spectral: 0.15, comb: 0.10, existing: 0.15 },
+  /** Compressed content (phase most important) */
+  COMPRESSED: { msd: 0.15, phase: 0.45, spectral: 0.20, comb: 0.10, existing: 0.10 },
+} as const
+
+// Algorithm mode options for UI
+// NOTE: Phase coherence is DISABLED - Web Audio API doesn't provide phase data
+export const ALGORITHM_MODES = {
+  auto: { label: 'Auto', description: 'Automatic algorithm selection based on content' },
+  msd: { label: 'MSD Only', description: 'Magnitude Slope Deviation - 100% for speech (RECOMMENDED)' },
+  phase: { label: 'Phase Only', description: 'DISABLED - Web Audio API limitation' },
+  combined: { label: 'MSD + Phase', description: 'Phase disabled - same as MSD only' },
+  all: { label: 'All Algorithms', description: 'MSD + Spectral + Comb (phase disabled)' },
 } as const

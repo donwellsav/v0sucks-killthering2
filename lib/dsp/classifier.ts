@@ -1,8 +1,18 @@
 // KillTheRing2 Classifier - Distinguishes feedback vs whistle vs instrument
 // Enhanced with acoustic research from "Sound Insulation" (Carl Hopkins, 2007)
+// Now integrates MSD, Phase Coherence, and Spectral Flatness from advancedDetection.ts
 
 import { CLASSIFIER_WEIGHTS, SEVERITY_THRESHOLDS, SCHROEDER_CONSTANTS } from './constants'
-import type { Track, ClassificationResult, SeverityLevel, IssueLabel, TrackedPeak, DetectorSettings } from '@/types/advisory'
+import type { 
+  Track, 
+  ClassificationResult, 
+  SeverityLevel, 
+  IssueLabel, 
+  TrackedPeak, 
+  DetectorSettings,
+  AlgorithmScores,
+  FusedDetectionResult,
+} from '@/types/advisory'
 import {
   calculateSchroederFrequency,
   getFrequencyBand,
@@ -307,8 +317,8 @@ export function shouldReportIssue(
   const ignoreWhistle = !settings.musicAware // If music aware, don't filter whistles
   const { label, severity, confidence } = classification
   
-  // Get confidence threshold from settings (default 0.65 = 65%)
-  const confidenceThreshold = settings.confidenceThreshold ?? 0.65
+  // Get confidence threshold from settings (default 0.40 = 40%)
+  const confidenceThreshold = settings.confidenceThreshold ?? 0.40
 
   // Always report runaway regardless of mode or confidence
   if (severity === 'RUNAWAY') {
@@ -388,4 +398,177 @@ export function getSeverityUrgency(severity: SeverityLevel): number {
     case 'INSTRUMENT': return 1
     default: return 0
   }
+}
+
+// ============================================================================
+// ENHANCED CLASSIFICATION WITH ADVANCED ALGORITHMS
+// ============================================================================
+
+/**
+ * Enhanced classification that incorporates advanced algorithm scores
+ * Combines traditional classification with MSD, Phase, and Spectral analysis
+ */
+export function classifyTrackWithAlgorithms(
+  track: Track | TrackedPeak,
+  algorithmScores: AlgorithmScores | null,
+  fusionResult: FusedDetectionResult | null,
+  settings?: DetectorSettings
+): ClassificationResult {
+  // Get base classification
+  const baseResult = classifyTrack(track, settings)
+  
+  // If no algorithm scores, return base result
+  if (!algorithmScores || !fusionResult) {
+    return baseResult
+  }
+  
+  const reasons = [...baseResult.reasons]
+  let pFeedback = baseResult.pFeedback
+  let pWhistle = baseResult.pWhistle
+  let pInstrument = baseResult.pInstrument
+  
+  // ==================== Integrate Advanced Algorithm Scores ====================
+  
+  // MSD Analysis
+  if (algorithmScores.msd) {
+    const msd = algorithmScores.msd
+    if (msd.isFeedbackLikely) {
+      // Strong MSD indicator - boost feedback probability
+      pFeedback = Math.min(1, pFeedback + msd.feedbackScore * 0.2)
+      reasons.push(`MSD: ${msd.msd.toFixed(3)} dB²/frame² (${msd.framesAnalyzed} frames)`)
+    } else if (msd.feedbackScore < 0.3) {
+      // Strong non-feedback indicator
+      pFeedback = Math.max(0, pFeedback - 0.15)
+      pInstrument = Math.min(1, pInstrument + 0.1)
+      reasons.push(`MSD indicates musical content (score: ${(msd.feedbackScore * 100).toFixed(0)}%)`)
+    }
+  }
+  
+  // Phase Coherence Analysis - DISABLED
+  // NOTE: Web Audio API AnalyserNode.getFloatFrequencyData() only returns magnitude, not phase.
+  // The phaseBuffer exists but is never populated. Phase analysis is kept here for future
+  // implementation if we add AudioWorklet-based phase extraction.
+  // if (algorithmScores.phase) { ... } // DISABLED - no data available
+  
+  // Spectral Flatness Analysis
+  if (algorithmScores.spectral) {
+    const spectral = algorithmScores.spectral
+    if (spectral.isFeedbackLikely) {
+      // Pure tone detected
+      pFeedback = Math.min(1, pFeedback + 0.1)
+      reasons.push(`Pure tone: flatness ${spectral.flatness.toFixed(3)}, kurtosis ${spectral.kurtosis.toFixed(1)}`)
+    } else if (spectral.flatness > 0.2) {
+      // Broadband content
+      pInstrument = Math.min(1, pInstrument + 0.1)
+    }
+  }
+  
+  // Comb Pattern Detection
+  if (algorithmScores.comb && algorithmScores.comb.hasPattern) {
+    const comb = algorithmScores.comb
+    // Comb pattern is a strong indicator of feedback loop
+    pFeedback = Math.min(1, pFeedback + comb.confidence * 0.2)
+    reasons.push(`Comb pattern: ${comb.matchingPeaks} peaks @ ${comb.fundamentalSpacing?.toFixed(0)}Hz`)
+    
+    // Add predicted frequencies as a note
+    if (comb.predictedFrequencies.length > 0) {
+      reasons.push(`Predicted feedback: ${comb.predictedFrequencies.slice(0, 3).map(f => f.toFixed(0)).join(', ')}Hz`)
+    }
+  }
+  
+  // Compression Adjustment
+  if (algorithmScores.compression && algorithmScores.compression.isCompressed) {
+    const comp = algorithmScores.compression
+    // Compressed content needs more careful analysis
+    // Apply threshold multiplier from compression detection
+    const adjustment = comp.thresholdMultiplier - 1
+    pFeedback = Math.max(0, pFeedback - adjustment * 0.1)
+    reasons.push(`Compressed audio (crest: ${comp.crestFactor.toFixed(1)}dB)`)
+  }
+  
+  // ==================== Use Fusion Result ====================
+  
+  // Override with fusion result if it's decisive
+  if (fusionResult.verdict === 'FEEDBACK' && fusionResult.confidence > 0.7) {
+    pFeedback = Math.max(pFeedback, fusionResult.feedbackProbability)
+    if (!reasons.some(r => r.includes('Algorithm fusion'))) {
+      reasons.push(`Algorithm fusion: ${(fusionResult.feedbackProbability * 100).toFixed(0)}% (${fusionResult.contributingAlgorithms.join('+')})`)
+    }
+  } else if (fusionResult.verdict === 'NOT_FEEDBACK' && fusionResult.confidence > 0.7) {
+    pFeedback = Math.min(pFeedback, 0.3)
+    if (!reasons.some(r => r.includes('Algorithm fusion'))) {
+      reasons.push(`Fusion: likely not feedback (${(fusionResult.confidence * 100).toFixed(0)}% confident)`)
+    }
+  }
+  
+  // ==================== Renormalize ====================
+  
+  pFeedback = Math.max(0, Math.min(1, pFeedback))
+  pWhistle = Math.max(0, Math.min(1, pWhistle))
+  pInstrument = Math.max(0, Math.min(1, pInstrument))
+  
+  const total = pFeedback + pWhistle + pInstrument
+  if (total > 0) {
+    pFeedback /= total
+    pWhistle /= total
+    pInstrument /= total
+  }
+  
+  // Recalculate confidence
+  const maxProb = Math.max(pFeedback, pWhistle, pInstrument)
+  const confidence = Math.max(baseResult.confidence, fusionResult?.confidence ?? 0, maxProb)
+  const pUnknown = 1 - confidence
+  
+  // Determine updated label and severity
+  let { label, severity } = baseResult
+  
+  // Override based on new probabilities
+  if (pFeedback >= 0.6 && fusionResult?.verdict === 'FEEDBACK') {
+    label = 'ACOUSTIC_FEEDBACK'
+    if (severity !== 'RUNAWAY' && severity !== 'GROWING') {
+      severity = fusionResult.confidence > 0.8 ? 'GROWING' : 'RESONANCE'
+    }
+  }
+  
+  return {
+    ...baseResult,
+    pFeedback,
+    pWhistle,
+    pInstrument,
+    pUnknown,
+    label,
+    severity,
+    confidence,
+    reasons,
+  }
+}
+
+/**
+ * Get algorithm contribution summary for display
+ */
+export function getAlgorithmSummary(scores: AlgorithmScores): string[] {
+  const summary: string[] = []
+  
+  if (scores.msd) {
+    const status = scores.msd.isFeedbackLikely ? 'FEEDBACK' : 'OK'
+    summary.push(`MSD: ${status} (${(scores.msd.feedbackScore * 100).toFixed(0)}%)`)
+  }
+  
+  // Phase is disabled - no data from Web Audio API
+  // if (scores.phase) { ... }
+  
+  if (scores.spectral) {
+    const status = scores.spectral.isFeedbackLikely ? 'PURE' : 'BROAD'
+    summary.push(`Spectral: ${status} (${scores.spectral.flatness.toFixed(2)})`)
+  }
+  
+  if (scores.comb && scores.comb.hasPattern) {
+    summary.push(`Comb: ${scores.comb.matchingPeaks} peaks @ ${scores.comb.fundamentalSpacing?.toFixed(0)}Hz`)
+  }
+  
+  if (scores.compression && scores.compression.isCompressed) {
+    summary.push(`Compressed: ${scores.compression.estimatedRatio.toFixed(1)}:1`)
+  }
+  
+  return summary
 }
