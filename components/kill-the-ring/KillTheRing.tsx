@@ -213,69 +213,73 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex items-stretch justify-between px-2 sm:px-4 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4 h-12">
+      <header className="flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
-        {/* Logo / start-stop */}
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <TooltipProvider delayDuration={400}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={isRunning ? stop : start}
-                  aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                  className="relative self-stretch aspect-square flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-                >
-                  <div className={`absolute inset-[5px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
-                  {isRunning && (
-                    <div className="absolute inset-[5px] rounded-full border-2 border-primary animate-ping opacity-30" />
-                  )}
-                  <svg
-                    className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
+        {/* Row 1: Logo + Gain slider */}
+        <div className="flex items-stretch justify-between px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+
+          {/* Logo / start-stop */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={isRunning ? stop : start}
+                    aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+                    className="relative self-stretch aspect-square flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                   >
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                  </svg>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                {isRunning ? 'Stop analysis' : 'Start analysis'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                    <div className={`absolute inset-[5px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+                    {isRunning && (
+                      <div className="absolute inset-[5px] rounded-full border-2 border-primary animate-ping opacity-30" />
+                    )}
+                    <svg
+                      className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {isRunning ? 'Stop analysis' : 'Start analysis'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-          <div className="flex flex-col justify-center gap-[3px]">
-            <div className="flex items-baseline gap-1.5 leading-none">
-              <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
-              <span className="text-base font-black tracking-tight text-primary">RING</span>
+            <div className="flex flex-col justify-center gap-[3px]">
+              <div className="flex items-baseline gap-1.5 leading-none">
+                <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-base font-black tracking-tight text-primary">RING</span>
+              </div>
+              <span className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+                Don Wells AV
+              </span>
             </div>
-            <span className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
-              Don Wells AV
-            </span>
+          </div>
+
+          {/* Center: Gain slider */}
+          <div className="hidden landscape:flex items-center flex-1 min-w-0 px-4">
+            <div className="flex-1 flex flex-col gap-2 min-w-0">
+              <InputMeterSlider
+                value={settings.inputGainDb}
+                onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+                level={inputLevel}
+                fullWidth
+              />
+            </div>
           </div>
         </div>
 
-        {/* Center: Gain slider */}
-        <div className="hidden landscape:flex items-center flex-1 min-w-0 px-4">
-          <div className="flex-1 flex flex-col gap-2 min-w-0">
-            <InputMeterSlider
-              value={settings.inputGainDb}
-              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-              level={inputLevel}
-              fullWidth
-            />
-          </div>
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
+        {/* Row 2: Action icons */}
+        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 border-t border-border/50 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
-            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline">
+            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
 
-          <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground" aria-label="Session History">
+          <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground h-7 px-2" aria-label="Session History">
             <Link href="/sessions">
               <History className="w-4 h-4" />
               <span className="hidden sm:inline text-xs">History</span>
