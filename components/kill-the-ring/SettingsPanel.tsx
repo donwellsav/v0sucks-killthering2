@@ -187,6 +187,28 @@ export function SettingsPanel({
             </Section>
 
             <Section
+              title="A-Weighting"
+              showTooltip={settings.showTooltips}
+              tooltip="Applies IEC 61672-1 A-weighting curve to match human hearing sensitivity. Reduces low-frequency emphasis (below ~500Hz is attenuated). Enable for perceived-loudness analysis; disable for flat-response detection of all feedback regardless of audibility."
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Apply A-weighting curve</span>
+                <button
+                  role="switch"
+                  aria-checked={settings.aWeightingEnabled}
+                  onClick={() => onSettingsChange({ aWeightingEnabled: !settings.aWeightingEnabled })}
+                  className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    settings.aWeightingEnabled ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+                    settings.aWeightingEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </Section>
+
+            <Section
               title="Harmonic Tolerance"
               showTooltip={settings.showTooltips}
               tooltip="Cents window used when matching overtones and sub-harmonics. Tighten for calibration in controlled rooms (25–35¢). Widen for live performance with reverb or temperature drift (65–100¢). Default 50¢ = half a semitone."

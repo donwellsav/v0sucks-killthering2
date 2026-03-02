@@ -276,6 +276,11 @@ export class FeedbackDetector {
       this.growthRateThreshold = settings.growthRateThreshold
     }
 
+    // A-weighting (IEC 61672-1) - applies perceptual loudness curve
+    if (settings.aWeightingEnabled !== undefined) {
+      mappedConfig.aWeightingEnabled = settings.aWeightingEnabled
+    }
+
     if (Object.keys(mappedConfig).length > 0) {
       this.updateConfig(mappedConfig)
     }

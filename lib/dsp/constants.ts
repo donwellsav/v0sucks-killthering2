@@ -205,6 +205,7 @@ export const DEFAULT_SETTINGS = {
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
   showTooltips: true, // Show help tooltips throughout the UI (disable for experienced engineers)
+  aWeightingEnabled: false, // A-weighting off by default - enable for human-perceived loudness weighting
 }
 
 // Frequency range presets — quick switching for different use cases
