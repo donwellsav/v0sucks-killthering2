@@ -171,39 +171,42 @@ export const COMPRESSION_CONSTANTS = {
   ANALYSIS_WINDOW_MS: 500,
 } as const
 
-/** Algorithm fusion weights */
+/** Algorithm fusion weights - PHASE REMOVED (not populated by Web Audio API)
+ * Weights redistributed to MSD, spectral, comb, and existing algorithms
+ * Total weights still sum to 1.0 for proper normalization
+ */
 export const FUSION_WEIGHTS = {
-  /** Default weights for each algorithm (sum to 1) */
+  /** Default weights for each algorithm (sum to 1) - PHASE DISABLED */
   DEFAULT: {
-    msd: 0.35,
-    phase: 0.30,
-    spectral: 0.15,
-    comb: 0.10,
+    msd: 0.50,      // Increased from 0.35 (absorbs phase weight)
+    phase: 0.00,    // DISABLED - Web Audio API doesn't provide phase data
+    spectral: 0.25, // Increased from 0.15
+    comb: 0.15,     // Increased from 0.10
     existing: 0.10,
   },
-  /** Weights for speech content (MSD is most reliable) */
+  /** Weights for speech content (MSD is most reliable per DAFx-16 paper) */
   SPEECH: {
-    msd: 0.45,
-    phase: 0.25,
-    spectral: 0.15,
-    comb: 0.05,
+    msd: 0.55,      // Increased - 100% accurate for speech per research
+    phase: 0.00,    // DISABLED
+    spectral: 0.25, // Increased from 0.15
+    comb: 0.10,     // Increased from 0.05
     existing: 0.10,
   },
-  /** Weights for music content (phase is more reliable) */
+  /** Weights for music content */
   MUSIC: {
-    msd: 0.20,
-    phase: 0.40,
-    spectral: 0.15,
-    comb: 0.10,
+    msd: 0.35,      // Still primary even for music
+    phase: 0.00,    // DISABLED
+    spectral: 0.30, // Increased - spectral flatness helps with music
+    comb: 0.20,     // Increased - comb patterns more useful for music
     existing: 0.15,
   },
   /** Weights when compression is detected */
   COMPRESSED: {
-    msd: 0.15,
-    phase: 0.45,
-    spectral: 0.20,
-    comb: 0.10,
-    existing: 0.10,
+    msd: 0.30,      // MSD less reliable for compressed content per DAFx-16
+    phase: 0.00,    // DISABLED
+    spectral: 0.35, // Increased - spectral analysis more important
+    comb: 0.20,     // Increased
+    existing: 0.15,
   },
 } as const
 
@@ -779,11 +782,11 @@ export interface FusionConfig {
 }
 
 export const DEFAULT_FUSION_CONFIG: FusionConfig = {
-  mode: 'combined',
+  mode: 'msd',  // Changed from 'combined' - phase is disabled (no data from Web Audio API)
   msdMinFrames: MSD_CONSTANTS.MIN_FRAMES_SPEECH,
-  phaseThreshold: PHASE_CONSTANTS.HIGH_COHERENCE,
+  phaseThreshold: PHASE_CONSTANTS.HIGH_COHERENCE, // Kept for future use if phase is implemented
   enableCompressionDetection: true,
-  feedbackThreshold: 0.65,
+  feedbackThreshold: 0.55, // Lowered from 0.65 for more aggressive detection
 }
 
 /**

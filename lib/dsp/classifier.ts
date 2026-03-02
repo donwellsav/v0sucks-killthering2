@@ -444,19 +444,11 @@ export function classifyTrackWithAlgorithms(
     }
   }
   
-  // Phase Coherence Analysis
-  if (algorithmScores.phase) {
-    const phase = algorithmScores.phase
-    if (phase.isFeedbackLikely) {
-      // High phase coherence - strong feedback indicator
-      pFeedback = Math.min(1, pFeedback + phase.feedbackScore * 0.15)
-      reasons.push(`Phase coherence: ${(phase.coherence * 100).toFixed(0)}%`)
-    } else if (phase.coherence < 0.4) {
-      // Low coherence - likely music/noise
-      pFeedback = Math.max(0, pFeedback - 0.1)
-      reasons.push(`Random phase (${(phase.coherence * 100).toFixed(0)}%) - likely music`)
-    }
-  }
+  // Phase Coherence Analysis - DISABLED
+  // NOTE: Web Audio API AnalyserNode.getFloatFrequencyData() only returns magnitude, not phase.
+  // The phaseBuffer exists but is never populated. Phase analysis is kept here for future
+  // implementation if we add AudioWorklet-based phase extraction.
+  // if (algorithmScores.phase) { ... } // DISABLED - no data available
   
   // Spectral Flatness Analysis
   if (algorithmScores.spectral) {
@@ -562,10 +554,8 @@ export function getAlgorithmSummary(scores: AlgorithmScores): string[] {
     summary.push(`MSD: ${status} (${(scores.msd.feedbackScore * 100).toFixed(0)}%)`)
   }
   
-  if (scores.phase) {
-    const status = scores.phase.isFeedbackLikely ? 'LOCKED' : 'RANDOM'
-    summary.push(`Phase: ${status} (${(scores.phase.coherence * 100).toFixed(0)}%)`)
-  }
+  // Phase is disabled - no data from Web Audio API
+  // if (scores.phase) { ... }
   
   if (scores.spectral) {
     const status = scores.spectral.isFeedbackLikely ? 'PURE' : 'BROAD'

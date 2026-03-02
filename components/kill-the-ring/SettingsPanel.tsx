@@ -377,12 +377,12 @@ export function SettingsPanel({
             <Section
               title="Algorithm Mode"
               showTooltip={settings.showTooltips}
-              tooltip="Select which detection algorithms to use. 'Combined' (MSD + Phase) offers the best balance. 'All' uses every algorithm for maximum accuracy but higher CPU."
+              tooltip="Select which detection algorithms to use. 'MSD' (Magnitude Slope Deviation) is recommended - 100% accuracy for speech per DAFx-16. Note: Phase coherence is disabled (Web Audio API limitation)."
             >
               <div className="space-y-2">
                 {(Object.keys(ALGORITHM_MODES) as AlgorithmMode[]).map((mode) => {
                   const info = ALGORITHM_MODES[mode]
-                  const isSelected = (settings.algorithmMode ?? 'combined') === mode
+                  const isSelected = (settings.algorithmMode ?? 'msd') === mode
                   return (
                     <button
                       key={mode}
@@ -414,10 +414,10 @@ export function SettingsPanel({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Frames</span>
-                  <span className="text-xs font-mono">{settings.msdMinFrames ?? 15}</span>
+                  <span className="text-xs font-mono">{settings.msdMinFrames ?? 7}</span>
                 </div>
                 <Slider
-                  value={[settings.msdMinFrames ?? 15]}
+                  value={[settings.msdMinFrames ?? 7]}
                   onValueChange={([v]) => onSettingsChange({ msdMinFrames: v })}
                   min={7}
                   max={50}
@@ -430,12 +430,16 @@ export function SettingsPanel({
               </div>
             </Section>
 
+            {/* Phase Coherence Section - DISABLED
+                Web Audio API AnalyserNode.getFloatFrequencyData() only returns magnitude, not phase.
+                The phase buffer exists but is never populated. Kept for future AudioWorklet implementation.
+            */}
             <Section
-              title="Phase Coherence Threshold"
+              title="Phase Coherence (Disabled)"
               showTooltip={settings.showTooltips}
-              tooltip="Threshold for phase stability detection. Higher = stricter (fewer false positives). Lower = more sensitive (catch more feedback). 0.85 for high precision, 0.65 for general use."
+              tooltip="DISABLED: Web Audio API doesn't provide phase data. This feature requires AudioWorklet implementation for future support."
             >
-              <div className="space-y-2">
+              <div className="space-y-2 opacity-50 pointer-events-none">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Threshold</span>
                   <span className="text-xs font-mono">{((settings.phaseCoherenceThreshold ?? 0.75) * 100).toFixed(0)}%</span>
@@ -446,10 +450,11 @@ export function SettingsPanel({
                   min={40}
                   max={95}
                   step={5}
+                  disabled
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>Sensitive</span>
-                  <span>Strict</span>
+                  <span>Not Available</span>
+                  <span>Web Audio API Limitation</span>
                 </div>
               </div>
             </Section>
@@ -462,10 +467,10 @@ export function SettingsPanel({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Threshold</span>
-                  <span className="text-xs font-mono">{((settings.fusionFeedbackThreshold ?? 0.65) * 100).toFixed(0)}%</span>
+                  <span className="text-xs font-mono">{((settings.fusionFeedbackThreshold ?? 0.55) * 100).toFixed(0)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.fusionFeedbackThreshold ?? 0.65) * 100]}
+                  value={[(settings.fusionFeedbackThreshold ?? 0.55) * 100]}
                   onValueChange={([v]) => onSettingsChange({ fusionFeedbackThreshold: v / 100 })}
                   min={40}
                   max={90}
