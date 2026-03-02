@@ -1,5 +1,5 @@
 'use client'
-
+// v23 clean baseline - no problematic components
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
