@@ -108,3 +108,20 @@
     min-height: 100vh;
   }
 }
+
+@layer components {
+  @keyframes flash-slow {
+    0%, 100% {
+      opacity: 1;
+      color: #dc2626;
+    }
+    50% {
+      opacity: 0.2;
+      color: #dc2626;
+    }
+  }
+
+  .animate-flash-slow {
+    animation: flash-slow 2s ease-in-out infinite;
+  }
+}
