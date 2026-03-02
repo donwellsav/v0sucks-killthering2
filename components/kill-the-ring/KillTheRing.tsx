@@ -60,6 +60,24 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [pinnedCuts, setPinnedCuts] = useState<PinnedCut[]>([])
   const appliedIdsRef = useRef<Set<string>>(new Set())
 
+  // Dismissed advisory IDs — hidden until the advisory disappears and a new one is detected
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
+
+  const handleDismiss = useCallback((id: string) => {
+    setDismissedIds((prev) => new Set(prev).add(id))
+  }, [])
+
+  // Auto-expire dismissed IDs once the advisory is no longer in the live list
+  useEffect(() => {
+    if (dismissedIds.size === 0) return
+    const liveIds = new Set(advisories.map((a) => a.id))
+    setDismissedIds((prev) => {
+      const next = new Set<string>()
+      prev.forEach((id) => { if (liveIds.has(id)) next.add(id) })
+      return next.size === prev.size ? prev : next
+    })
+  }, [advisories, dismissedIds.size])
+
   const handleApply = useCallback((advisory: Advisory) => {
     if (appliedIdsRef.current.has(advisory.id)) return
     const pin = advisoryToPin(advisory)
@@ -360,7 +378,9 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 advisories={advisories}
                 maxIssues={settings.maxDisplayedIssues}
                 appliedIds={appliedIdsRef.current}
+                dismissedIds={dismissedIds}
                 onApply={handleApply}
+                onDismiss={handleDismiss}
               />
             </section>
           </div>
@@ -423,7 +443,9 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 advisories={advisories}
                 maxIssues={settings.maxDisplayedIssues}
                 appliedIds={appliedIdsRef.current}
+                dismissedIds={dismissedIds}
                 onApply={handleApply}
+                onDismiss={handleDismiss}
               />
             </div>
           </div>
@@ -469,7 +491,9 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 advisories={advisories}
                 maxIssues={settings.maxDisplayedIssues}
                 appliedIds={appliedIdsRef.current}
+                dismissedIds={dismissedIds}
                 onApply={handleApply}
+                onDismiss={handleDismiss}
               />
             ) : (
               <EQNotepad

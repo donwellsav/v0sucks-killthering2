@@ -3,7 +3,7 @@
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { getSeverityText } from '@/lib/dsp/classifier'
-import { AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Circle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Advisory } from '@/types/advisory'
@@ -16,12 +16,15 @@ interface IssuesListProps {
   advisories: Advisory[]
   maxIssues?: number
   appliedIds?: Set<string>
+  dismissedIds?: Set<string>
   onApply?: (advisory: Advisory) => void
+  onDismiss?: (id: string) => void
 }
 
-export function IssuesList({ advisories, maxIssues = 10, appliedIds, onApply }: IssuesListProps) {
-  // Sort by frequency (low → high) and slice to max
+export function IssuesList({ advisories, maxIssues = 10, appliedIds, dismissedIds, onApply, onDismiss }: IssuesListProps) {
+  // Filter dismissed, sort by frequency (low → high), then slice to max
   const sorted = [...advisories]
+    .filter((a) => !dismissedIds?.has(a.id))
     .sort((a, b) => (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0))
     .slice(0, maxIssues)
 
@@ -41,6 +44,7 @@ export function IssuesList({ advisories, maxIssues = 10, appliedIds, onApply }: 
             rank={index + 1}
             isApplied={appliedIds?.has(advisory.id) ?? false}
             onApply={onApply}
+            onDismiss={onDismiss}
           />
         ))
       )}
@@ -53,9 +57,10 @@ interface IssueCardProps {
   rank: number
   isApplied: boolean
   onApply?: (advisory: Advisory) => void
+  onDismiss?: (id: string) => void
 }
 
-function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
+function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardProps) {
   const severityColor = getSeverityColor(advisory.severity)
   const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
   const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
@@ -148,6 +153,26 @@ function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
                 </TooltipTrigger>
                 <TooltipContent side="left" className="text-xs">
                   {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {onDismiss && (
+            <TooltipProvider delayDuration={300}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDismiss(advisory.id)}
+                    aria-label={`Dismiss ${freqStr}Hz issue`}
+                    className="h-5 w-5 p-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left" className="text-xs">
+                  Dismiss (re-shows if re-detected)
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
