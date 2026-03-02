@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,13 +23,22 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString(undefined, {
+  return new Date(dateStr).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Renders date only on the client to avoid server/client timezone mismatch */
+function ClientDate({ dateStr }: { dateStr: string }) {
+  const [formatted, setFormatted] = useState<string>('')
+  useEffect(() => {
+    setFormatted(formatDate(dateStr))
+  }, [dateStr])
+  return <span suppressHydrationWarning>{formatted}</span>
 }
 
 const MODE_LABELS: Record<string, string> = {
@@ -112,7 +121,7 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
             >
               <td className="px-4 py-3 font-mono text-foreground/80">
                 <Link href={`/sessions/${s.id}`} className="hover:text-foreground hover:underline underline-offset-2">
-                  {formatDate(s.started_at)}
+                  <ClientDate dateStr={s.started_at} />
                 </Link>
               </td>
               <td className="px-4 py-3 text-foreground">{MODE_LABELS[s.mode] ?? s.mode}</td>
@@ -154,7 +163,7 @@ export function SessionsTable({ sessions }: SessionsTableProps) {
           <div key={s.id} className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <Link href={`/sessions/${s.id}`} className="text-xs font-medium text-foreground hover:underline underline-offset-2">
-                {formatDate(s.started_at)}
+                <ClientDate dateStr={s.started_at} />
               </Link>
               <div className="flex items-center gap-2">
                 {s.ended_at ? (

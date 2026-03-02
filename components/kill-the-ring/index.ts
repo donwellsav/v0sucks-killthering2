@@ -2,7 +2,6 @@ export { KillTheRing } from "./KillTheRing";
 export { SpectrumCanvas } from "./SpectrumCanvas";
 export { WaterfallCanvas } from "./WaterfallCanvas";
 export { GEQBarView } from "./GEQBarView";
-export { TrackTimeline } from "./TrackTimeline";
 export { IssuesList } from "./IssuesList";
 export { ControlPanel } from "./ControlPanel";
 export { SettingsPanel } from "./SettingsPanel";
