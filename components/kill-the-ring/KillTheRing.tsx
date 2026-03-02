@@ -1,21 +1,18 @@
 'use client'
 
-// BUILD v4.0 - Clean version without problematic inline components
-// Fixed: Removed all problematic components, clean SettingsPanel
-// Built: 2026-03-02
+// BUILD v3.0 - Force Full Rebuild (Cache Buster)
+// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
+// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
+// Built: 2026-02-28
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
-import { useFeedbackHistory } from '@/hooks/useFeedbackHistory'
 import { IssuesList } from './IssuesList'
 import { EQNotepad, advisoryToPin, type PinnedCut } from './EQNotepad'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
-import { FeedbackHeatmapCanvas } from './FeedbackHeatmapCanvas'
-import { MSDTrendGraph } from './MSDTrendGraph'
-import { GBFHeaderChip } from './GBFEstimator'
 import { SettingsPanel } from './SettingsPanel'
 import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
@@ -31,14 +28,12 @@ import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
-type GraphView = 'rta' | 'geq' | 'waterfall' | 'heatmap' | 'msd'
+type GraphView = 'rta' | 'geq' | 'waterfall'
 
 const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'rta', label: 'RTA' },
   { value: 'geq', label: 'GEQ' },
   { value: 'waterfall', label: 'WTF' },
-  { value: 'heatmap', label: 'HEAT' },
-  { value: 'msd', label: 'MSD' },
 ]
 
 export const KillTheRing = memo(function KillTheRingComponent() {
@@ -194,9 +189,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   }, [isRunning, flushEventsToDB])
 
   useAdvisoryLogging(advisories)
-  
-  // Track feedback history for heatmap and MSD trend visualization
-  const { feedbackHistory, msdHistory } = useFeedbackHistory(advisories)
 
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
@@ -314,11 +306,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </span>
           )}
 
-          <GBFHeaderChip
-            spectrum={spectrum}
-            advisories={advisories}
-            feedbackThresholdDb={settings.feedbackThresholdDb}
-          />
           <FeedbackHistoryPanel />
           <HelpMenu />
           <SettingsPanel
@@ -534,7 +521,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         )}
 
         {/* Desktop: Always-visible left sidebar */}
-        <aside className="hidden landscape:flex w-72 xl:w-80 2xl:w-88 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+        <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3">
             <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
           </div>
@@ -625,12 +612,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                   <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
                 </div>
-                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'heatmap' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <FeedbackHeatmapCanvas feedbackHistory={feedbackHistory} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
-                </div>
-                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'msd' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <MSDTrendGraph msdHistory={msdHistory} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
-                </div>
               </div>
             </div>
           </div>
@@ -677,8 +658,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
                 {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
                 {bottomLeftGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomLeftGraph === 'heatmap' && <FeedbackHeatmapCanvas feedbackHistory={feedbackHistory} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomLeftGraph === 'msd' && <MSDTrendGraph msdHistory={msdHistory} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
               </div>
             </div>
             {/* Bottom-Right Graph */}
@@ -704,8 +683,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
                 {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
                 {bottomRightGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomRightGraph === 'heatmap' && <FeedbackHeatmapCanvas feedbackHistory={feedbackHistory} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomRightGraph === 'msd' && <MSDTrendGraph msdHistory={msdHistory} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
               </div>
             </div>
           </div>

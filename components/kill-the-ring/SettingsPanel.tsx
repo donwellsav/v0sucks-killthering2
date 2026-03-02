@@ -1,5 +1,5 @@
 'use client'
-// BUILD v4.0 - Clean version without problematic inline components
+
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -44,7 +44,6 @@ export function SettingsPanel({
   onSettingsChange,
   onReset,
 }: SettingsPanelProps) {
-  // Settings panel state
   const [logs, setLogs] = useState<LogEntry[]>([])
   const logger = getEventLogger()
 
@@ -98,23 +97,23 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-<TabsList className="grid w-full grid-cols-4">
-  <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
-  <BarChart3 className="w-3.5 h-3.5" />
-  <span className="hidden sm:inline">Analysis</span>
-  </TabsTrigger>
-  <TabsTrigger value="algorithms" className="gap-1 text-xs px-2">
-  <Cpu className="w-3.5 h-3.5" />
-  <span className="hidden sm:inline">Algo</span>
-  </TabsTrigger>
-  <TabsTrigger value="display" className="gap-1 text-xs px-2">
-  <Monitor className="w-3.5 h-3.5" />
-  <span className="hidden sm:inline">Display</span>
-  </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Analysis</span>
+            </TabsTrigger>
+            <TabsTrigger value="algorithms" className="gap-1 text-xs px-2">
+              <Cpu className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Algo</span>
+            </TabsTrigger>
+            <TabsTrigger value="display" className="gap-1 text-xs px-2">
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Display</span>
+            </TabsTrigger>
             <TabsTrigger value="export" className="gap-1 text-xs px-2">
               <Download className="w-3.5 h-3.5" />
               {issueLogs.length > 0 && (
-                <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full">
+                <span className="ml-1 px-1 py-px bg-primary/20 text-primary text-[9px] rounded-full font-medium leading-none">
                   {issueLogs.length}
                 </span>
               )}
@@ -339,7 +338,7 @@ export function SettingsPanel({
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Room Volume</span>
-                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m��</span>
+                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m³</span>
                       </div>
                       <Slider
                         value={[settings.roomVolume ?? 250]}
@@ -692,21 +691,21 @@ export function SettingsPanel({
             </div>
           </TabsContent>
 
-  <TabsContent value="export" className="mt-4 space-y-4">
-  <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearLogs}
-                  className="text-destructive hover:text-destructive h-7 text-xs gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  Clear
-                </Button>
-              </div>
+          <TabsContent value="export" className="mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearLogs}
+                className="text-destructive hover:text-destructive h-7 text-xs gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear
+              </Button>
+            </div>
 
             <div className="space-y-2">
               {(
@@ -732,10 +731,10 @@ export function SettingsPanel({
               ))}
             </div>
 
-  <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
-  Logs are stored in memory for this session. Export before closing the tab.
-  </p>
-  </TabsContent>
+            <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
+              Logs are stored in memory for this session. Export before closing the tab.
+            </p>
+          </TabsContent>
 
         </Tabs>
       </DialogContent>
