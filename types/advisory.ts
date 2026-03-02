@@ -271,10 +271,11 @@ export interface DetectorSettings {
   showTooltips: boolean // Show/hide all help tooltips throughout the UI
   aWeightingEnabled: boolean // Apply A-weighting curve to analysis (per IEC 61672-1)
   // Confidence and filtering
-  confidenceThreshold: number // Minimum confidence to display (0.5-0.95, default 0.65)
+  confidenceThreshold: number // Minimum confidence to display (0.5-0.95, default 0.70)
   // Room acoustics for Schroeder frequency calculation
-  roomRT60: number // Reverberation time in seconds (0.3-3.0, default 1.2)
-  roomVolume: number // Room volume in m³ (50-5000, default 500)
+  roomRT60: number // Reverberation time in seconds (0.3-3.0, default 0.7)
+  roomVolume: number // Room volume in m³ (50-5000, default 250)
+  roomPreset: 'small' | 'medium' | 'large' | 'custom' // Quick room size preset
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

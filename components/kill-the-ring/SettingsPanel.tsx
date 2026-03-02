@@ -235,15 +235,15 @@ export function SettingsPanel({
             <Section
               title="Confidence Threshold"
               showTooltip={settings.showTooltips}
-              tooltip="Minimum confidence level to display an alert. Lower values show more alerts (some may be false positives). Higher values show only high-confidence detections (may miss subtle feedback). 65% is a good balance."
+              tooltip="Minimum confidence level to display an alert. Lower values show more alerts (some may be false positives). Higher values show only high-confidence detections (may miss subtle feedback). 70% is optimal for speech systems."
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Min. Confidence</span>
-                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.65) * 100)}%</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.70) * 100)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.confidenceThreshold ?? 0.65) * 100]}
+                  value={[(settings.confidenceThreshold ?? 0.70) * 100]}
                   onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
                   min={50}
                   max={95}
@@ -259,45 +259,101 @@ export function SettingsPanel({
             <Section
               title="Room Acoustics"
               showTooltip={settings.showTooltips}
-              tooltip="Room parameters for automatic frequency-dependent thresholds. The Schroeder frequency (f_S = 2000√(T/V)) determines where room modes dominate. Below this frequency, the algorithm uses adjusted thresholds to reduce false positives from room resonances."
+              tooltip="Room parameters for automatic frequency-dependent thresholds. The Schroeder frequency (f_S = 2000√(T/V)) determines where room modes dominate. Select a preset or use Custom for manual control."
             >
               <div className="space-y-3">
+                {/* Room Preset Selector */}
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">RT60 (reverb time)</span>
-                    <span className="text-xs font-mono">{(settings.roomRT60 ?? 1.2).toFixed(1)}s</span>
-                  </div>
-                  <Slider
-                    value={[(settings.roomRT60 ?? 1.2) * 10]}
-                    onValueChange={([v]) => onSettingsChange({ roomRT60: v / 10 })}
-                    min={3}
-                    max={30}
-                    step={1}
-                  />
-                  <div className="flex justify-between text-[9px] text-muted-foreground">
-                    <span>Dead (studio)</span>
-                    <span>Live (cathedral)</span>
+                  <span className="text-xs text-muted-foreground">Room Size Preset</span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['small', 'medium', 'large', 'custom'] as const).map((preset) => {
+                      const presetLabels = {
+                        small: 'Small',
+                        medium: 'Medium',
+                        large: 'Large',
+                        custom: 'Custom',
+                      }
+                      const presetDescriptions = {
+                        small: '10-20 people',
+                        medium: '20-50 people',
+                        large: '50-200 people',
+                        custom: 'Manual',
+                      }
+                      const isSelected = (settings.roomPreset ?? 'medium') === preset
+                      return (
+                        <button
+                          key={preset}
+                          onClick={() => {
+                            if (preset === 'custom') {
+                              onSettingsChange({ roomPreset: 'custom' })
+                            } else {
+                              // Apply preset values
+                              const presetValues = {
+                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 8, ringThresholdDb: 5 },
+                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 10, ringThresholdDb: 6 },
+                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 12, ringThresholdDb: 7 },
+                              }[preset]
+                              onSettingsChange({ roomPreset: preset, ...presetValues })
+                            }
+                          }}
+                          className={`flex flex-col items-start px-2 py-1.5 rounded-md text-left transition-colors ${
+                            isSelected
+                              ? 'bg-primary/20 border border-primary/50 text-primary'
+                              : 'bg-muted/50 border border-transparent hover:bg-muted'
+                          }`}
+                        >
+                          <span className="text-xs font-medium">{presetLabels[preset]}</span>
+                          <span className="text-[9px] text-muted-foreground">{presetDescriptions[preset]}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-muted-foreground">Room Volume</span>
-                    <span className="text-xs font-mono">{settings.roomVolume ?? 500}m³</span>
-                  </div>
-                  <Slider
-                    value={[settings.roomVolume ?? 500]}
-                    onValueChange={([v]) => onSettingsChange({ roomVolume: v })}
-                    min={50}
-                    max={5000}
-                    step={50}
-                  />
-                  <div className="flex justify-between text-[9px] text-muted-foreground">
-                    <span>Small room</span>
-                    <span>Large venue</span>
-                  </div>
-                </div>
-                <div className="text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
-                  Schroeder freq: {Math.round(2000 * Math.sqrt((settings.roomRT60 ?? 1.2) / (settings.roomVolume ?? 500)))}Hz
+
+                {/* Manual controls - only show for Custom preset */}
+                {(settings.roomPreset ?? 'medium') === 'custom' && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">RT60 (reverb time)</span>
+                        <span className="text-xs font-mono">{(settings.roomRT60 ?? 0.7).toFixed(1)}s</span>
+                      </div>
+                      <Slider
+                        value={[(settings.roomRT60 ?? 0.7) * 10]}
+                        onValueChange={([v]) => onSettingsChange({ roomRT60: v / 10 })}
+                        min={3}
+                        max={30}
+                        step={1}
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>Dead (studio)</span>
+                        <span>Live (cathedral)</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Room Volume</span>
+                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m³</span>
+                      </div>
+                      <Slider
+                        value={[settings.roomVolume ?? 250]}
+                        onValueChange={([v]) => onSettingsChange({ roomVolume: v })}
+                        min={50}
+                        max={5000}
+                        step={50}
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>Small room</span>
+                        <span>Large venue</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Schroeder frequency display */}
+                <div className="text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1 flex justify-between">
+                  <span>Schroeder freq:</span>
+                  <span className="font-mono">{Math.round(2000 * Math.sqrt((settings.roomRT60 ?? 0.7) / (settings.roomVolume ?? 250)))}Hz</span>
                 </div>
               </div>
             </Section>

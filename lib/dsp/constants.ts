@@ -275,36 +275,80 @@ export const OPERATION_MODES = {
   },
 } as const
 
-// Default settings for the analyzer - optimized for Corporate/Conference PA feedback detection
-// with Feedback Hunt mode default and Vocal-Focused frequency range (200Hz-8kHz)
+// Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
+// Prioritizes accuracy over speed, A-weighting enabled for speech intelligibility
 export const DEFAULT_SETTINGS = {
   mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
-  fftSize: 8192 as const, // Good balance of resolution and response time
-  smoothingTimeConstant: 0.6, // Less smoothing for faster transient response
-  minFrequency: 200, // Vocal-focused lower bound
+  fftSize: 8192 as const, // Good frequency resolution for accurate detection
+  smoothingTimeConstant: 0.7, // Slightly more smoothing for accuracy (reduces speech transient false positives)
+  minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble in conference rooms)
   maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 8, // Feedback Hunt threshold for balanced PA detection
-  ringThresholdDb: 5, // Resonance detection balanced for general use
-  growthRateThreshold: 2, // Responsive detection without excessive false positives
+  feedbackThresholdDb: 10, // Higher threshold for accuracy - reduces false positives from loud speech
+  ringThresholdDb: 6, // Slightly higher for speech - normal speech peaks won't trigger
+  growthRateThreshold: 2.5, // Slightly slower response for accuracy (fewer false positives)
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
-  noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
+  noiseFloorDecay: 0.97, // Slower decay for more stable noise floor in quiet conference rooms
   peakMergeCents: 50,
-  maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues, can adjust up to 12
-  eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
-  musicAware: false, // Disabled by default for maximum detection
-  autoMusicAware: false, // Auto music-aware mode off by default
+  maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues
+  eqPreset: 'surgical' as const, // Precise narrow cuts for speech (preserve clarity)
+  musicAware: false, // Disabled - no music in corporate/conference
+  autoMusicAware: false, // Auto music-aware mode off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
   inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
-  harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
-  showTooltips: true, // Show help tooltips throughout the UI (disable for experienced engineers)
-  aWeightingEnabled: false, // A-weighting off by default - enable for human-perceived loudness weighting
-  // Confidence and filtering
-  confidenceThreshold: 0.65, // 65% confidence minimum - good balance of sensitivity vs noise
-  // Room acoustics for automatic frequency-dependent thresholds
-  roomRT60: 1.2, // Default reverberation time (typical venue)
-  roomVolume: 500, // Default room volume in m³ (typical conference/small venue)
+  harmonicToleranceCents: 50, // ±50 cents for harmonic matching
+  showTooltips: true, // Show help tooltips (useful for AV techs)
+  aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes frequencies humans hear as loud (speech sibilance 2-5kHz)
+  // Confidence and filtering - ACCURACY FOCUSED
+  confidenceThreshold: 0.70, // 70% threshold - reduces false positives from normal speech dynamics
+  // Room acoustics - defaults to medium conference room
+  roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
+  roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)
+  // Room preset identifier
+  roomPreset: 'medium' as const, // Default to medium conference room
 }
+
+// Room size presets for quick switching in corporate/conference environments
+export const ROOM_PRESETS = {
+  small: {
+    label: 'Small Boardroom',
+    description: '10-20 people, huddle rooms, small meeting spaces',
+    roomRT60: 0.5, // Well-treated small room
+    roomVolume: 80, // ~80m³ (approx 20x15x10 ft)
+    schroederFreq: 158, // Pre-calculated: 2000 * sqrt(0.5/80)
+    feedbackThresholdDb: 8, // More sensitive - less ambient noise
+    ringThresholdDb: 5,
+  },
+  medium: {
+    label: 'Medium Conference Room',
+    description: '20-50 people, standard conference/training rooms',
+    roomRT60: 0.7, // Typical treated conference room
+    roomVolume: 250, // ~250m³ (approx 30x25x12 ft)
+    schroederFreq: 106, // Pre-calculated: 2000 * sqrt(0.7/250)
+    feedbackThresholdDb: 10, // Balanced
+    ringThresholdDb: 6,
+  },
+  large: {
+    label: 'Large Auditorium',
+    description: '50-200 people, ballrooms, auditoriums, town halls',
+    roomRT60: 1.0, // Larger spaces have more reverb
+    roomVolume: 1000, // ~1000m³ (approx 50x40x20 ft)
+    schroederFreq: 63, // Pre-calculated: 2000 * sqrt(1.0/1000)
+    feedbackThresholdDb: 12, // Higher threshold - more ambient noise
+    ringThresholdDb: 7,
+  },
+  custom: {
+    label: 'Custom',
+    description: 'Manual RT60 and volume settings',
+    roomRT60: 0.7,
+    roomVolume: 250,
+    schroederFreq: 106,
+    feedbackThresholdDb: 10,
+    ringThresholdDb: 6,
+  },
+} as const
+
+export type RoomPresetKey = keyof typeof ROOM_PRESETS
 
 // Frequency range presets — quick switching for different use cases
 export const FREQ_RANGE_PRESETS = [
