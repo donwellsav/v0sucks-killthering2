@@ -78,7 +78,6 @@ export function FrequencyBandControls({
     setSavedAsName(null)
   }
 
-  /** Save current custom range as the "Speech" preset (overwrites it) */
   const saveAsSpeech = () => {
     setQuickPresets(prev =>
       prev.map(p => p.label === 'Speech' ? { ...p, minHz: customMin, maxHz: customMax } : p)
@@ -122,8 +121,8 @@ export function FrequencyBandControls({
             >
               {band.label}
               <span className="block text-[8px] opacity-60">
-                {band.minHz < 1000 ? band.minHz : `${(band.minHz/1000).toFixed(1)}k`}–
-                {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz/1000).toFixed(0)}k`}
+                {band.minHz < 1000 ? band.minHz : `${(band.minHz / 1000).toFixed(1)}k`}–
+                {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz / 1000).toFixed(0)}k`}
               </span>
             </button>
           ))}
@@ -151,7 +150,7 @@ export function FrequencyBandControls({
         </div>
       </div>
 
-      {/* Custom range — saveable as Speech preset */}
+      {/* Custom range - saveable as Speech */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Custom Range</div>
@@ -193,209 +192,6 @@ export function FrequencyBandControls({
         <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Active Range</div>
         <div className="text-sm font-mono font-medium">
           {fmtHz(currentMinHz)} – {fmtHz(currentMaxHz)}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-interface FrequencyBand {
-  id: string
-  label: string
-  minHz: number
-  maxHz: number
-  color: string
-  solo: boolean
-  mute: boolean
-}
-
-interface FrequencyBandControlsProps {
-  /** Callback when frequency range changes */
-  onRangeChange: (minHz: number, maxHz: number) => void
-  /** Current min frequency */
-  currentMinHz: number
-  /** Current max frequency */
-  currentMaxHz: number
-  className?: string
-}
-
-const DEFAULT_BANDS: FrequencyBand[] = [
-  { id: 'sub', label: 'Sub', minHz: 20, maxHz: 120, color: '#ef4444', solo: false, mute: false },
-  { id: 'low', label: 'Low', minHz: 120, maxHz: 400, color: '#f97316', solo: false, mute: false },
-  { id: 'lowMid', label: 'Low-Mid', minHz: 400, maxHz: 1000, color: '#eab308', solo: false, mute: false },
-  { id: 'mid', label: 'Mid', minHz: 1000, maxHz: 2500, color: '#22c55e', solo: false, mute: false },
-  { id: 'highMid', label: 'Hi-Mid', minHz: 2500, maxHz: 6000, color: '#3b82f6', solo: false, mute: false },
-  { id: 'high', label: 'High', minHz: 6000, maxHz: 20000, color: '#8b5cf6', solo: false, mute: false },
-]
-
-const QUICK_PRESETS = [
-  { label: 'Full Range', minHz: 20, maxHz: 20000 },
-  { label: 'Vocal Focus', minHz: 200, maxHz: 4000 },
-  { label: 'Sub/Bass', minHz: 20, maxHz: 400 },
-  { label: 'Midrange', minHz: 400, maxHz: 4000 },
-  { label: 'High Freq', minHz: 4000, maxHz: 20000 },
-]
-
-export function FrequencyBandControls({
-  onRangeChange,
-  currentMinHz,
-  currentMaxHz,
-  className,
-}: FrequencyBandControlsProps) {
-  const [bands, setBands] = useState<FrequencyBand[]>(DEFAULT_BANDS)
-  const [customMin, setCustomMin] = useState(currentMinHz)
-  const [customMax, setCustomMax] = useState(currentMaxHz)
-
-  // Solo a band - shows only that frequency range
-  const handleSolo = (bandId: string) => {
-    const band = bands.find(b => b.id === bandId)
-    if (!band) return
-
-    // Check if already solo'd
-    const isAlreadySolo = band.solo
-
-    if (isAlreadySolo) {
-      // Un-solo - go back to full range
-      setBands(bands.map(b => ({ ...b, solo: false })))
-      onRangeChange(20, 20000)
-    } else {
-      // Solo this band
-      setBands(bands.map(b => ({ ...b, solo: b.id === bandId })))
-      onRangeChange(band.minHz, band.maxHz)
-    }
-  }
-
-  // Mute a band - excludes it from the range (not implemented yet - would need filter)
-  const handleMute = (bandId: string) => {
-    setBands(bands.map(b => 
-      b.id === bandId ? { ...b, mute: !b.mute } : b
-    ))
-    // Note: Actual muting would require spectrum masking in the analyzer
-  }
-
-  // Apply custom range
-  const applyCustomRange = () => {
-    onRangeChange(customMin, customMax)
-    setBands(bands.map(b => ({ ...b, solo: false })))
-  }
-
-  // Apply preset
-  const applyPreset = (preset: typeof QUICK_PRESETS[0]) => {
-    setCustomMin(preset.minHz)
-    setCustomMax(preset.maxHz)
-    onRangeChange(preset.minHz, preset.maxHz)
-    setBands(bands.map(b => ({ ...b, solo: false })))
-  }
-
-  // Convert Hz to log slider position (0-100)
-  const hzToSlider = (hz: number) => {
-    const minLog = Math.log10(20)
-    const maxLog = Math.log10(20000)
-    return ((Math.log10(hz) - minLog) / (maxLog - minLog)) * 100
-  }
-
-  // Convert slider position to Hz
-  const sliderToHz = (pos: number) => {
-    const minLog = Math.log10(20)
-    const maxLog = Math.log10(20000)
-    return Math.round(Math.pow(10, minLog + (pos / 100) * (maxLog - minLog)))
-  }
-
-  return (
-    <div className={cn('space-y-4', className)}>
-      {/* Band buttons */}
-      <div className="space-y-2">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          Frequency Bands
-        </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {bands.map((band) => (
-            <button
-              key={band.id}
-              onClick={() => handleSolo(band.id)}
-              className={cn(
-                'px-2 py-1.5 rounded text-[10px] font-medium border transition-all',
-                band.solo
-                  ? 'text-white border-transparent'
-                  : 'text-muted-foreground border-border hover:border-primary/50'
-              )}
-              style={{
-                backgroundColor: band.solo ? band.color : 'transparent',
-              }}
-            >
-              {band.label}
-              <span className="block text-[8px] opacity-60">
-                {band.minHz < 1000 ? band.minHz : `${(band.minHz/1000).toFixed(1)}k`}-
-                {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz/1000).toFixed(0)}k`}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick presets */}
-      <div className="space-y-2">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          Quick Presets
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {QUICK_PRESETS.map((preset) => (
-            <Button
-              key={preset.label}
-              variant="outline"
-              size="sm"
-              onClick={() => applyPreset(preset)}
-              className={cn(
-                'h-6 text-[9px] px-2',
-                currentMinHz === preset.minHz && currentMaxHz === preset.maxHz && 'border-primary'
-              )}
-            >
-              {preset.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Custom range slider */}
-      <div className="space-y-2">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
-          Custom Range
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between text-xs">
-            <span className="font-mono">{customMin < 1000 ? `${customMin} Hz` : `${(customMin/1000).toFixed(1)} kHz`}</span>
-            <span className="font-mono">{customMax < 1000 ? `${customMax} Hz` : `${(customMax/1000).toFixed(1)} kHz`}</span>
-          </div>
-          <Slider
-            value={[hzToSlider(customMin), hzToSlider(customMax)]}
-            onValueChange={([min, max]) => {
-              setCustomMin(sliderToHz(min))
-              setCustomMax(sliderToHz(max))
-            }}
-            min={0}
-            max={100}
-            step={1}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full h-7 text-xs"
-            onClick={applyCustomRange}
-          >
-            Apply Range
-          </Button>
-        </div>
-      </div>
-
-      {/* Current range indicator */}
-      <div className="p-2 rounded bg-muted/50 text-center">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
-          Active Range
-        </div>
-        <div className="text-sm font-mono font-medium">
-          {currentMinHz < 1000 ? `${currentMinHz} Hz` : `${(currentMinHz/1000).toFixed(1)} kHz`}
-          {' - '}
-          {currentMaxHz < 1000 ? `${currentMaxHz} Hz` : `${(currentMaxHz/1000).toFixed(1)} kHz`}
         </div>
       </div>
     </div>
