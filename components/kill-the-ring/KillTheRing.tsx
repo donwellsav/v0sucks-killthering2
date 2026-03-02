@@ -215,8 +215,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
-        {/* Row 1: Gain slider + Logo wordmark (logo left-aligned) */}
-        <div className="flex items-stretch justify-start px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        {/* Row 1: Gain slider + Logo wordmark (logo left edge aligns with icons) */}
+        <div className="flex items-stretch justify-end px-2 sm:px-4 gap-2 sm:gap-4 h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
@@ -244,8 +244,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         </div>
 
-        {/* Row 2: Action icons (left-aligned with logo) */}
-        <div className="flex items-center justify-start gap-1 sm:gap-2 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
+        {/* Row 2: Action icons (leaves room for button) */}
+        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
