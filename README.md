@@ -1,10 +1,31 @@
-# Kill The Ring
+# Kill The Ring 2
 
-**Real-time acoustic feedback and ring detection for live sound engineers.**
+**Professional real-time acoustic feedback detection and analysis for live sound engineers.**
 
-Kill The Ring analyzes a microphone input in the browser using the Web Audio API, identifies feedback frequencies, resonant rings, and problematic tones, and delivers specific GEQ/PEQ cut recommendations with pitch translation — all without any server round-trips. Default settings are tuned for corporate/conference PA systems with a vocal-focused frequency range of 200 Hz – 8 kHz.
+Kill The Ring analyzes microphone input in the browser using the Web Audio API, identifies feedback frequencies using advanced DSP algorithms based on peer-reviewed academic research, and delivers specific EQ recommendations with pitch translation. This is an **analysis tool only** - it does not output or modify audio.
 
 Built by [Don Wells AV](https://donwellsav.com).
+
+---
+
+## Quick Reference for AI Systems
+
+**What this app does:** Real-time feedback frequency detection and EQ recommendations for live sound engineers.
+
+**Key files to understand the system:**
+- `lib/dsp/feedbackDetector.ts` - Core FFT analysis engine
+- `lib/dsp/advancedDetection.ts` - MSD, Phase, Spectral, Comb algorithms
+- `lib/dsp/classifier.ts` - Feedback vs music classification
+- `lib/dsp/constants.ts` - All tunable parameters and defaults
+- `types/advisory.ts` - All TypeScript interfaces
+
+**Current default values (as of last update):**
+- Input Gain: **+15 dB**
+- Confidence Threshold: **40%**
+- Algorithm Mode: **Combined (MSD + Phase)**
+- MSD Min Frames: **15**
+- Phase Coherence Threshold: **75%**
+- Fusion Feedback Threshold: **65%**
 
 ---
 
@@ -15,38 +36,44 @@ Built by [Don Wells AV](https://donwellsav.com).
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
 - [DSP Architecture](#dsp-architecture)
+- [Advanced Detection Algorithms](#advanced-detection-algorithms)
+- [Algorithm Fusion System](#algorithm-fusion-system)
 - [Detection Engine](#detection-engine)
+- [Mathematical Foundations](#mathematical-foundations)
 - [Operation Modes](#operation-modes)
 - [Settings Reference](#settings-reference)
 - [EQ Recommendations](#eq-recommendations)
 - [Severity Levels](#severity-levels)
-- [Logging and Export](#logging-and-export)
-- [Session History](#session-history)
 - [Default Configuration](#default-configuration)
-- [Browser Requirements](#browser-requirements)
-- [Development](#development)
+- [Development Guide](#development-guide)
+- [Academic References](#academic-references)
 
 ---
 
 ## Features
 
+### Core Analysis
 - **Real-time FFT spectrum analysis** via Web Audio API (4096, 8192, or 16384 bins)
-- **Three simultaneous live visualizations:** RTA Spectrum, 31-Band GEQ, and Waterfall — all switchable and clickable
-- **Waterfall time axis** — real elapsed-time gridlines (auto-scaling 1s–30s) instead of fixed labels
-- **Adaptive noise floor** — dynamically adjusts to the room environment
+- **Three simultaneous live visualizations:** RTA Spectrum, 31-Band GEQ, and Waterfall
+- **Adaptive noise floor** with configurable attack/release time constants
 - **Peak detection with quadratic interpolation** for sub-bin frequency accuracy
-- **Harmonic tracking** — suppresses harmonics (up to 8th) of detected fundamentals to reduce clutter
-- **Weighted classifier** — distinguishes acoustic feedback from whistles and instruments using stability, harmonicity, modulation, sideband noise, and growth rate
+- **Harmonic tracking** suppresses harmonics (up to 8th) of detected fundamentals
+
+### Advanced Detection (Based on Academic Research)
+- **MSD Algorithm** (DAFx-16): Magnitude Slope Deviation detects feedback's characteristic linear dB growth
+- **Phase Coherence** (Nyquist): Feedback maintains constant phase relationships
+- **Spectral Flatness**: Pure tones have near-zero Wiener entropy
+- **Comb Pattern Detection** (DBX): Identifies feedback from acoustic path reflections
+- **Compression Detection**: Adapts thresholds for dynamically compressed content
+- **Algorithm Fusion**: Weighted combination of all algorithms with content-aware tuning
+
+### Professional Features
 - **GEQ band mapping** to ISO 31-band center frequencies with cut depth recommendations
-- **PEQ recommendations** with filter type (bell/notch/HPF/LPF), Q estimation from −3 dB bandwidth, and gain
-- **Pitch translation** — every detected frequency shown as a musical note (e.g. A4, C#3 +15 cents)
-- **5 operation modes** from ultra-sensitive calibration to music-aware performance monitoring
-- **Auto Music-Aware mode** — automatically switches sensitivity based on signal level vs. noise floor (configurable hysteresis)
-- **Frequency range presets** — Vocal / Monitor / Full / Sub quick-switch chips
-- **EQ Notepad** — apply cuts from issue cards and accumulate them in a persistent notepad with one-click copy
-- **Session history** — per-session frequency histogram (ISO 31-band) with dominant severity coloring and most-active-bands breakdown
-- **Session event logger** with CSV, JSON, and plain text export
-- **Sidebar detection controls** for real-time threshold adjustment without leaving the workflow
+- **PEQ recommendations** with filter type, Q estimation, and gain
+- **Pitch translation** - every frequency shown as musical note (e.g., A4, C#3 +15 cents)
+- **5 operation modes** from calibration to music-aware performance
+- **Session history** with database persistence (Neon PostgreSQL)
+- **Event logging** with CSV, JSON, and plain text export
 
 ---
 
@@ -54,16 +81,16 @@ Built by [Don Wells AV](https://donwellsav.com).
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript |
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript (strict mode) |
 | UI Components | shadcn/ui |
 | Styling | Tailwind CSS v4 |
 | Audio | Web Audio API (`AnalyserNode`) |
 | Visualization | HTML5 Canvas (custom rendering) |
 | Database | Neon (PostgreSQL via `@neondatabase/serverless`) |
-| State | React hooks (`useState`, `useCallback`, `useRef`) |
+| State | React hooks + SWR for data fetching |
 
-No external audio processing libraries. All DSP runs in the browser.
+**No external audio processing libraries.** All DSP runs client-side in the browser.
 
 ---
 
@@ -73,7 +100,7 @@ No external audio processing libraries. All DSP runs in the browser.
 
 - Node.js 18+
 - pnpm (preferred), npm, or yarn
-- A modern browser with Web Audio API support (Chrome, Firefox, Edge, Safari 14.1+)
+- Modern browser with Web Audio API (Chrome 89+, Firefox 76+, Safari 14.1+, Edge 89+)
 - Microphone access (HTTPS required in production)
 
 ### Installation
@@ -92,12 +119,6 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000), grant microphone permission, and click **Start**.
 
-### Using the shadcn CLI (recommended for fresh install)
-
-```bash
-npx shadcn@latest init
-```
-
 ---
 
 ## Project Structure
@@ -105,113 +126,441 @@ npx shadcn@latest init
 ```
 kill-the-ring/
 ├── app/
-│   ├── layout.tsx              # Root layout with metadata
-│   ├── page.tsx                # Entry point — renders KillTheRing
+│   ├── layout.tsx                    # Root layout with metadata
+│   ├── page.tsx                      # Entry point - renders KillTheRing
+│   ├── api/
+│   │   └── sessions/                 # Session API routes
 │   └── sessions/
-│       ├── page.tsx            # Sessions list page
-│       └── [id]/
-│           └── page.tsx        # Session detail — frequency histogram + stats
+│       ├── page.tsx                  # Sessions list page
+│       └── [id]/page.tsx             # Session detail with histogram
+│
 ├── components/
 │   ├── kill-the-ring/
-│   │   ├── KillTheRing.tsx       # Main orchestration component
-│   │   ├── SpectrumCanvas.tsx    # RTA Spectrum visualization
-│   │   ├── GEQBarView.tsx        # 31-Band GEQ bar visualization
-│   │   ├── WaterfallCanvas.tsx   # Waterfall history with real time axis
-│   │   ├── IssuesList.tsx        # Active issues list with Apply buttons
-│   │   ├── EQNotepad.tsx         # Accumulated applied cuts with copy export
-│   │   ├── FrequencyHistogram.tsx # ISO 31-band histogram canvas (session detail)
-│   │   ├── InputMeterSlider.tsx  # Combined input gain + level meter
-│   │   ├── SettingsPanel.tsx     # Advanced settings dialog
-│   │   ├── DetectionControls.tsx # Sidebar mode/threshold controls
-│   │   ├── HelpMenu.tsx          # Full help documentation dialog
-│   │   ├── LogsViewer.tsx        # Session event log dialog with export
-│   │   └── SessionsTable.tsx     # Sessions list table with clickable rows
-│   └── ui/                     # shadcn/ui components
+│   │   ├── KillTheRing.tsx           # Main orchestration component
+│   │   ├── KillTheRingClient.tsx     # Client-side wrapper
+│   │   ├── SpectrumCanvas.tsx        # RTA Spectrum visualization
+│   │   ├── GEQBarView.tsx            # 31-Band GEQ bar visualization
+│   │   ├── WaterfallCanvas.tsx       # Waterfall history display
+│   │   ├── IssuesList.tsx            # Active issues with Apply buttons
+│   │   ├── EQNotepad.tsx             # Accumulated applied cuts
+│   │   ├── AlgorithmStatusBar.tsx    # Real-time algorithm state display
+│   │   ├── FrequencyHistogram.tsx    # ISO 31-band histogram (sessions)
+│   │   ├── InputMeterSlider.tsx      # Combined input gain + level meter
+│   │   ├── SettingsPanel.tsx         # Settings dialog (4 tabs)
+│   │   ├── DetectionControls.tsx     # Sidebar mode/threshold controls
+│   │   ├── HelpMenu.tsx              # Comprehensive help documentation
+│   │   ├── LogsViewer.tsx            # Event log with export
+│   │   ├── FeedbackHistoryPanel.tsx  # Historical feedback tracking
+│   │   └── SessionsTable.tsx         # Sessions list table
+│   └── ui/                           # shadcn/ui components
+│
 ├── hooks/
-│   ├── useAudioAnalyzer.ts     # Main React hook — audio analyzer lifecycle
-│   ├── useAdvisoryLogging.ts   # Logs advisories to the event logger
-│   └── useAnimationFrame.ts    # rAF utility hook
+│   ├── useAudioAnalyzer.ts           # Main audio analyzer lifecycle
+│   ├── useAdvisoryLogging.ts         # Advisory event logging
+│   └── useAnimationFrame.ts          # rAF utility hook
+│
 ├── lib/
 │   ├── audio/
-│   │   └── createAudioAnalyzer.ts   # AudioAnalyzer factory — bridges DSP and React
+│   │   └── createAudioAnalyzer.ts    # AudioAnalyzer factory
 │   ├── db/
-│   │   └── sessions.ts              # Neon DB layer: sessions, events, frequency stats
+│   │   └── sessions.ts               # Neon DB layer
 │   ├── dsp/
-│   │   ├── feedbackDetector.ts      # Core FFT analysis and peak detection engine
-│   │   ├── classifier.ts            # Weighted feedback/whistle/instrument classifier
-│   │   ├── eqAdvisor.ts             # GEQ/PEQ recommendation generator
-│   │   ├── trackManager.ts          # Peak track lifecycle management
-│   │   └── constants.ts             # ISO bands, severity thresholds, mode presets, freq range presets
+│   │   ├── feedbackDetector.ts       # Core FFT analysis engine (826 lines)
+│   │   ├── advancedDetection.ts      # MSD, Phase, Spectral, Comb (959 lines)
+│   │   ├── classifier.ts             # Feedback/whistle/instrument classifier
+│   │   ├── eqAdvisor.ts              # GEQ/PEQ recommendation generator
+│   │   ├── trackManager.ts           # Peak track lifecycle management
+│   │   ├── acousticUtils.ts          # Room acoustics calculations
+│   │   ├── feedbackHistory.ts        # Historical tracking
+│   │   └── constants.ts              # All tunable parameters (486 lines)
 │   ├── logging/
-│   │   └── eventLogger.ts           # In-session event logger with export
+│   │   └── eventLogger.ts            # Session event logger
 │   └── utils/
-│       ├── mathHelpers.ts           # DSP math: median, prefix sums, interpolation
-│       └── pitchUtils.ts            # Hz → note/octave/cents conversion
+│       ├── mathHelpers.ts            # DSP math utilities
+│       └── pitchUtils.ts             # Hz to note/octave/cents
+│
 └── types/
-    └── advisory.ts                  # All TypeScript types and interfaces
+    └── advisory.ts                   # All TypeScript interfaces (400+ lines)
 ```
 
 ---
 
 ## DSP Architecture
 
+### Signal Flow (Analysis Only - No Audio Output)
+
 ```
-Microphone → MediaStream → AnalyserNode (passive, no output)
-                                ↓
-                    rafLoop (requestAnimationFrame)
-                                ↓
-                    analyze() every analysisIntervalMs (20ms default)
-                                ↓
-              getFloatFrequencyData() → Float32Array (freqDb)
-                                ↓
-              Apply input gain + A-weighting (optional) + clamp
-                                ↓
-              Build power array + prefix sum for neighborhood averaging
-                                ↓
-              Update adaptive noise floor (EMA attack/release)
-                                ↓
-              For each bin in [startBin, endBin]:
-                • Local max check (prominence filter)
-                • Neighborhood background level via prefix sum
-                • Prominence threshold gate
-                • Quadratic interpolation → true frequency + amplitude
-                • Hold timer (sustainMs) → confirmed peak
-                • Harmonic suppression (up to 8th harmonic, 1.5% tolerance)
-                • Q estimation from −3 dB bandwidth
-                • onPeakDetected callback → TrackManager
-                                ↓
-              TrackManager → classify (Classifier) → EQ advisor → Advisory
-                                ↓
-              React state update → UI render
+Microphone
+    │
+    ▼
+MediaStream (getUserMedia)
+    │
+    ▼
+GainNode (software input gain, +15 dB default)
+    │
+    ▼
+AnalyserNode (passive, no output connection)
+    │
+    ├──► getFloatFrequencyData() → Float32Array (freqDb)
+    │
+    ▼
+rafLoop (requestAnimationFrame @ 60fps)
+    │
+    ├── analyze() every analysisIntervalMs (20ms default)
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│  CORE ANALYSIS PIPELINE                                 │
+├─────────────────────────────────────────────────────────┤
+│  1. Apply input gain + optional A-weighting            │
+│  2. Build power array + prefix sum for neighborhoods   │
+│  3. Update adaptive noise floor (EMA attack/release)   │
+│  4. Update MSD history buffer (for advanced detection) │
+│  5. Update amplitude buffer (compression detection)    │
+│  6. Detect content type (speech/music/compressed)      │
+│                                                        │
+│  For each bin in [startBin, endBin]:                   │
+│    • Local max check (prominence filter)               │
+│    • Neighborhood background via prefix sum            │
+│    • Prominence threshold gate                         │
+│    • Quadratic interpolation → true freq + amplitude   │
+│    • Hold timer → confirmed peak                       │
+│    • Harmonic suppression (up to 8th, 1.5% tolerance)  │
+│    • Q estimation from -3 dB bandwidth                 │
+│    • Calculate algorithm scores (MSD, Phase, etc.)     │
+│    • Fuse algorithm results → verdict                  │
+│    • onPeakDetected callback → TrackManager            │
+└─────────────────────────────────────────────────────────┘
+    │
+    ▼
+TrackManager → Classifier → EQ Advisor → Advisory
+    │
+    ▼
+React State Update → UI Render
 ```
 
-**Key design decision:** The `AnalyserNode` is connected in passive/analysis-only mode — no audio routing to the output. Kill The Ring never affects the actual audio signal.
+**Key design decision:** The `AnalyserNode` is connected in passive/analysis-only mode. Kill The Ring **never** affects the actual audio signal.
+
+---
+
+## Advanced Detection Algorithms
+
+Kill The Ring uses five complementary detection algorithms based on peer-reviewed academic research. Each algorithm exploits a different physical property of acoustic feedback.
+
+### 1. MSD (Magnitude Slope Deviation) - DAFx-16 Paper
+
+**Physical principle:** Feedback amplitude grows exponentially, which appears as **linear growth in dB scale**. The second derivative of dB magnitude over time is therefore near-zero for feedback.
+
+**Formula:**
+```
+MSD(k,m) = Σ |G''(k,n)|²  for n = (m-N)+1 to m
+```
+
+Where:
+- `G''(k,n)` = second derivative of dB magnitude at bin k, frame n
+- `N` = number of frames in analysis window
+- Low MSD = likely feedback, High MSD = likely music
+
+**Performance (from paper):**
+| Content Type | Accuracy | Frames Needed |
+|--------------|----------|---------------|
+| Speech | 100% | 7 frames (~160ms) |
+| Classical Music | 100% | 13 frames (~300ms) |
+| Rock Music | 22% | 50+ frames (needs compression detection) |
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `MSDHistoryBuffer` class
+
+### 2. Phase Coherence Analysis - Nyquist Stability
+
+**Physical principle:** True feedback occurs when the Nyquist phase condition is met:
+```
+∠G(ω)·F(ω) = n·2π
+```
+
+Feedback frequencies maintain **constant phase relationships** across consecutive frames. Music does not.
+
+**Formula:**
+```
+φ_coherence(k) = |1/N Σ e^(jΔφ(k,n))|  for n = 1 to N
+```
+
+Where:
+- `Δφ(k,n)` = phase difference between frames at bin k
+- Coherence = 1.0 means perfect phase lock (feedback)
+- Coherence < 0.7 means random phase (music)
+
+**Thresholds:**
+- High coherence: > 0.85 (strong feedback indicator)
+- Medium coherence: 0.65-0.85 (uncertain)
+- Low coherence: < 0.4 (likely music/noise)
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `PhaseHistoryBuffer` class
+
+### 3. Spectral Flatness + Kurtosis
+
+**Physical principle:** Feedback is a **near-pure tone** with very low spectral flatness (Wiener entropy) around the peak frequency. The amplitude distribution also has high kurtosis (peaky, not Gaussian).
+
+**Formulas:**
+
+Spectral Flatness (Wiener entropy):
+```
+SF = (∏ X(k))^(1/N) / (1/N Σ X(k))
+```
+
+Kurtosis:
+```
+K = E[(X-μ)⁴] / (E[(X-μ)²])² - 3
+```
+
+**Thresholds:**
+| Signal Type | Spectral Flatness | Kurtosis |
+|-------------|-------------------|----------|
+| Pure tone (feedback) | ≈ 0 | > 10 |
+| Speech | 0.05-0.15 | 1-5 |
+| Music | > 0.1 | < 3 |
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `calculateSpectralFlatness()` function
+
+### 4. Comb Filter Pattern Detection - DBX Paper
+
+**Physical principle:** Multiple feedback frequencies appear at **regular intervals** due to the round-trip delay of the acoustic path:
+```
+f_n = n·c / 2d
+```
+
+Where:
+- `c` = speed of sound (343 m/s)
+- `d` = acoustic path length
+- `n` = harmonic number
+
+If we detect 3+ peaks at regular frequency spacing, it strongly indicates a feedback system from a specific acoustic path.
+
+**Algorithm:**
+1. Collect all candidate peak frequencies
+2. Calculate frequency spacing between all pairs
+3. Find common divisors (GCD pattern)
+4. If 3+ peaks share common spacing → feedback pattern detected
+5. Predict next feedback frequencies
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `detectCombPattern()` function
+
+### 5. Compression Detection
+
+**Physical principle:** Dynamically compressed audio (common in rock/pop music) has sustained notes that look like early-stage feedback - sustained amplitude with low MSD. We detect compression by analyzing crest factor and dynamic range.
+
+**Detection criteria:**
+- Normal crest factor: ~12 dB (peak-to-RMS)
+- Compressed crest factor: < 6 dB
+- Normal dynamic range: > 20 dB
+- Compressed dynamic range: < 8 dB
+
+When compression is detected, the system:
+1. Raises the MSD threshold
+2. Increases required analysis frames
+3. Weights phase coherence more heavily
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `AmplitudeHistoryBuffer` class
+
+---
+
+## Algorithm Fusion System
+
+All algorithm scores are combined using a weighted voting system with content-aware weights.
+
+### Fusion Formula
+
+```
+Score_feedback = w₁·S_MSD + w₂·S_phase + w₃·S_spectral + w₄·S_comb + w₅·S_existing
+```
+
+### Content-Aware Weights
+
+| Content Type | MSD | Phase | Spectral | Comb | Existing |
+|--------------|-----|-------|----------|------|----------|
+| Speech | 0.45 | 0.25 | 0.15 | 0.05 | 0.10 |
+| Music | 0.20 | 0.40 | 0.15 | 0.10 | 0.15 |
+| Compressed | 0.15 | 0.45 | 0.20 | 0.10 | 0.10 |
+| Unknown | 0.35 | 0.30 | 0.15 | 0.10 | 0.10 |
+
+### Decision Matrix
+
+| MSD Score | Phase Score | Existing Score | Verdict |
+|-----------|-------------|----------------|---------|
+| High | High | High | **FEEDBACK** (confirmed) |
+| High | High | Low | POSSIBLE_FEEDBACK (early) |
+| High | Low | High | POSSIBLE_FEEDBACK (room mode?) |
+| Low | High | High | UNCERTAIN (sustained note?) |
+| Low | Low | * | NOT_FEEDBACK |
+
+**Implementation:** `lib/dsp/advancedDetection.ts` - `fuseAlgorithmResults()` function
 
 ---
 
 ## Detection Engine
 
-### `FeedbackDetector` (`lib/dsp/feedbackDetector.ts`)
+### FeedbackDetector Class
 
-The core class wrapping `AnalyserNode`. Key parameters:
+Location: `lib/dsp/feedbackDetector.ts`
+
+The core class wrapping `AnalyserNode`. Contains 800+ lines of DSP code.
+
+#### Key Parameters
 
 | Parameter | Default | Description |
 |---|---|---|
-| `fftSize` | 8192 | FFT window size. Higher = better low-freq resolution, slower updates |
-| `analysisIntervalMs` | 20 ms | How often to run analysis in the rAF loop |
-| `sustainMs` | 250 ms | How long a peak must persist before triggering |
-| `clearMs` | 400 ms | How long a peak must be absent before clearing |
-| `relativeThresholdDb` | 18 dB | Peak must exceed local background by this much |
-| `prominenceDb` | 12 dB | Minimum prominence above the neighborhood average |
-| `neighborhoodBins` | 8 | Bins each side for background level calculation (±2 excluded) |
+| `fftSize` | 8192 | FFT window size (frequency resolution) |
+| `analysisIntervalMs` | 20 ms | Analysis loop interval |
+| `sustainMs` | 250 ms | Time peak must persist before triggering |
+| `clearMs` | 400 ms | Time peak must be absent before clearing |
+| `relativeThresholdDb` | 18 dB | Peak must exceed local background by this |
+| `prominenceDb` | 12 dB | Minimum prominence above neighborhood |
+| `neighborhoodBins` | 8 | Bins each side for background calculation |
 
-### Noise Floor
+#### History Buffers (for Advanced Algorithms)
 
-An adaptive noise floor is estimated using a configurable number of spectral samples across the analysis range. It uses separate attack (200 ms) and release (1000 ms) time constants implemented as exponential moving averages, allowing it to track quiet environments quickly and recover slowly after loud transients.
+| Buffer | Purpose | Size |
+|--------|---------|------|
+| `MSDHistoryBuffer` | Stores dB magnitude for MSD calculation | fftSize × 50 frames |
+| `PhaseHistoryBuffer` | Stores phase data for coherence | fftSize × 10 frames |
+| `AmplitudeHistoryBuffer` | Stores peak/RMS for compression detection | 100 samples |
 
-### Quadratic Interpolation
+#### Public Methods
 
-True peak frequency is estimated using parabolic interpolation between the peak bin and its neighbors, providing sub-bin accuracy that is critical for meaningful musical pitch display.
+```typescript
+// Lifecycle
+start(inputNode: MediaStreamAudioSourceNode): void
+stop(): void
+
+// Configuration
+updateSettings(settings: Partial<DetectorSettings>): void
+setAlgorithmMode(mode: AlgorithmMode): void
+setMSDMinFrames(frames: number): void
+updateFusionConfig(config: Partial<FusionConfig>): void
+
+// State
+getState(): FeedbackDetectorState
+getSpectrum(): Float32Array
+getContentType(): ContentType
+getCompressionResult(): CompressionResult | null
+getAlgorithmScoresForBin(binIndex: number): AlgorithmScores | undefined
+
+// Callbacks
+onPeakDetected?: (peak: DetectedPeak) => void
+onPeakCleared?: (peak: ClearedPeak) => void
+onAlgorithmScores?: (scores: AlgorithmScoresEvent) => void
+onContentTypeDetected?: (contentType: ContentType) => void
+onCombPatternDetected?: (pattern: CombPatternResult) => void
+```
+
+### Classifier
+
+Location: `lib/dsp/classifier.ts`
+
+Distinguishes feedback from whistles and instruments using weighted scoring.
+
+#### Classification Inputs
+
+- Stability: How stable is the frequency over time?
+- Harmonicity: Are harmonics present in expected ratios?
+- Modulation: Is there vibrato/tremolo (suggests instrument)?
+- Sideband noise: Is the peak surrounded by broadband content?
+- Growth rate: How fast is the amplitude increasing?
+- Algorithm scores: MSD, Phase, Spectral, Comb results
+
+#### Output Labels
+
+| Label | Description |
+|-------|-------------|
+| `ACOUSTIC_FEEDBACK` | High confidence feedback |
+| `WHISTLE` | Detected whistle or sibilance |
+| `INSTRUMENT_HARMONIC` | Likely musical content |
+| `POSSIBLE_RING` | Uncertain, may need attention |
+
+### EQ Advisor
+
+Location: `lib/dsp/eqAdvisor.ts`
+
+Generates GEQ and PEQ recommendations based on detected issues.
+
+#### GEQ Mapping
+
+Maps detected frequency to nearest ISO 31-band center frequency (1/3 octave):
+```
+20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500,
+630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000,
+10000, 12500, 16000, 20000 Hz
+```
+
+#### Cut Depths by Severity and Style
+
+| Severity | Surgical | Heavy |
+|----------|----------|-------|
+| RUNAWAY | -18 dB | -12 dB |
+| GROWING | -9 dB | -6 dB |
+| RESONANCE | -4 dB | -3 dB |
+| POSSIBLE_RING | -3 dB | -3 dB |
+
+---
+
+## Mathematical Foundations
+
+### Quadratic Interpolation for Peak Frequency
+
+True peak frequency is estimated using parabolic interpolation:
+
+```
+δ = 0.5 × (α - γ) / (α - 2β + γ)
+true_freq = (peak_bin + δ) × sample_rate / fft_size
+```
+
+Where:
+- α = magnitude at bin - 1
+- β = magnitude at peak bin
+- γ = magnitude at bin + 1
+
+### Adaptive Noise Floor
+
+Exponential moving average with separate attack and release:
+
+```
+if current_level > noise_floor:
+    noise_floor += (current_level - noise_floor) × attack_coefficient
+else:
+    noise_floor += (current_level - noise_floor) × release_coefficient
+```
+
+Default time constants:
+- Attack: 200 ms (track loud transients quickly)
+- Release: 1000 ms (recover slowly from loud events)
+
+### A-Weighting Curve
+
+Per IEC 61672-1, applied to prioritize speech frequencies:
+
+```
+R_A(f) = 12194² × f⁴ / ((f² + 20.6²) × √((f² + 107.7²)(f² + 737.9²)) × (f² + 12194²))
+A(f) = 20 × log₁₀(R_A(f)) + 2.0
+```
+
+### Q Factor Estimation
+
+Estimated from -3 dB bandwidth:
+
+```
+Q = f_center / bandwidth_3dB
+```
+
+Where `bandwidth_3dB` is measured by finding bins 3 dB below the peak on each side.
+
+### Schroeder Frequency
+
+Below this frequency, room modes are isolated (feedback-prone):
+
+```
+f_Schroeder = 2000 × √(RT60 / Volume)
+```
+
+Where RT60 is reverberation time in seconds and Volume is in cubic meters.
 
 ---
 
@@ -219,28 +568,11 @@ True peak frequency is estimated using parabolic interpolation between the peak 
 
 | Mode | Threshold | Ring | Growth | Use Case |
 |---|---|---|---|---|
-| **Feedback Hunt** (default) | 8 dB | 5 dB | 2 dB/s | General PA monitoring and soundcheck |
-| **Aggressive** | 6 dB | 3 dB | 1 dB/s | System calibration, pre-show ring-out |
-| **Vocal Ring** | 6 dB | 4 dB | 1.5 dB/s | Monitor mix tuning, vocal-focused systems |
-| **Music-Aware** | 12 dB | 7 dB | 3 dB/s | During live performance, reduces false positives |
-| **Calibration** | 4 dB | 2 dB | 0.5 dB/s | Initial setup with pink noise or gain sweep |
-
-Selecting a mode applies all three thresholds simultaneously. Individual sliders in the sidebar override per-parameter after a mode is selected.
-
-### Auto Music-Aware
-
-The **Auto Music-Aware** toggle watches `spectrum.peak` vs `noiseFloor + hysteresis` and automatically switches the `musicAware` flag on/off with a 1-second debounce. A Speech/Music pill indicator shows the current automatic state. The hysteresis threshold defaults to 15 dB above the noise floor and is adjustable in Settings.
-
-### Frequency Range Presets
-
-Four preset chips instantly update `minFrequency`/`maxFrequency`:
-
-| Preset | Range | Use Case |
-|---|---|---|
-| Vocal | 200–8000 Hz | Speech PA, vocal monitors (default) |
-| Monitor | 300–3000 Hz | Core intelligibility band, monitor wedges |
-| Full | 20–20000 Hz | Full-range calibration |
-| Sub | 20–250 Hz | Subwoofer monitoring |
+| **Feedback Hunt** | 6 dB | 4 dB | 1.5 dB/s | General PA monitoring |
+| **Aggressive** | 5 dB | 3 dB | 1 dB/s | System calibration |
+| **Vocal Ring** | 5 dB | 3 dB | 1 dB/s | Monitor mix tuning |
+| **Music-Aware** | 10 dB | 6 dB | 2.5 dB/s | Live performance |
+| **Calibration** | 4 dB | 2 dB | 0.5 dB/s | Initial setup |
 
 ---
 
@@ -250,185 +582,203 @@ Four preset chips instantly update `minFrequency`/`maxFrequency`:
 
 | Setting | Range | Default | Description |
 |---|---|---|---|
-| FFT Size | 4096 / 8192 / 16384 | 8192 | Frequency resolution vs. response speed |
-| Spectrum Smoothing | 0 – 95% | 60% | Frame averaging to reduce visual noise |
-| Hold Time | 0.5 – 5 s | 3 s | How long issues remain visible after disappearing |
-| Input Gain | 0 – +30 dB | +12 dB | Software boost applied before analysis only |
+| FFT Size | 4096/8192/16384 | 8192 | Frequency resolution |
+| Smoothing | 0-95% | 50% | Frame averaging |
+| Hold Time | 0.5-5s | 3s | Issue visibility duration |
+| Input Gain | -40 to +40 dB | **+15 dB** | Software boost before analysis |
+| Confidence | 40-95% | **40%** | Minimum confidence to display |
+
+### Algorithms Tab
+
+| Setting | Range | Default | Description |
+|---|---|---|---|
+| Algorithm Mode | Auto/MSD/Phase/Combined/All | **Combined** | Which algorithms to use |
+| MSD Min Frames | 7-50 | **15** | Frames for MSD analysis |
+| Phase Threshold | 40-95% | **75%** | Phase coherence threshold |
+| Fusion Threshold | 40-90% | **65%** | Combined probability threshold |
+| Compression Detection | on/off | **on** | Adapt for compressed content |
+| Comb Pattern Detection | on/off | **on** | Detect acoustic path patterns |
 
 ### Display Tab
 
 | Setting | Range | Default | Description |
 |---|---|---|---|
-| Graph Label Size | 8 – 26 px | 15 px | Font size for canvas frequency and dB labels |
-| Max Issues Shown | 3 – 12 | 6 | Limits the active issues list length |
-| EQ Style | Surgical / Heavy | Surgical | Surgical = narrow Q (8–16), Heavy = wide Q (2–4) |
-
-### Sidebar Detection Controls
-
-| Control | Maps To | Range | Default |
-|---|---|---|---|
-| Mode pills | `mode` | 5 presets | Feedback Hunt |
-| Freq Range chips | `minFrequency` / `maxFrequency` | 4 presets | Vocal |
-| Auto Music-Aware | `autoMusicAware` | toggle | off |
-| Threshold slider | `feedbackThresholdDb` | 2 – 20 dB | 8 dB |
-| Ring slider | `ringThresholdDb` | 1 – 12 dB | 5 dB |
-| Growth slider | `growthRateThreshold` | 0.5 – 8 dB/s | 2 dB/s |
-
----
-
-## EQ Recommendations
-
-Every detected advisory includes both GEQ and PEQ recommendations generated by `lib/dsp/eqAdvisor.ts`.
-
-### GEQ
-
-Maps the detected frequency to the nearest **ISO 31-band center frequency** (1/3 octave spacing, 20 Hz – 20 kHz). Suggests a cut depth based on severity and EQ style preset.
-
-### PEQ
-
-Provides exact frequency, Q factor (blended from preset and measured −3 dB bandwidth), gain, and filter type:
-
-- `bell` — standard parametric cut
-- `notch` — very narrow, deep cut for runaway feedback
-- `HPF` — high-pass filter for sub-80 Hz rumble
-- `LPF` — low-pass filter for above 12 kHz
-
-### Cut Depths by Severity
-
-| Severity | Surgical | Heavy |
-|---|---|---|
-| RUNAWAY | −18 dB | −12 dB |
-| GROWING | −9 dB | −6 dB |
-| RESONANCE | −4 dB | −3 dB |
-| POSSIBLE RING | −3 dB | −3 dB |
-
-### EQ Notepad
-
-Pressing **Apply** on an issue card logs the GEQ band, cut depth, PEQ Q, and gain to the **EQ Notepad** sidebar tab. The notepad accumulates all applied cuts for the session. The **Copy** button exports them as formatted text suitable for pasting into a console note or text file. Applied cuts are stored in component state and cleared on page reload.
+| Graph Font Size | 8-26 px | 15 px | Canvas label size |
+| Max Issues | 3-12 | 8 | Maximum displayed issues |
+| EQ Style | Surgical/Heavy | Surgical | Cut depth preset |
+| Show Algorithm Scores | on/off | off | Display advanced metrics |
 
 ---
 
 ## Severity Levels
 
-| Level | Color | Meaning |
-|---|---|---|
-| **RUNAWAY** | Red | Active feedback rapidly increasing — act immediately |
-| **GROWING** | Orange | Feedback building, not yet critical |
-| **RESONANCE** | Yellow | Stable resonant peak that could become feedback |
-| **POSSIBLE RING** | Purple | Subtle ring, may need attention |
-| **WHISTLE** | Cyan | Detected whistle or sibilance |
-| **INSTRUMENT** | Green | Likely musical content, not feedback |
-
----
-
-## Logging and Export
-
-`lib/logging/eventLogger.ts` maintains an in-session event log (singleton) that records:
-
-- Analysis start/stop events
-- Every detected issue (frequency, amplitude, severity, classification, Q, bandwidth, pitch)
-- Settings changes
-- Export events
-
-**Export formats:**
-- **CSV** — opens in Excel/Sheets; one row per event
-- **JSON** — complete data structure for programmatic analysis
-- **Plain Text** — formatted human-readable report
-
-Logs are stored in memory for the session duration and cleared on page reload. Export before closing.
-
-Session events are also persisted to the **Neon database** in the `session_events` table and are queryable through the Sessions history page.
-
----
-
-## Session History
-
-The `/sessions` page lists all recorded sessions. Each row links to a **session detail page** (`/sessions/[id]`) which shows:
-
-- **Stats strip** — total issues, unique frequency bands, hottest frequency, dominant severity
-- **Frequency Distribution histogram** — ISO 31-band canvas chart, bar height = event count, bar color = dominant severity
-- **Most Active Bands table** — top 5 bands with severity label, proportional bar, and event count
-- **Legend** — all detected severities with their counts
-
-The histogram is useful for identifying persistent venue resonances across multiple sessions and building venue-specific EQ starting points.
+| Level | Color | Meaning | Action Required |
+|---|---|---|---|
+| **RUNAWAY** | Red | Active feedback, rapidly increasing | Immediate cut |
+| **GROWING** | Orange | Feedback building, not critical yet | Apply cut soon |
+| **RESONANCE** | Yellow | Stable resonant peak | Monitor, cut if grows |
+| **POSSIBLE_RING** | Purple | Subtle ring detected | Watch closely |
+| **WHISTLE** | Cyan | Sibilance or whistle | Consider HPF/de-esser |
+| **INSTRUMENT** | Green | Likely musical content | Ignore |
 
 ---
 
 ## Default Configuration
 
-Optimized for corporate/conference PA systems with vocal focus:
+```typescript
+// lib/dsp/constants.ts - DEFAULT_SETTINGS
 
+{
+  // Core detection
+  mode: 'feedbackHunt',
+  fftSize: 8192,
+  smoothingTimeConstant: 0.5,
+  minFrequency: 200,
+  maxFrequency: 8000,
+  feedbackThresholdDb: 6,
+  ringThresholdDb: 4,
+  growthRateThreshold: 1.5,
+  
+  // Timing
+  holdTimeMs: 3000,
+  noiseFloorDecay: 0.98,
+  
+  // Display
+  maxDisplayedIssues: 8,
+  eqPreset: 'surgical',
+  graphFontSize: 15,
+  
+  // Input
+  inputGainDb: 15,                    // UPDATED: was 12
+  
+  // Filtering
+  confidenceThreshold: 0.40,          // UPDATED: was 0.55
+  aWeightingEnabled: true,
+  
+  // Advanced algorithms
+  algorithmMode: 'combined',
+  msdMinFrames: 15,
+  phaseCoherenceThreshold: 0.75,
+  enableCompressionDetection: true,
+  enableCombPatternDetection: true,
+  fusionFeedbackThreshold: 0.65,
+  showAlgorithmScores: false,
+  showPhaseDisplay: false,
+  
+  // Room acoustics
+  roomRT60: 0.7,
+  roomVolume: 250,
+  roomPreset: 'medium',
+}
 ```
-Mode:               Feedback Hunt
-Frequency range:    200 Hz – 8 kHz (Vocal preset)
-Feedback threshold: 8 dB
-Ring threshold:     5 dB
-Growth rate:        2 dB/s
-FFT size:           8192
-Smoothing:          60%
-Hold time:          3 s
-Input gain:         +12 dB
-EQ style:           Surgical
-Auto Music-Aware:   off (hysteresis: 15 dB)
+
+---
+
+## Development Guide
+
+### Adding a New Algorithm
+
+1. Define types in `lib/dsp/advancedDetection.ts`:
+   ```typescript
+   export interface NewAlgorithmResult {
+     score: number
+     isFeedbackLikely: boolean
+     // ... other fields
+   }
+   ```
+
+2. Add to `AlgorithmScores` interface:
+   ```typescript
+   export interface AlgorithmScores {
+     msd: MSDResult | null
+     phase: PhaseCoherenceResult | null
+     // ... existing
+     newAlgorithm: NewAlgorithmResult | null  // add
+   }
+   ```
+
+3. Implement the algorithm class/function in `advancedDetection.ts`
+
+4. Integrate in `feedbackDetector.ts`:
+   - Add buffer in `allocateBuffers()`
+   - Calculate in `calculateAlgorithmScores()`
+   - Reset in `resetHistory()`
+
+5. Update fusion weights in `fuseAlgorithmResults()`
+
+6. Add UI controls in `SettingsPanel.tsx` (Algorithms tab)
+
+7. Update `HelpMenu.tsx` and this README
+
+### Modifying Detection Thresholds
+
+All tunable constants are in `lib/dsp/constants.ts`:
+
+- `DEFAULT_SETTINGS` - Default values for all settings
+- `OPERATION_MODES` - Per-mode threshold overrides
+- `SEVERITY_THRESHOLDS` - Classification thresholds
+- `CLASSIFIER_WEIGHTS` - Scoring weights
+- `MSD_SETTINGS`, `PHASE_SETTINGS`, etc. - Algorithm constants
+
+### Database Schema
+
+Sessions and events are stored in Neon PostgreSQL. See `lib/db/sessions.ts`:
+
+```sql
+-- Sessions table
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY,
+  started_at TIMESTAMP,
+  ended_at TIMESTAMP,
+  settings JSONB
+);
+
+-- Events table
+CREATE TABLE session_events (
+  id UUID PRIMARY KEY,
+  session_id UUID REFERENCES sessions(id),
+  timestamp TIMESTAMP,
+  type TEXT,
+  data JSONB
+);
 ```
+
+---
+
+## Academic References
+
+1. **DAFx-16 Paper**: "Automatic Detection of Acoustic Feedback Using Magnitude Slope Deviation"
+   - Source of MSD algorithm
+   - Key finding: Feedback grows linearly in dB scale
+
+2. **DBX Feedback Prevention Paper**: "Feedback Prevention and Suppression"
+   - Source of comb filter pattern detection
+   - Key finding: Feedback occurs at regular frequency intervals
+
+3. **KU Leuven 2025**: "2-ch Acoustic Feedback Cancellation System"
+   - Mathematical framework for phase coherence analysis
+   - Identifiability conditions for feedback path estimation
+
+4. **Carl Hopkins - "Sound Insulation" (2007)**
+   - Schroeder frequency calculation
+   - Modal density and room acoustics theory
+
+5. **F. Alton Everest - "Master Handbook of Acoustics"**
+   - Reverberation time effects on feedback
+   - Room mode behavior and standing waves
 
 ---
 
 ## Browser Requirements
 
-- **Chrome / Edge 89+** — full support, recommended
-- **Firefox 76+** — full support
-- **Safari 14.1+** — supported; Safari may prompt for mic permission differently
+- **Chrome / Edge 89+** - Full support, recommended
+- **Firefox 76+** - Full support
+- **Safari 14.1+** - Supported (different mic permission flow)
 - HTTPS or `localhost` required for `getUserMedia`
 - Web Audio API required (all modern browsers)
 
 ---
 
-## Development
-
-```bash
-# Development server (Turbopack)
-pnpm dev
-
-# Type check
-pnpm tsc --noEmit
-
-# Build for production
-pnpm build
-
-# Start production server
-pnpm start
-```
-
-### Adding a New Operation Mode
-
-1. Add the mode key to `OperationMode` in `types/advisory.ts`
-2. Add mode settings to `OPERATION_MODES` in `lib/dsp/constants.ts`
-3. Mode pills are auto-generated from OPERATION_MODES in `DetectionControls.tsx`
-4. Add filtering logic to `shouldReportIssue()` in `lib/dsp/classifier.ts`
-5. Update the Help menu in `HelpMenu.tsx` and the modes table above
-
-### Modifying Detection Thresholds
-
-All tunable constants live in `lib/dsp/constants.ts`:
-
-- `DEFAULT_SETTINGS` — default values for all `DetectorSettings` fields including `autoMusicAwareHysteresisDb`
-- `FREQ_RANGE_PRESETS` — the four frequency range preset definitions
-- `SEVERITY_THRESHOLDS` — velocity and Q thresholds for severity classification
-- `CLASSIFIER_WEIGHTS` — weighted scoring for feedback vs. whistle vs. instrument
-- `EQ_PRESETS` — cut depths and Q factors per preset
-- `SPECTRAL_TRENDS` — thresholds for shelf/filter suggestions (rumble, mud, harshness)
-
-### Database
-
-Sessions and events are stored in Neon PostgreSQL. The schema lives in `lib/db/sessions.ts`. Key functions:
-
-- `createSession()` / `endSession()` — session lifecycle
-- `insertSessionEvents()` — batch event flush (every 30s)
-- `getSessionFrequencyStats()` — ISO 31-band histogram aggregation for session detail page
-
----
-
 ## License
 
-Copyright © Don Wells AV. All rights reserved.
+Copyright 2024-2026 Don Wells AV. All rights reserved.
