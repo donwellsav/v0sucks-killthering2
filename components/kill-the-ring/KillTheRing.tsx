@@ -247,6 +247,15 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 >
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
+                {!isRunning && (
+                  <div 
+                    className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full"
+                  >
+                    <span className="font-black whitespace-nowrap text-white leading-none" style={{ fontSize: '13px' }}>
+                      START
+                    </span>
+                  </div>
+                )}
               </button>
             </div>
 
@@ -260,19 +269,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               </span>
             </div>
           </div>
-
-          {/* START text at bottom of header */}
-          {!isRunning && (
-            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2">
-              <span 
-                className="font-black whitespace-nowrap text-white leading-none cursor-pointer" 
-                style={{ fontSize: '13px' }}
-                onClick={start}
-              >
-                START
-              </span>
-            </div>
-          )}
 
           {/* Mobile-only: wordmark (button is the absolute circle) */}
           <div className="flex sm:hidden items-center gap-0">
