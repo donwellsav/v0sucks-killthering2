@@ -317,8 +317,8 @@ export function shouldReportIssue(
   const ignoreWhistle = !settings.musicAware // If music aware, don't filter whistles
   const { label, severity, confidence } = classification
   
-  // Get confidence threshold from settings (default 0.65 = 65%)
-  const confidenceThreshold = settings.confidenceThreshold ?? 0.65
+  // Get confidence threshold from settings (default 0.40 = 40%)
+  const confidenceThreshold = settings.confidenceThreshold ?? 0.40
 
   // Always report runaway regardless of mode or confidence
   if (severity === 'RUNAWAY') {

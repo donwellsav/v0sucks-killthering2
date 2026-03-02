@@ -371,7 +371,7 @@ export interface DetectorSettings {
   showTooltips: boolean // Show/hide all help tooltips throughout the UI
   aWeightingEnabled: boolean // Apply A-weighting curve to analysis (per IEC 61672-1)
   // Confidence and filtering
-  confidenceThreshold: number // Minimum confidence to display (0.5-0.95, default 0.70)
+  confidenceThreshold: number // Minimum confidence to display (0.40-0.95, default 0.40)
   // Room acoustics for Schroeder frequency calculation
   roomRT60: number // Reverberation time in seconds (0.3-3.0, default 0.7)
   roomVolume: number // Room volume in m³ (50-5000, default 250)
@@ -427,5 +427,5 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   noiseFloorSampleCount: 160, // Faster noise floor sampling
   noiseFloorAttackMs: 200, // Faster attack for dynamic environments
   noiseFloorReleaseMs: 1000, // Faster release
-  inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
+  inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
 }

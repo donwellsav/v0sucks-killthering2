@@ -294,13 +294,13 @@ export const DEFAULT_SETTINGS = {
   musicAware: false, // Disabled - no music in corporate/conference
   autoMusicAware: false, // Auto music-aware mode off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
-  inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
+  inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes speech frequencies (2-5kHz)
   // Confidence filtering - LOW threshold, better false positives than missing real feedback
-  confidenceThreshold: 0.55, // 55% - aggressive, show more alerts
+  confidenceThreshold: 0.40, // 40% - very aggressive, surface almost everything
   // Room acoustics - defaults to medium conference room
   roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
   roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)

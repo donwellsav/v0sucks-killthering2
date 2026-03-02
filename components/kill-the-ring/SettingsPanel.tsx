@@ -245,10 +245,10 @@ export function SettingsPanel({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Min. Confidence</span>
-                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.55) * 100)}%</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.40) * 100)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.confidenceThreshold ?? 0.55) * 100]}
+                  value={[(settings.confidenceThreshold ?? 0.40) * 100]}
                   onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
                   min={40}
                   max={90}
