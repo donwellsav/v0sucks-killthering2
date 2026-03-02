@@ -222,7 +222,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         <div className="flex items-stretch justify-end pr-12 px-2 gap-2 h-10 sm:h-auto sm:justify-start sm:pr-0 sm:px-0 sm:gap-3 sm:flex-shrink-0">
 
           {/* Desktop-only: button inside logo group */}
-          <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
+          <div className="hidden sm:flex items-stretch gap-2.5 flex-shrink-0">
             <TooltipProvider delayDuration={400}>
               <Tooltip>
                 <TooltipTrigger asChild>
