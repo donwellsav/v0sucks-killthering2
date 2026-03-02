@@ -235,15 +235,15 @@ export function SettingsPanel({
             <Section
               title="Confidence Threshold"
               showTooltip={settings.showTooltips}
-              tooltip="Minimum confidence level to display an alert. Lower values show more alerts (some may be false positives). Higher values show only high-confidence detections (may miss subtle feedback). 70% is optimal for speech systems."
+              tooltip="Minimum confidence level to display an alert. The improved classifier handles false positives well, so 65% is a good balance. Raise to 75%+ only if you still see too many false alerts."
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Min. Confidence</span>
-                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.70) * 100)}%</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.65) * 100)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.confidenceThreshold ?? 0.70) * 100]}
+                  value={[(settings.confidenceThreshold ?? 0.65) * 100]}
                   onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
                   min={50}
                   max={95}
@@ -287,11 +287,11 @@ export function SettingsPanel({
                             if (preset === 'custom') {
                               onSettingsChange({ roomPreset: 'custom' })
                             } else {
-                              // Apply preset values
+                              // Apply preset values - SENSITIVE thresholds, classifier handles accuracy
                               const presetValues = {
-                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 8, ringThresholdDb: 5 },
-                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 10, ringThresholdDb: 6 },
-                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 12, ringThresholdDb: 7 },
+                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 7, ringThresholdDb: 4 },
+                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 8, ringThresholdDb: 5 },
+                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 9, ringThresholdDb: 6 },
                               }[preset]
                               onSettingsChange({ roomPreset: preset, ...presetValues })
                             }
