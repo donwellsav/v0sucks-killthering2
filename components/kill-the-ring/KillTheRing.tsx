@@ -613,45 +613,22 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             ))}
           </div>
 
-          {/* Bottom row: GEQ + Waterfall toggleable with pills (~40% height), tablet and up */}
-          <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1 flex-col">
-            {/* Pill buttons for bottom graphs */}
-            <div className="flex items-center gap-1 px-2 py-1 flex-shrink-0">
-              {GRAPH_CHIPS.map((chip) => (
-                <button
-                  key={`bottom-${chip.value}`}
-                  onClick={() => setActiveGraph(chip.value)}
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-                    activeGraph === chip.value
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-            
-            {/* Bottom graphs container */}
-            <div className="flex-1 min-h-0 flex gap-1.5 landscape:gap-2">
-              {/* GEQ Graph */}
-              <div className={`flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
-                  <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>
-                </div>
-                <div className="flex-1 min-h-0">
-                  <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
-                </div>
+          {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
+          <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>
               </div>
-              
-              {/* Waterfall Graph */}
-              <div className={`flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
-                <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
-                  <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">Waterfall</span>
-                </div>
-                <div className="flex-1 min-h-0">
-                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
-                </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+              </div>
+            </div>
+            <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
+                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">Waterfall</span>
+              </div>
+              <div className="flex-1 min-h-0 pointer-events-none">
+                <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
               </div>
             </div>
           </div>
