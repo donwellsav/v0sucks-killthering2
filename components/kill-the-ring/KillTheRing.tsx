@@ -215,11 +215,11 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
-        {/* Row 1: Gain slider + Logo wordmark (logo left edge aligns with icons) */}
-        <div className="flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-10 sm:h-12">
+        {/* Mobile: Gain slider + Logo wordmark */}
+        <div className="landscape:hidden flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-10 sm:h-12">
 
           {/* Center: Gain slider */}
-          <div className="hidden landscape:flex items-center flex-1 min-w-0">
+          <div className="flex items-center flex-1 min-w-0">
             <div className="flex-1 flex flex-col gap-2 min-w-0">
               <InputMeterSlider
                 value={settings.inputGainDb}
@@ -244,14 +244,48 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         </div>
 
-        {/* Row 2: Action icons (leaves room for button) */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 pb-1 text-xs text-muted-foreground">
-          {noiseFloorDb !== null && (
-            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
-              Floor: {noiseFloorDb.toFixed(0)}dB
-            </span>
-          )}
+        {/* Desktop: Streamlined logo + action icons */}
+        <div className="hidden landscape:flex items-center justify-between px-4 h-14">
+          {/* Logo wordmark */}
+          <div className="flex items-center gap-0">
+            <div className="flex flex-col justify-center gap-0">
+              <div className="flex items-baseline gap-1.5 leading-none">
+                <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-xl font-black tracking-tight text-primary">RING</span>
+              </div>
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+                Don Wells AV
+              </span>
+            </div>
+          </div>
 
+          {/* Desktop action icons */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {noiseFloorDb !== null && (
+              <span className="font-mono text-[10px] text-muted-foreground">
+                Floor: {noiseFloorDb.toFixed(0)}dB
+              </span>
+            )}
+            <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground h-8 px-2" aria-label="Session History">
+              <Link href="/sessions">
+                <History className="w-4 h-4" />
+                <span className="text-xs">History</span>
+              </Link>
+            </Button>
+            <HelpMenu />
+            <SettingsPanel
+              settings={settings}
+              onSettingsChange={handleSettingsChange}
+              onReset={() => {
+                resetSettings()
+                logger.logSettingsChanged({ action: 'reset_to_defaults' })
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Mobile: Action icons (leaves room for button) */}
+        <div className="landscape:hidden flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 pb-1 text-xs text-muted-foreground">
           <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground h-7 px-2" aria-label="Session History">
             <Link href="/sessions">
               <History className="w-4 h-4" />
@@ -273,7 +307,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             variant="ghost"
             size="sm"
             onClick={() => setMobileShowGraph(!mobileShowGraph)}
-            className="landscape:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             aria-label={mobileShowGraph ? 'Show controls' : 'Show graph'}
             title={mobileShowGraph ? 'Show controls' : 'Show graph'}
           >
@@ -296,7 +330,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             variant="ghost"
             size="sm"
             onClick={() => setMobileMenuOpen(true)}
-            className="landscape:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             aria-label="Open menu"
             aria-expanded={mobileMenuOpen}
           >
