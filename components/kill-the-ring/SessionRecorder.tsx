@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import type { SpectrumData, Advisory } from '@/types/advisory'
 
@@ -33,7 +32,7 @@ interface SessionRecording {
   settings: Record<string, unknown>
 }
 
-interface SessionRecorderProps {
+export interface SessionRecorderContentProps {
   spectrum: SpectrumData | null
   advisories: Advisory[]
   isRunning: boolean
@@ -44,14 +43,13 @@ interface SessionRecorderProps {
 const MAX_RECORDING_DURATION = 5 * 60 * 1000
 const RECORDING_INTERVAL = 100
 
-export function SessionRecorder({
+export function SessionRecorderContent({
   spectrum,
   advisories,
   isRunning,
   settings,
   onPlaybackFrame,
-}: SessionRecorderProps) {
-  const [open, setOpen] = useState(false)
+}: SessionRecorderContentProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [recordings, setRecordings] = useState<SessionRecording[]>([])
   const [currentRecording, setCurrentRecording] = useState<SessionRecording | null>(null)
@@ -180,127 +178,103 @@ export function SessionRecorder({
   }, [])
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <div className="space-y-4">
+      {/* Status indicator */}
+      {isRecording && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30">
+          <span className="w-2 h-2 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+          <span className="text-xs text-destructive font-medium">
+            Recording — {formatDuration((currentRecording?.frames.length ?? 0) * RECORDING_INTERVAL)}
+          </span>
+        </div>
+      )}
+
+      {/* Record / Stop */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">
+          Records spectrum + detections for later review. Max 5 minutes.
+        </p>
         <Button
-          suppressHydrationWarning
-          variant="ghost"
+          variant={isRecording ? 'destructive' : 'default'}
           size="sm"
-          className={cn(
-            'gap-1.5 text-muted-foreground hover:text-foreground',
-            isRecording && 'text-red-500 hover:text-red-400'
-          )}
-          aria-label="Session Recorder"
-          title="Session Recorder"
+          className="w-full h-9"
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={!isRunning && !isRecording}
         >
-          {/* Record / Circle icon */}
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="9" />
-            {isRecording && <circle cx="12" cy="12" r="5" fill="currentColor" className="animate-pulse" />}
-          </svg>
-          <span className="hidden sm:inline text-xs">{isRecording ? 'REC' : 'Record'}</span>
+          {isRecording ? 'Stop Recording' : 'Start Recording'}
         </Button>
-      </DialogTrigger>
+        {!isRunning && !isRecording && (
+          <p className="text-[10px] text-muted-foreground text-center">Start analysis to enable recording</p>
+        )}
+      </div>
 
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle className="text-base">Session Recorder</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5 mt-2">
-          {/* Record / Stop */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">
-              Records analysis data (spectrum + detections) for later review. Max 5 minutes.
-            </p>
-            <Button
-              variant={isRecording ? 'destructive' : 'default'}
-              size="sm"
-              className="w-full h-9"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!isRunning && !isRecording}
-            >
-              {isRecording ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  Stop Recording ({formatDuration((currentRecording?.frames.length ?? 0) * RECORDING_INTERVAL)})
-                </span>
-              ) : 'Start Recording'}
-            </Button>
-            {!isRunning && !isRecording && (
-              <p className="text-[10px] text-muted-foreground text-center">Start analysis to enable recording</p>
-            )}
-          </div>
-
-          {/* Saved recordings */}
-          {recordings.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Saved Recordings</p>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                {recordings.map(rec => (
-                  <div
-                    key={rec.id}
-                    className={cn(
-                      'p-2 rounded border text-xs flex items-center justify-between gap-2',
-                      playbackRecording?.id === rec.id ? 'border-primary bg-primary/10' : 'border-border'
-                    )}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{rec.name}</div>
-                      <div className="text-[9px] text-muted-foreground">
-                        {formatDuration(rec.duration)} · {rec.frames.length} frames
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0">
-                      <Button variant="outline" size="sm" className="h-6 px-2 text-[9px]" onClick={() => loadForPlayback(rec)}>Load</Button>
-                      <Button variant="outline" size="sm" className="h-6 px-2 text-[9px]" onClick={() => exportRecording(rec)}>Export</Button>
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-destructive" onClick={() => deleteRecording(rec.id)}>Del</Button>
-                    </div>
+      {/* Saved recordings */}
+      {recordings.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Saved Recordings</p>
+          <div className="space-y-1.5 max-h-36 overflow-y-auto">
+            {recordings.map(rec => (
+              <div
+                key={rec.id}
+                className={cn(
+                  'p-2 rounded border text-xs flex items-center justify-between gap-2',
+                  playbackRecording?.id === rec.id ? 'border-primary bg-primary/10' : 'border-border'
+                )}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{rec.name}</div>
+                  <div className="text-[9px] text-muted-foreground">
+                    {formatDuration(rec.duration)} · {rec.frames.length} frames
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Playback controls */}
-          {playbackRecording && (
-            <div className="space-y-3 p-3 rounded-lg bg-muted/50">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium truncate">{playbackRecording.name}</span>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-[10px]" onClick={() => setPlaybackRecording(null)}>✕</Button>
-              </div>
-              <div className="space-y-1">
-                <Slider
-                  value={[playbackIndex]}
-                  onValueChange={([v]) => seekTo(v)}
-                  min={0}
-                  max={Math.max(0, playbackRecording.frames.length - 1)}
-                  step={1}
-                />
-                <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>{formatDuration(playbackIndex * RECORDING_INTERVAL)}</span>
-                  <span>{formatDuration(playbackRecording.duration)}</span>
+                </div>
+                <div className="flex gap-1 flex-shrink-0">
+                  <Button variant="outline" size="sm" className="h-6 px-2 text-[9px]" onClick={() => loadForPlayback(rec)}>Load</Button>
+                  <Button variant="outline" size="sm" className="h-6 px-2 text-[9px]" onClick={() => exportRecording(rec)}>Export</Button>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[9px] text-destructive" onClick={() => deleteRecording(rec.id)}>Del</Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-7 flex-1" onClick={isPlaying ? pausePlayback : startPlayback}>
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
-                <select
-                  value={playbackSpeed}
-                  onChange={e => setPlaybackSpeed(Number(e.target.value))}
-                  className="h-7 px-2 text-xs bg-background border border-border rounded"
-                >
-                  <option value={0.5}>0.5×</option>
-                  <option value={1}>1×</option>
-                  <option value={2}>2×</option>
-                  <option value={4}>4×</option>
-                </select>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+
+      {/* Playback controls */}
+      {playbackRecording && (
+        <div className="space-y-3 p-3 rounded-lg bg-muted/50">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium truncate">{playbackRecording.name}</span>
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-[10px]" onClick={() => setPlaybackRecording(null)}>✕</Button>
+          </div>
+          <div className="space-y-1">
+            <Slider
+              value={[playbackIndex]}
+              onValueChange={([v]) => seekTo(v)}
+              min={0}
+              max={Math.max(0, playbackRecording.frames.length - 1)}
+              step={1}
+            />
+            <div className="flex justify-between text-[9px] text-muted-foreground">
+              <span>{formatDuration(playbackIndex * RECORDING_INTERVAL)}</span>
+              <span>{formatDuration(playbackRecording.duration)}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-7 flex-1" onClick={isPlaying ? pausePlayback : startPlayback}>
+              {isPlaying ? 'Pause' : 'Play'}
+            </Button>
+            <select
+              value={playbackSpeed}
+              onChange={e => setPlaybackSpeed(Number(e.target.value))}
+              className="h-7 px-2 text-xs bg-background border border-border rounded"
+            >
+              <option value={0.5}>0.5×</option>
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={4}>4×</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

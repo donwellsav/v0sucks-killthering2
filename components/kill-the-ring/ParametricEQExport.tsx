@@ -3,7 +3,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
 import type { Advisory } from '@/types/advisory'
@@ -17,13 +16,12 @@ interface EQBand {
   type: 'peaking' | 'notch'
 }
 
-interface ParametricEQExportProps {
+export interface ParametricEQExportContentProps {
   advisories: Advisory[]
   feedbackHistory?: Map<number, { count: number; maxSeverity: string }>
 }
 
-export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQExportProps) {
-  const [open, setOpen] = useState(false)
+export function ParametricEQExportContent({ advisories, feedbackHistory }: ParametricEQExportContentProps) {
   const [qFactor, setQFactor] = useState(5)
   const [cutDepth, setCutDepth] = useState(-6)
   const [includeHistorical, setIncludeHistorical] = useState(true)
@@ -33,7 +31,6 @@ export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQ
 
   const eqBands = useMemo<EQBand[]>(() => {
     const bands = new Map<number, EQBand>()
-
     for (const a of advisories) {
       const freq = Math.round(a.trueFrequencyHz)
       let depth = cutDepth
@@ -41,19 +38,12 @@ export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQ
       else if (a.severity === 'high') depth = Math.min(depth, -10)
       bands.set(freq, { frequency: freq, gain: depth, q: qFactor, type: qFactor >= 8 ? 'notch' : 'peaking' })
     }
-
     if (includeHistorical && feedbackHistory) {
       for (const [freq, data] of feedbackHistory) {
         if (bands.has(freq) || data.count < 3) continue
-        bands.set(freq, {
-          frequency: Math.round(freq),
-          gain: cutDepth + 2,
-          q: qFactor * 0.8,
-          type: 'peaking',
-        })
+        bands.set(freq, { frequency: Math.round(freq), gain: cutDepth + 2, q: qFactor * 0.8, type: 'peaking' })
       }
     }
-
     return Array.from(bands.values()).sort((a, b) => a.frequency - b.frequency).slice(0, maxBands)
   }, [advisories, feedbackHistory, qFactor, cutDepth, includeHistorical, maxBands])
 
@@ -63,32 +53,27 @@ export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQ
         content: ['Band,Frequency (Hz),Gain (dB),Q Factor,Type',
           ...eqBands.map((b, i) => `${i + 1},${b.frequency},${b.gain.toFixed(1)},${b.q.toFixed(1)},${b.type}`)
         ].join('\n'),
-        filename: 'feedback_eq_cuts.csv',
-        mime: 'text/csv',
+        filename: 'feedback_eq_cuts.csv', mime: 'text/csv',
       }
       case 'waves': return {
         content: JSON.stringify({ plugin: 'Q10', bands: eqBands.map((b, i) => ({ band: i + 1, enabled: true, frequency: b.frequency, gain: b.gain, q: b.q })) }, null, 2),
-        filename: 'feedback_eq_waves.json',
-        mime: 'application/json',
+        filename: 'feedback_eq_waves.json', mime: 'application/json',
       }
       case 'protools': return {
-        content: ['# Pro Tools Parametric EQ Settings', `# Exported ${new Date().toISOString()}`, '',
+        content: ['# Pro Tools Parametric EQ', `# Exported ${new Date().toISOString()}`, '',
           ...eqBands.map((b, i) => `Band ${i + 1}: ${b.frequency} Hz, ${b.gain.toFixed(1)} dB, Q=${b.q.toFixed(1)}`)
         ].join('\n'),
-        filename: 'feedback_eq_protools.txt',
-        mime: 'text/plain',
+        filename: 'feedback_eq_protools.txt', mime: 'text/plain',
       }
       case 'smaart': return {
         content: ['# Smaart Feedback Frequency List', `# Exported ${new Date().toISOString()}`, '# Frequency (Hz), Recommended Cut (dB)',
           ...eqBands.map(b => `${b.frequency}, ${b.gain.toFixed(1)}`)
         ].join('\n'),
-        filename: 'feedback_frequencies_smaart.txt',
-        mime: 'text/plain',
+        filename: 'feedback_frequencies_smaart.txt', mime: 'text/plain',
       }
       default: return {
         content: JSON.stringify({ format: 'Kill The Ring EQ Export', version: '1.0', exportedAt: new Date().toISOString(), bands: eqBands }, null, 2),
-        filename: 'feedback_eq_export.json',
-        mime: 'application/json',
+        filename: 'feedback_eq_export.json', mime: 'application/json',
       }
     }
   }, [eqBands])
@@ -97,9 +82,7 @@ export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQ
     const { content, filename, mime } = buildContent(exportFormat)
     const url = URL.createObjectURL(new Blob([content], { type: mime }))
     const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    a.click()
+    a.href = url; a.download = filename; a.click()
     URL.revokeObjectURL(url)
   }, [buildContent, exportFormat])
 
@@ -120,130 +103,92 @@ export function ParametricEQExport({ advisories, feedbackHistory }: ParametricEQ
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          suppressHydrationWarning
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'gap-1.5 text-muted-foreground hover:text-foreground',
-            advisories.length > 0 && 'text-primary/80 hover:text-primary'
-          )}
-          aria-label="Export EQ"
-          title="Export Parametric EQ"
-        >
-          {/* Download icon */}
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          <span className="hidden sm:inline text-xs">EQ</span>
-          {advisories.length > 0 && (
-            <span className="hidden sm:inline bg-primary/20 text-primary text-[9px] px-1 rounded-full">
-              {advisories.length}
-            </span>
-          )}
-        </Button>
-      </DialogTrigger>
-
-      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle className="text-base">Parametric EQ Export</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5 mt-2">
-          {/* Band preview */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium">Generated Bands ({eqBands.length} / {maxBands})</span>
-              <span className="text-muted-foreground font-mono">Q = {qFactor.toFixed(1)}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto">
-              {eqBands.map(band => (
-                <div key={band.frequency} className="p-1.5 rounded bg-muted/50 text-[10px] flex justify-between items-center gap-1">
-                  <span className="font-mono">{formatFrequency(band.frequency)}</span>
-                  <span className={cn('font-mono font-semibold',
-                    band.gain <= -10 ? 'text-destructive' : band.gain <= -6 ? 'text-orange-500' : 'text-yellow-500'
-                  )}>
-                    {band.gain.toFixed(0)} dB
-                  </span>
-                </div>
-              ))}
-              {eqBands.length === 0 && (
-                <div className="col-span-2 py-4 text-center text-muted-foreground text-xs">
-                  No feedback frequencies detected yet
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Settings */}
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>Q Factor (bandwidth)</span>
-                <span className="font-mono text-muted-foreground">{qFactor.toFixed(1)}</span>
-              </div>
-              <Slider value={[qFactor]} onValueChange={([v]) => setQFactor(v)} min={1} max={15} step={0.5} />
-              <div className="flex justify-between text-[9px] text-muted-foreground"><span>Wide</span><span>Narrow</span></div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>Cut Depth</span>
-                <span className="font-mono text-muted-foreground">{cutDepth} dB</span>
-              </div>
-              <Slider value={[Math.abs(cutDepth)]} onValueChange={([v]) => setCutDepth(-v)} min={1} max={18} step={1} />
-              <div className="flex justify-between text-[9px] text-muted-foreground"><span>Gentle</span><span>Deep</span></div>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span>Max Bands</span>
-                <span className="font-mono text-muted-foreground">{maxBands}</span>
-              </div>
-              <Slider value={[maxBands]} onValueChange={([v]) => setMaxBands(v)} min={1} max={16} step={1} />
-            </div>
-
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" checked={includeHistorical} onChange={e => setIncludeHistorical(e.target.checked)} className="rounded" />
-              <span>Include historical frequencies (3+ detections)</span>
-            </label>
-          </div>
-
-          {/* Format selector */}
-          <div className="space-y-2">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Export Format</p>
-            <div className="grid grid-cols-5 gap-1">
-              {(['json', 'csv', 'waves', 'protools', 'smaart'] as ExportFormat[]).map(fmt => (
-                <button
-                  key={fmt}
-                  onClick={() => setExportFormat(fmt)}
-                  className={cn(
-                    'py-1 rounded text-[9px] font-medium border transition-colors',
-                    exportFormat === fmt ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
-                  )}
-                >
-                  {fmt === 'protools' ? 'PT' : fmt.toUpperCase()}
-                </button>
-              ))}
-            </div>
-            <p className="text-[9px] text-muted-foreground">{FORMAT_INFO[exportFormat]}</p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex gap-2">
-            <Button variant="default" size="sm" className="flex-1 h-9" onClick={handleDownload} disabled={eqBands.length === 0}>
-              Download
-            </Button>
-            <Button variant="outline" size="sm" className="h-9 px-4" onClick={handleCopy} disabled={eqBands.length === 0}>
-              {copied ? 'Copied!' : 'Copy'}
-            </Button>
-          </div>
+    <div className="space-y-4">
+      {/* Band preview */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-medium">Generated Bands ({eqBands.length} / {maxBands})</span>
+          <span className="text-muted-foreground font-mono">Q = {qFactor.toFixed(1)}</span>
         </div>
-      </DialogContent>
-    </Dialog>
+        <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
+          {eqBands.map(band => (
+            <div key={band.frequency} className="p-1.5 rounded bg-muted/50 text-[10px] flex justify-between items-center gap-1">
+              <span className="font-mono">{formatFrequency(band.frequency)}</span>
+              <span className={cn('font-mono font-semibold',
+                band.gain <= -10 ? 'text-destructive' : band.gain <= -6 ? 'text-orange-500' : 'text-yellow-500'
+              )}>
+                {band.gain.toFixed(0)} dB
+              </span>
+            </div>
+          ))}
+          {eqBands.length === 0 && (
+            <div className="col-span-2 py-4 text-center text-muted-foreground text-xs">
+              No feedback frequencies detected yet
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Settings */}
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span>Q Factor</span>
+            <span className="font-mono text-muted-foreground">{qFactor.toFixed(1)}</span>
+          </div>
+          <Slider value={[qFactor]} onValueChange={([v]) => setQFactor(v)} min={1} max={15} step={0.5} />
+          <div className="flex justify-between text-[9px] text-muted-foreground"><span>Wide</span><span>Narrow</span></div>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span>Cut Depth</span>
+            <span className="font-mono text-muted-foreground">{cutDepth} dB</span>
+          </div>
+          <Slider value={[Math.abs(cutDepth)]} onValueChange={([v]) => setCutDepth(-v)} min={1} max={18} step={1} />
+          <div className="flex justify-between text-[9px] text-muted-foreground"><span>Gentle</span><span>Deep</span></div>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs">
+            <span>Max Bands</span>
+            <span className="font-mono text-muted-foreground">{maxBands}</span>
+          </div>
+          <Slider value={[maxBands]} onValueChange={([v]) => setMaxBands(v)} min={1} max={16} step={1} />
+        </div>
+        <label className="flex items-center gap-2 text-xs cursor-pointer">
+          <input type="checkbox" checked={includeHistorical} onChange={e => setIncludeHistorical(e.target.checked)} className="rounded" />
+          Include historical (3+ detections)
+        </label>
+      </div>
+
+      {/* Format selector */}
+      <div className="space-y-2">
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Export Format</p>
+        <div className="grid grid-cols-5 gap-1">
+          {(['json', 'csv', 'waves', 'protools', 'smaart'] as ExportFormat[]).map(fmt => (
+            <button
+              key={fmt}
+              onClick={() => setExportFormat(fmt)}
+              className={cn(
+                'py-1 rounded text-[9px] font-medium border transition-colors',
+                exportFormat === fmt ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'
+              )}
+            >
+              {fmt === 'protools' ? 'PT' : fmt.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <p className="text-[9px] text-muted-foreground">{FORMAT_INFO[exportFormat]}</p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2">
+        <Button variant="default" size="sm" className="flex-1 h-9" onClick={handleDownload} disabled={eqBands.length === 0}>
+          Download
+        </Button>
+        <Button variant="outline" size="sm" className="h-9 px-4" onClick={handleCopy} disabled={eqBands.length === 0}>
+          {copied ? 'Copied!' : 'Copy'}
+        </Button>
+      </div>
+    </div>
   )
 }

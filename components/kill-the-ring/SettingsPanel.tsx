@@ -30,9 +30,11 @@ import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { MicPresets } from './MicPresets'
 import { ABComparison } from './ABComparison'
 import { FrequencyBandControls } from './FrequencyBandControls'
+import { SessionRecorderContent } from './SessionRecorder'
+import { ParametricEQExportContent } from './ParametricEQExport'
 import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
 import { ALGORITHM_MODES } from '@/lib/dsp/constants'
-import type { AlgorithmMode } from '@/types/advisory'
+import type { AlgorithmMode, SpectrumData, Advisory } from '@/types/advisory'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -40,11 +42,19 @@ interface SettingsPanelProps {
   settings: DetectorSettings
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
   onReset: () => void
+  // Passed through for inline Record and EQ Export tabs
+  spectrum?: SpectrumData | null
+  advisories?: Advisory[]
+  isRunning?: boolean
 }
 
 export function SettingsPanel({
   settings,
   onSettingsChange,
+  onReset,
+  spectrum = null,
+  advisories = [],
+  isRunning = false,
   onReset,
 }: SettingsPanelProps) {
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -715,23 +725,41 @@ export function SettingsPanel({
               maxFrequency={settings.maxFrequency ?? 10000}
               onRangeChange={(min, max) => onSettingsChange({ minFrequency: min, maxFrequency: max })}
             />
-          </TabsContent>
-          
-          <TabsContent value="export" className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearLogs}
-                className="text-destructive hover:text-destructive h-7 text-xs gap-1"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Clear
-              </Button>
+
+            {/* Session Recorder inline */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Session Recorder</p>
+              <SessionRecorderContent
+                spectrum={spectrum}
+                advisories={advisories}
+                isRunning={isRunning}
+                settings={settings as Record<string, unknown>}
+              />
             </div>
+          </TabsContent>
+
+          <TabsContent value="export" className="mt-4 space-y-4">
+            {/* Parametric EQ Export inline */}
+            <div className="space-y-2">
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Parametric EQ Export</p>
+              <ParametricEQExportContent advisories={advisories} />
+            </div>
+
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-muted-foreground">
+                  {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearLogs}
+                  className="text-destructive hover:text-destructive h-7 text-xs gap-1"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Clear
+                </Button>
+              </div>
 
             <div className="space-y-2">
               {(
@@ -760,6 +788,7 @@ export function SettingsPanel({
             <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
               Logs are stored in memory for this session. Export before closing the tab.
             </p>
+            </div>{/* end border-t wrapper */}
           </TabsContent>
 
         </Tabs>
