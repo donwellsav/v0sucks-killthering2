@@ -55,7 +55,6 @@ export function SettingsPanel({
   spectrum = null,
   advisories = [],
   isRunning = false,
-  onReset,
 }: SettingsPanelProps) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const logger = getEventLogger()
