@@ -1,5 +1,5 @@
 'use client'
-
+// Clean file - single definitions only
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
