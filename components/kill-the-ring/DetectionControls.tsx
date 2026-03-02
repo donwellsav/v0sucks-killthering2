@@ -80,8 +80,8 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </button>
         </div>
 
-        {/* Sliders — label · track · value on one line each */}
-        <div className="space-y-1">
+        {/* Sliders — label+value row above full-width track */}
+        <div className="space-y-1.5">
           <SliderRow
             label="Threshold"
             value={`${settings.feedbackThresholdDb}dB`}
@@ -126,33 +126,30 @@ interface SliderRowProps {
 
 function SliderRow({ label, value, tooltip, min, max, step, sliderValue, onChange }: SliderRowProps) {
   return (
-    <div className="flex items-center gap-2">
-      {/* Fixed-width label — as narrow as possible */}
-      <div className="flex items-center gap-1 w-12 flex-shrink-0">
-        <span className="text-xs text-muted-foreground">{label}</span>
-        {tooltip && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help flex-shrink-0" />
-            </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-[200px] text-xs">
-              {tooltip}
-            </TooltipContent>
-          </Tooltip>
-        )}
+    <div className="space-y-0.5">
+      {/* Label + value on one compact row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground">{label}</span>
+          {tooltip && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help flex-shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[200px] text-xs">
+                {tooltip}
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+        <span className="text-xs font-mono text-foreground tabular-nums">{value}</span>
       </div>
-      {/* Slider fills all remaining space */}
-      <div className="flex-1 min-w-0">
-        <Slider
-          value={[sliderValue]}
-          onValueChange={([v]) => onChange(v)}
-          min={min} max={max} step={step}
-        />
-      </div>
-      {/* Fixed-width right-aligned value */}
-      <span className="text-xs font-mono text-foreground tabular-nums text-right w-10 flex-shrink-0">
-        {value}
-      </span>
+      {/* Full-width slider track */}
+      <Slider
+        value={[sliderValue]}
+        onValueChange={([v]) => onChange(v)}
+        min={min} max={max} step={step}
+      />
     </div>
   )
 }
