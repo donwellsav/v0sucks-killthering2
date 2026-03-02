@@ -3,7 +3,6 @@
 // Enhanced with MSD, Phase Coherence, Spectral Flatness, and Comb Filter algorithms
 
 import { A_WEIGHTING, LN10_OVER_10, HARMONIC_SETTINGS } from './constants'
-import { clamp } from '@/lib/utils/mathHelpers'
 import {
   MSDHistoryBuffer,
   PhaseHistoryBuffer,
@@ -359,6 +358,32 @@ export class FeedbackDetector {
     // Confidence threshold for filtering
     if (settings.confidenceThreshold !== undefined) {
       mappedConfig.confidenceThreshold = settings.confidenceThreshold
+    }
+
+    // ==================== Advanced Algorithm Settings ====================
+    // Algorithm mode (auto, msd, phase, combined, all)
+    if (settings.algorithmMode !== undefined) {
+      this.setAlgorithmMode(settings.algorithmMode)
+    }
+
+    // MSD minimum frames for analysis
+    if (settings.msdMinFrames !== undefined) {
+      this.setMSDMinFrames(settings.msdMinFrames)
+    }
+
+    // Phase coherence threshold
+    if (settings.phaseCoherenceThreshold !== undefined) {
+      this.fusionConfig.phaseThreshold = settings.phaseCoherenceThreshold
+    }
+
+    // Compression detection
+    if (settings.enableCompressionDetection !== undefined) {
+      this.fusionConfig.enableCompressionDetection = settings.enableCompressionDetection
+    }
+
+    // Fusion feedback threshold
+    if (settings.fusionFeedbackThreshold !== undefined) {
+      this.fusionConfig.feedbackThreshold = settings.fusionFeedbackThreshold
     }
 
     if (Object.keys(mappedConfig).length > 0) {
