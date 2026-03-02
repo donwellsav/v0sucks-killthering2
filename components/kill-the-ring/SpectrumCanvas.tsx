@@ -14,11 +14,12 @@ interface SpectrumCanvasProps {
   advisories: Advisory[]
   isRunning: boolean
   graphFontSize?: number
+  onStart?: () => void
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize = 11 }: SpectrumCanvasProps) {
+export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize = 11, onStart }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -255,7 +256,7 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
     <div ref={containerRef} className="relative w-full h-full">
       <canvas ref={canvasRef} className="w-full h-full" />
       {showPlaceholder && (
-        <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0">
           <Image
             src="/rta-placeholder.jpg"
             alt="RTA spectrum placeholder"
@@ -264,8 +265,13 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
             priority
             sizes="100vw"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="flex items-center gap-2 px-4 py-2 rounded-md bg-black/60 text-sm text-neutral-300 font-medium tracking-wide backdrop-blur-sm">
+          <div
+            className={`absolute inset-0 flex items-center justify-center ${onStart ? 'cursor-pointer' : 'pointer-events-none'}`}
+            onClick={onStart}
+            role={onStart ? 'button' : undefined}
+            aria-label={onStart ? 'Start analysis' : undefined}
+          >
+            <span className="flex items-center gap-2 px-4 py-2 rounded-md bg-black/60 text-sm text-neutral-300 font-medium tracking-wide backdrop-blur-sm pointer-events-none">
               Press
               {/* mini speaker button replica */}
               <span className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-primary/60 flex-shrink-0">
