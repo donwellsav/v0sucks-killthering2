@@ -256,7 +256,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         {/* Center: Gain slider */}
-        <div className="hidden tablet:flex items-center flex-1 min-w-0 px-4">
+        <div className="hidden landscape:flex items-center flex-1 min-w-0 px-4">
           <div className="flex-1 flex flex-col gap-2 min-w-0">
             <InputMeterSlider
               value={settings.inputGainDb}
@@ -270,7 +270,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         {/* Right: actions */}
         <div className="flex items-center gap-1 sm:gap-2 text-xs text-muted-foreground flex-shrink-0">
           {noiseFloorDb !== null && (
-            <span className="font-mono text-[9px] sm:text-[10px] hidden tablet:inline">
+            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline">
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
@@ -296,7 +296,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             variant="ghost"
             size="sm"
             onClick={() => setMobileShowGraph(!mobileShowGraph)}
-            className="tablet:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            className="landscape:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             aria-label={mobileShowGraph ? 'Show controls' : 'Show graph'}
             title={mobileShowGraph ? 'Show controls' : 'Show graph'}
           >
@@ -319,7 +319,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             variant="ghost"
             size="sm"
             onClick={() => setMobileMenuOpen(true)}
-            className="tablet:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            className="landscape:hidden h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
             aria-label="Open menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -331,7 +331,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Mobile full-screen overlay ─────────────────────────── */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-50 bg-background flex flex-col tablet:hidden"
+          className="fixed inset-0 z-50 bg-background flex flex-col landscape:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Controls menu"
@@ -422,7 +422,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* Mobile: Controls + Issues panel (hidden when viewing graph) */}
         {!mobileShowGraph && (
-          <div className="tablet:hidden flex-1 flex flex-col overflow-hidden bg-background">
+          <div className="landscape:hidden flex-1 flex flex-col overflow-hidden bg-background">
             <div className="border-b border-border p-2 flex-shrink-0 bg-card/50">
               <InputMeterSlider
                 value={settings.inputGainDb}
@@ -452,7 +452,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         )}
 
         {/* Desktop: Always-visible left sidebar */}
-        <aside className="hidden tablet:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+        <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3">
             <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
           </div>
@@ -506,7 +506,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </aside>
 
         {/* Graph area — full width on mobile (when mobileShowGraph), right panel on desktop */}
-        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 ${mobileShowGraph ? 'flex' : 'hidden tablet:flex'}`}>
+        <main className={`flex-1 flex flex-col overflow-hidden min-w-0 ${mobileShowGraph ? 'flex' : 'hidden landscape:flex'}`}>
 
           {/* Top: Large active graph (~60% height) */}
           <div className="flex-[3] min-h-0 p-1.5 sm:p-2 md:p-3 pb-0.5 sm:pb-1">
@@ -548,7 +548,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Mobile graph pill switcher */}
-          <div className="flex tablet:hidden items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
+          <div className="flex landscape:hidden items-center gap-2 px-2 pb-1.5 pt-0.5 flex-shrink-0">
             {GRAPH_CHIPS.map((chip) => (
               <button
                 key={chip.value}
@@ -565,7 +565,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
-          <div className="hidden tablet:flex flex-[2] min-h-0 gap-1.5 tablet:gap-2 p-1.5 tablet:p-3 pt-0.5 tablet:pt-1">
+          <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
               <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
                 <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>

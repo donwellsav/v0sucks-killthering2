@@ -3,7 +3,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Custom breakpoint: desktop layout kicks in at 600px */
+/* Orientation-based layout: landscape = desktop, portrait = phone */
+@custom-variant landscape (@media (orientation: landscape));
+
 @theme inline {
   --breakpoint-tablet: 600px;
 }
