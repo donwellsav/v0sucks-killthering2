@@ -215,25 +215,25 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Header ─────────────────────────────────────────────── */}
       {/* Mobile: two-row stacked layout with full-height circle button */}
       {/* Desktop (sm:): single-row layout, logo left, actions right    */}
-      <header className="relative flex flex-col sm:flex-row sm:items-stretch sm:justify-between border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:gap-4">
+      <header className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:py-2 sm:gap-4">
 
         {/* ── MOBILE Row 1: Logo wordmark (right-aligned, above icons) ── */}
         {/* ── DESKTOP: Logo + button group (left side) ───────────────── */}
         <div className="flex items-stretch justify-end pr-12 px-2 gap-2 h-10 sm:h-auto sm:justify-start sm:pr-0 sm:px-0 sm:gap-3 sm:flex-shrink-0">
 
           {/* Desktop-only: button inside logo group */}
-          <div className="hidden sm:flex items-stretch gap-2.5 flex-shrink-0">
+          <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
             <TooltipProvider delayDuration={400}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={isRunning ? stop : start}
                     aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                    className="relative self-stretch aspect-square flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
+                    className="relative w-9 h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                   >
-                    <div className={`absolute inset-[4px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+                    <div className={`absolute inset-0 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                     {isRunning && (
-                      <div className="absolute inset-[4px] rounded-full border-2 border-primary animate-ping opacity-30" />
+                      <div className="absolute inset-0 rounded-full border-2 border-primary animate-ping opacity-30" />
                     )}
                     <svg
                       className={`w-5 h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
