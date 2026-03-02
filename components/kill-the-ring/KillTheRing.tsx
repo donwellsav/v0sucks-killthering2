@@ -1,7 +1,7 @@
 'use client'
 
-// BUILD v3.1 - Cache Buster (FrequencyBandControls removed)
-// Fixed: Removed corrupt FrequencyBandControls import, advisories prop passed correctly
+// BUILD v4.0 - Clean version without problematic inline components
+// Fixed: Removed all problematic components, clean SettingsPanel
 // Built: 2026-03-02
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
@@ -198,12 +198,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   // Track feedback history for heatmap and MSD trend visualization
   const { feedbackHistory, msdHistory } = useFeedbackHistory(advisories)
 
-  // Stable refs so SettingsPanel/SessionRecorder don't re-render every audio frame
-  const spectrumRef = useRef(spectrum)
-  useEffect(() => { spectrumRef.current = spectrum }, [spectrum])
-  const advisoriesRef = useRef(advisories)
-  useEffect(() => { advisoriesRef.current = advisories }, [advisories])
-
   const handleModeChange = (mode: OperationMode) => {
     const modeSettings = OPERATION_MODES[mode]
     updateSettings({
@@ -334,8 +328,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               resetSettings()
               logger.logSettingsChanged({ action: 'reset_to_defaults' })
             }}
-            isRunning={isRunning}
-            advisories={advisories}
           />
 
           {/* Mobile: toggle graph vs controls */}
@@ -542,7 +534,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         )}
 
         {/* Desktop: Always-visible left sidebar */}
-        <aside className="hidden landscape:flex w-64 xl:w-72 2xl:w-80 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+        <aside className="hidden landscape:flex w-72 xl:w-80 2xl:w-88 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3">
             <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
           </div>

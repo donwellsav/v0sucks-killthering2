@@ -1,5 +1,5 @@
 'use client'
-// BUILD v3.1 - advisories prop correctly wired, FrequencyBandControls removed
+// BUILD v4.0 - Clean version without problematic inline components
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -27,14 +27,9 @@ import {
 } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { MicPresets } from './MicPresets'
-import { ABComparison } from './ABComparison'
-
-import { SessionRecorderContent } from './SessionRecorder'
-import { ParametricEQExportContent } from './ParametricEQExport'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu } from 'lucide-react'
 import { ALGORITHM_MODES } from '@/lib/dsp/constants'
-import type { AlgorithmMode, Advisory } from '@/types/advisory'
+import type { AlgorithmMode } from '@/types/advisory'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
 import type { DetectorSettings } from '@/types/advisory'
 
@@ -42,16 +37,12 @@ interface SettingsPanelProps {
   settings: DetectorSettings
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
   onReset: () => void
-  isRunning?: boolean
-  advisories?: Advisory[]
 }
 
 export function SettingsPanel({
   settings,
   onSettingsChange,
   onReset,
-  isRunning = false,
-  advisories = [],
 }: SettingsPanelProps) {
   // Settings panel state
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -107,23 +98,19 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Analysis</span>
-            </TabsTrigger>
-            <TabsTrigger value="algorithms" className="gap-1 text-xs px-2">
-              <Cpu className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Algo</span>
-            </TabsTrigger>
-            <TabsTrigger value="display" className="gap-1 text-xs px-2">
-              <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Display</span>
-            </TabsTrigger>
-            <TabsTrigger value="tools" className="gap-1 text-xs px-2">
-              <Mic className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Tools</span>
-            </TabsTrigger>
+<TabsList className="grid w-full grid-cols-4">
+  <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
+  <BarChart3 className="w-3.5 h-3.5" />
+  <span className="hidden sm:inline">Analysis</span>
+  </TabsTrigger>
+  <TabsTrigger value="algorithms" className="gap-1 text-xs px-2">
+  <Cpu className="w-3.5 h-3.5" />
+  <span className="hidden sm:inline">Algo</span>
+  </TabsTrigger>
+  <TabsTrigger value="display" className="gap-1 text-xs px-2">
+  <Monitor className="w-3.5 h-3.5" />
+  <span className="hidden sm:inline">Display</span>
+  </TabsTrigger>
             <TabsTrigger value="export" className="gap-1 text-xs px-2">
               <Download className="w-3.5 h-3.5" />
               {issueLogs.length > 0 && (
@@ -705,37 +692,8 @@ export function SettingsPanel({
             </div>
           </TabsContent>
 
-          {/* Tools Tab - Mic Presets, A/B Comparison, Frequency Band Controls */}
-          <TabsContent value="tools" className="mt-4 space-y-5">
-            <MicPresets
-              settings={settings}
-              onSettingsChange={onSettingsChange}
-            />
-            
-            <ABComparison
-              currentSettings={settings}
-              onApplySettings={onSettingsChange}
-            />
-            
-            {/* Session Recorder inline */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Session Recorder</p>
-              <SessionRecorderContent
-                isRunning={isRunning}
-                settings={settings as Record<string, unknown>}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="export" className="mt-4 space-y-4">
-            {/* Parametric EQ Export inline */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Parametric EQ Export</p>
-              <ParametricEQExportContent advisories={advisories} />
-            </div>
-
-            <div className="border-t border-border pt-4">
-              <div className="flex items-center justify-between mb-3">
+  <TabsContent value="export" className="mt-4 space-y-4">
+  <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   {logs.length} event{logs.length !== 1 ? 's' : ''} &bull; {issueLogs.length} issue{issueLogs.length !== 1 ? 's' : ''} detected
                 </p>
@@ -774,11 +732,10 @@ export function SettingsPanel({
               ))}
             </div>
 
-            <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
-              Logs are stored in memory for this session. Export before closing the tab.
-            </p>
-            </div>{/* end border-t wrapper */}
-          </TabsContent>
+  <p className="text-[10px] text-muted-foreground border-t border-border pt-3">
+  Logs are stored in memory for this session. Export before closing the tab.
+  </p>
+  </TabsContent>
 
         </Tabs>
       </DialogContent>
