@@ -231,7 +231,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
 
           {/* Logo wordmark — right-aligned */}
-          <div className="flex items-center mr-auto gap-0">
+          <div className="flex items-center ml-auto gap-0">
             <div className="flex flex-col justify-center gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
