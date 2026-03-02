@@ -3,7 +3,6 @@ export { SpectrumCanvas } from "./SpectrumCanvas";
 export { WaterfallCanvas } from "./WaterfallCanvas";
 export { GEQBarView } from "./GEQBarView";
 export { IssuesList } from "./IssuesList";
-export { ControlPanel } from "./ControlPanel";
 export { SettingsPanel } from "./SettingsPanel";
 export { HelpMenu } from "./HelpMenu";
 export { InputMeterSlider } from "./InputMeterSlider";
