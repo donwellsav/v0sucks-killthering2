@@ -78,12 +78,13 @@ export const FREQUENCY_BANDS = {
   },
 } as const
 
-// Modal overlap factor thresholds (M = π / Q for single resonance)
-// From textbook Section 1.2.6.7, Equation 1.109
+// Modal overlap indicator thresholds (M = 1/Q)
+// Based on textbook Section 1.2.6.7 adapted for feedback detection
+// With M = 1/Q: high Q (feedback-like) gives low M, low Q (broad) gives high M
 export const MODAL_OVERLAP = {
-  ISOLATED: 0.3, // M < 0.3: Isolated mode, deep troughs between peaks (feedback prone)
-  COUPLED: 1.0, // M ≈ 1: Modes overlap, smoother response
-  DIFFUSE: 3.0, // M > 3: Diffuse field behavior (noise-like)
+  ISOLATED: 0.03, // M < 0.03 (Q > 33): Sharp isolated peak, high feedback risk
+  COUPLED: 0.1, // M ≈ 0.1 (Q ≈ 10): Moderate resonance
+  DIFFUSE: 0.33, // M > 0.33 (Q < 3): Broad peak, low feedback risk
 } as const
 
 // Cumulative growth tracking for slow-building feedback

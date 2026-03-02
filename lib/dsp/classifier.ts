@@ -10,7 +10,6 @@ import {
   classifyModalOverlap,
   analyzeCumulativeGrowth,
   calculateCalibratedConfidence,
-  analyzeFormantStructure,
   analyzeVibrato,
 } from './acousticUtils'
 
@@ -74,7 +73,7 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   // Get frequency band and modifiers
   const freqBand = getFrequencyBand(features.frequencyHz, schroederFreq)
   
-  // Calculate modal overlap factor (M = π / Q)
+  // Calculate modal overlap indicator (M = 1/Q, based on textbook Section 1.2.6.7)
   const modalOverlap = calculateModalOverlap(features.minQ)
   const modalAnalysis = classifyModalOverlap(modalOverlap)
   

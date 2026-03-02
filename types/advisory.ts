@@ -99,7 +99,7 @@ export interface ClassificationResult {
   confidence: number
   reasons: string[]
   // Enhanced fields from acoustic analysis
-  modalOverlapFactor?: number // M = π / Q (isolated < 0.3, coupled ≈ 1, diffuse > 3)
+  modalOverlapFactor?: number // M = 1/Q (isolated < 0.03, coupled < 0.1, diffuse > 0.33)
   cumulativeGrowthDb?: number // Total dB growth since onset
   frequencyBand?: 'LOW' | 'MID' | 'HIGH' // Which frequency band this falls into
   confidenceLabel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' // Human-readable confidence
