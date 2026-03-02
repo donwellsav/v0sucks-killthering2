@@ -19,6 +19,7 @@ function normalizeTrackInput(input: TrackInput) {
       maxVelocityDbPerSec: input.features.maxVelocityDbPerSec,
       minQ: input.features.minQ,
       persistenceMs: input.features.persistenceMs,
+      prominenceDb: input.prominenceDb,
     }
   }
   // TrackedPeak
@@ -31,6 +32,7 @@ function normalizeTrackInput(input: TrackInput) {
     maxVelocityDbPerSec: Math.abs(input.features.velocityDbPerSec),
     minQ: input.qEstimate,
     persistenceMs: input.lastUpdateTime - input.onsetTime,
+    prominenceDb: input.prominenceDb,
   }
 }
 
@@ -79,7 +81,9 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   }
 
   // 5. Runaway growth (high velocity = feedback)
-  if (features.maxVelocityDbPerSec > CLASSIFIER_WEIGHTS.GROWTH_THRESHOLD) {
+  // Use settings.growthRateThreshold if provided, otherwise fall back to constant
+  const growthThreshold = settings?.growthRateThreshold ?? CLASSIFIER_WEIGHTS.GROWTH_THRESHOLD
+  if (features.maxVelocityDbPerSec > growthThreshold) {
     const growthFactor = Math.min(features.maxVelocityDbPerSec / 20, 1)
     pFeedback += CLASSIFIER_WEIGHTS.GROWTH_FEEDBACK * growthFactor
     reasons.push(`Rapid growth: ${features.maxVelocityDbPerSec.toFixed(1)} dB/sec`)
@@ -115,17 +119,27 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   let label: IssueLabel
   let severity: SeverityLevel
 
-  // Determine severity based on velocity and other factors
-  if (features.maxVelocityDbPerSec >= SEVERITY_THRESHOLDS.RUNAWAY_VELOCITY) {
+  // Determine severity based on velocity, prominence, and other factors
+  // Use settings thresholds if provided, otherwise fall back to constants
+  const runawayVelocity = SEVERITY_THRESHOLDS.RUNAWAY_VELOCITY
+  const growingVelocity = settings?.growthRateThreshold ?? SEVERITY_THRESHOLDS.GROWING_VELOCITY
+  const ringThreshold = settings?.ringThresholdDb ?? 5 // Default 5dB prominence for ring
+  
+  if (features.maxVelocityDbPerSec >= runawayVelocity) {
     severity = 'RUNAWAY'
     pFeedback = Math.max(pFeedback, 0.7) // Runaway almost always feedback
-  } else if (features.maxVelocityDbPerSec >= SEVERITY_THRESHOLDS.GROWING_VELOCITY) {
+  } else if (features.maxVelocityDbPerSec >= growingVelocity) {
     severity = 'GROWING'
   } else if (features.minQ > SEVERITY_THRESHOLDS.HIGH_Q) {
     severity = 'RESONANCE'
-  } else if (features.persistenceMs < SEVERITY_THRESHOLDS.PERSISTENCE_MS) {
+  } else if (features.prominenceDb >= ringThreshold && features.persistenceMs < SEVERITY_THRESHOLDS.PERSISTENCE_MS) {
+    // Peak is prominent enough and hasn't persisted long — likely a ring
     severity = 'POSSIBLE_RING'
+  } else if (features.prominenceDb >= ringThreshold) {
+    // Peak is prominent but persisting — resonance
+    severity = 'RESONANCE'
   } else {
+    // Peak isn't prominent enough to be a ring — still flag as resonance if detected
     severity = 'RESONANCE'
   }
 
