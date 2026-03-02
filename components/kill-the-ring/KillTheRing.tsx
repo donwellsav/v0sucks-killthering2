@@ -234,8 +234,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex items-center ml-auto gap-0">
             <div className="flex flex-col justify-center gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
-                <span className="text-base font-black tracking-tight text-foreground">KILL THE</span>
-                <span className="text-lg font-black tracking-tight text-primary">RING</span>
+                <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-xl font-black tracking-tight text-primary">RING</span>
               </div>
               <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
                 Don Wells AV
