@@ -16,10 +16,10 @@ interface DetectionControlsProps {
 export function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="space-y-3">
+      <div className="space-y-2">
 
-        {/* Freq range pills */}
-        <div className="flex flex-wrap gap-1">
+        {/* Freq range pills — single row */}
+        <div className="flex gap-1 overflow-x-auto scrollbar-none">
           {FREQ_RANGE_PRESETS.map((preset) => {
             const isActive =
               settings.minFrequency === preset.minFrequency &&
@@ -28,7 +28,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               <button
                 key={preset.label}
                 onClick={() => onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency })}
-                className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                className={`px-1.5 py-0 rounded text-xs font-medium border transition-colors leading-5 whitespace-nowrap flex-shrink-0 ${
                   isActive
                     ? 'bg-primary/15 text-primary border-primary/40'
                     : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
@@ -40,8 +40,6 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
             )
           })}
         </div>
-
-        <div className="border-t border-border/40" />
 
         {/* Auto Music-Aware toggle */}
         <div className="flex items-center justify-between">
@@ -82,10 +80,8 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </button>
         </div>
 
-        <div className="border-t border-border/40" />
-
         {/* Sliders — label · track · value on one line each */}
-        <div className="space-y-2.5">
+        <div className="space-y-1.5">
           <SliderRow
             label="Threshold"
             value={`${settings.feedbackThresholdDb}dB`}
@@ -132,7 +128,7 @@ function SliderRow({ label, value, tooltip, min, max, step, sliderValue, onChang
   return (
     <div className="flex items-center gap-2">
       {/* Fixed-width label */}
-      <div className="flex items-center gap-1 w-16 flex-shrink-0">
+      <div className="flex items-center gap-1.5 w-14 flex-shrink-0">
         <span className="text-xs text-muted-foreground">{label}</span>
         {tooltip && (
           <Tooltip>
