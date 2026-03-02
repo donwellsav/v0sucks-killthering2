@@ -229,44 +229,35 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
           {/* Desktop-only: button inside logo group */}
           <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
-            <TooltipProvider delayDuration={400}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="relative">
-                    <button
-                      onClick={isRunning ? stop : start}
-                      aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                      className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
-                    >
-                      <div className={`absolute inset-1 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
-                      {isRunning && (
-                        <div className="absolute inset-1 rounded-full border-2 border-primary animate-ping opacity-30" />
-                      )}
-                      <svg
-                        className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                      >
-                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                      </svg>
-                    </button>
-                    {!isRunning && (
-                      <div 
-                        onClick={start}
-                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                      >
-                        <span className="text-base font-black animate-flash-slow whitespace-nowrap text-white">
-                          START
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {isRunning ? 'Stop analysis' : 'Start analysis'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="relative">
+              <button
+                onClick={isRunning ? stop : start}
+                aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+                className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+              >
+                <div className={`absolute inset-1 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+                {isRunning && (
+                  <div className="absolute inset-1 rounded-full border-2 border-primary animate-ping opacity-30" />
+                )}
+                <svg
+                  className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+              </button>
+              {!isRunning && (
+                <div 
+                  onClick={start}
+                  className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                >
+                  <span className="text-base font-black animate-flash-slow whitespace-nowrap text-white">
+                    START
+                  </span>
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-col justify-center gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
