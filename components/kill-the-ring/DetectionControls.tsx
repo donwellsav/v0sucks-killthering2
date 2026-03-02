@@ -17,7 +17,7 @@ interface DetectionControlsProps {
 export function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
   return (
     <TooltipProvider delayDuration={400}>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
 
         {/* Mode select */}
         <Select value={settings.mode} onValueChange={(v) => onModeChange(v as OperationMode)}>
@@ -33,7 +33,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </SelectContent>
         </Select>
 
-        {/* Freq range pills — single row, no label overhead */}
+        {/* Freq range pills */}
         <div className="flex items-center gap-1 flex-wrap">
           {FREQ_RANGE_PRESETS.map((preset) => {
             const isActive =
@@ -56,7 +56,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           })}
         </div>
 
-        {/* Auto Music-Aware — inline single row */}
+        {/* Auto Music-Aware */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 min-w-0">
             <span className="text-[10px] text-muted-foreground truncate">Music-Aware</span>
@@ -95,73 +95,74 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </button>
         </div>
 
-        {/* Sliders — each fits on two lines: label+value row, then track */}
+        {/* Sliders — label · track · value all on one line */}
         <InlineSlider
           label="Threshold"
           value={`${settings.feedbackThresholdDb}dB`}
           tooltip={settings.showTooltips ? 'Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.' : undefined}
-        >
-          <Slider
-            value={[settings.feedbackThresholdDb]}
-            onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
-            min={2} max={20} step={1}
-          />
-        </InlineSlider>
+          sliderNode={
+            <Slider
+              value={[settings.feedbackThresholdDb]}
+              onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
+              min={2} max={20} step={1}
+            />
+          }
+        />
 
         <InlineSlider
           label="Ring"
           value={`${settings.ringThresholdDb}dB`}
           tooltip={settings.showTooltips ? 'Resonance detection. 2-4dB calibration, 5-7dB normal, 8+dB shows.' : undefined}
-        >
-          <Slider
-            value={[settings.ringThresholdDb]}
-            onValueChange={([v]) => onSettingsChange({ ringThresholdDb: v })}
-            min={1} max={12} step={0.5}
-          />
-        </InlineSlider>
+          sliderNode={
+            <Slider
+              value={[settings.ringThresholdDb]}
+              onValueChange={([v]) => onSettingsChange({ ringThresholdDb: v })}
+              min={1} max={12} step={0.5}
+            />
+          }
+        />
 
         <InlineSlider
           label="Growth"
           value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
           tooltip={settings.showTooltips ? 'How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.' : undefined}
-        >
-          <Slider
-            value={[settings.growthRateThreshold]}
-            onValueChange={([v]) => onSettingsChange({ growthRateThreshold: v })}
-            min={0.5} max={8} step={0.5}
-          />
-        </InlineSlider>
+          sliderNode={
+            <Slider
+              value={[settings.growthRateThreshold]}
+              onValueChange={([v]) => onSettingsChange({ growthRateThreshold: v })}
+              min={0.5} max={8} step={0.5}
+            />
+          }
+        />
 
       </div>
     </TooltipProvider>
   )
 }
 
-function InlineSlider({ label, value, tooltip, children }: {
+function InlineSlider({ label, value, tooltip, sliderNode }: {
   label: string
   value: string
   tooltip?: string
-  children: React.ReactNode
+  sliderNode: React.ReactNode
 }) {
   return (
-    <div className="space-y-0.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground">{label}</span>
-          {tooltip && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <HelpCircle className="w-2.5 h-2.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
-                {tooltip}
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-        <span className="text-[10px] font-mono text-foreground tabular-nums">{value}</span>
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-0.5 w-16 flex-shrink-0">
+        <span className="text-[10px] text-muted-foreground">{label}</span>
+        {tooltip && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="w-2.5 h-2.5 text-muted-foreground/50 hover:text-muted-foreground cursor-help flex-shrink-0" />
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-[200px] text-xs">
+              {tooltip}
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
-      {children}
+      <div className="flex-1 min-w-0">{sliderNode}</div>
+      <span className="text-[10px] font-mono text-foreground tabular-nums w-10 text-right flex-shrink-0">{value}</span>
     </div>
   )
 }
