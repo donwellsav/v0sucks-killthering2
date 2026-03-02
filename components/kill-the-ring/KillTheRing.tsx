@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
         {/* Row 1: Gain slider + Logo wordmark (logo left edge aligns with icons) */}
-        <div className="flex items-stretch justify-end px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        <div className="flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
