@@ -3,6 +3,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Custom breakpoint: desktop layout kicks in at 600px */
+@theme inline {
+  --breakpoint-tablet: 600px;
+}
+
 /* Kill The Ring - Light Blue Theme */
 :root {
   --background: #1a1a1a;
