@@ -250,7 +250,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 {!isRunning && (
                   <div 
                     className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-                    style={{ translateY: 'calc(100% - 2px)' }}
+                    style={{ translateY: 'calc(100% + 2px)' }}
                   >
                     <span className="font-black whitespace-nowrap text-white leading-none" style={{ fontSize: '13px' }}>
                       START
