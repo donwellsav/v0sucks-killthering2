@@ -23,7 +23,7 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString(undefined, {
+  return new Date(dateStr).toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
