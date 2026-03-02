@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AudioAnalyzer, createAudioAnalyzer } from '@/lib/audio/createAudioAnalyzer'
 import { useDSPWorker, type DSPWorkerCallbacks } from './useDSPWorker'
+import { getSeverityUrgency } from '@/lib/dsp/classifier'
 import type { 
   Advisory, 
   SpectrumData,
@@ -214,14 +215,4 @@ export function useAudioAnalyzer(
   }
 }
 
-function getSeverityUrgency(severity: string): number {
-  switch (severity) {
-    case 'runaway': return 5
-    case 'growing': return 4
-    case 'resonance': return 3
-    case 'ring': return 2
-    case 'whistle': return 1
-    case 'instrument': return 1
-    default: return 0
-  }
-}
+

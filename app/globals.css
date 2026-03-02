@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Orientation-based layout: landscape = desktop, portrait = phone */
+@custom-variant landscape (@media (orientation: landscape));
+
+@theme inline {
+  --breakpoint-tablet: 600px;
+}
+
 /* Kill The Ring - Light Blue Theme */
 :root {
   --background: #1a1a1a;

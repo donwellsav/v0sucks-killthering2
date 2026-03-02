@@ -3,8 +3,7 @@
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { getSeverityText } from '@/lib/dsp/classifier'
-import { AlertTriangle, CheckCircle2, Circle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { AlertTriangle, CheckCircle2, Circle, X } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Advisory } from '@/types/advisory'
 
@@ -16,12 +15,15 @@ interface IssuesListProps {
   advisories: Advisory[]
   maxIssues?: number
   appliedIds?: Set<string>
+  dismissedIds?: Set<string>
   onApply?: (advisory: Advisory) => void
+  onDismiss?: (id: string) => void
 }
 
-export function IssuesList({ advisories, maxIssues = 10, appliedIds, onApply }: IssuesListProps) {
-  // Sort by frequency (low → high) and slice to max
+export function IssuesList({ advisories, maxIssues = 10, appliedIds, dismissedIds, onApply, onDismiss }: IssuesListProps) {
+  // Filter dismissed, sort by frequency (low → high), then slice to max
   const sorted = [...advisories]
+    .filter((a) => !dismissedIds?.has(a.id))
     .sort((a, b) => (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0))
     .slice(0, maxIssues)
 
@@ -41,6 +43,7 @@ export function IssuesList({ advisories, maxIssues = 10, appliedIds, onApply }: 
             rank={index + 1}
             isApplied={appliedIds?.has(advisory.id) ?? false}
             onApply={onApply}
+            onDismiss={onDismiss}
           />
         ))
       )}
@@ -53,22 +56,21 @@ interface IssueCardProps {
   rank: number
   isApplied: boolean
   onApply?: (advisory: Advisory) => void
+  onDismiss?: (id: string) => void
 }
 
-function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
+function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardProps) {
   const severityColor = getSeverityColor(advisory.severity)
-  const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : '---'
+  const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : null
   const freqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
 
   const geq = advisory.advisory?.geq
   const peq = advisory.advisory?.peq
 
-  // Determine if this issue is at risk of runaway feedback
   const velocity = advisory.velocityDbPerSec ?? 0
   const isRunaway = velocity >= RUNAWAY_VELOCITY_THRESHOLD || advisory.isRunaway
   const isWarning = velocity >= WARNING_VELOCITY_THRESHOLD && !isRunaway
 
-  // Estimate time to clip (0dB) if velocity is positive
   const timeToClipMs = advisory.predictedTimeToClipMs ?? (
     velocity > 0 && advisory.trueAmplitudeDb < 0
       ? ((0 - advisory.trueAmplitudeDb) / velocity) * 1000
@@ -82,90 +84,122 @@ function IssueCard({ advisory, rank, isApplied, onApply }: IssueCardProps) {
 
   return (
     <div
-      className={`flex flex-col gap-0.5 px-2 py-1.5 rounded border bg-card/80 transition-all ${
+      className={`relative flex flex-col rounded-md border bg-card transition-all overflow-hidden ${
         isApplied
-          ? 'border-primary/40 opacity-60'
+          ? 'border-primary/30 opacity-60'
           : isRunaway
-            ? 'border-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]'
+            ? 'border-red-500/70 shadow-[0_0_8px_rgba(239,68,68,0.35)] animate-pulse'
             : isWarning
-              ? 'border-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.3)]'
+              ? 'border-amber-500/60 shadow-[0_0_4px_rgba(245,158,11,0.25)]'
               : 'border-border'
       }`}
-      style={{ borderLeftColor: isApplied ? undefined : isRunaway ? '#ef4444' : isWarning ? '#f59e0b' : severityColor, borderLeftWidth: '3px' }}
     >
-      {/* Runaway warning badge */}
-      {(isRunaway || isWarning) && !isApplied && (
-        <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide mb-0.5 ${
-          isRunaway ? 'text-red-500' : 'text-amber-500'
-        }`}>
-          <AlertTriangle className={`w-3 h-3 ${isRunaway ? 'animate-pulse' : ''}`} />
-          <span>{isRunaway ? 'RUNAWAY' : 'WARNING'}</span>
-          {timeToClipStr && (
-            <span className="font-mono ml-1 opacity-80">{timeToClipStr}</span>
-          )}
-          <span className="font-mono ml-auto opacity-60">+{velocity.toFixed(0)}dB/s</span>
-        </div>
-      )}
+      {/* Left severity bar */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-0.5"
+        style={{ backgroundColor: isApplied ? 'transparent' : severityColor }}
+      />
 
-      {/* Main row: freq + severity + apply */}
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="font-mono text-xs font-medium text-foreground">
-            {freqStr}Hz
-          </span>
-          <span className="text-[10px] text-muted-foreground font-mono">
-            {pitchStr}
-          </span>
+      {/* Card body */}
+      <div className="pl-3 pr-2 pt-2 pb-2 flex flex-col gap-1.5">
+
+        {/* Row 1: frequency + pitch + dismiss */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span className="font-mono text-sm font-semibold text-foreground leading-none">
+              {freqStr}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">Hz</span>
+            </span>
+            {pitchStr && (
+              <span className="text-[10px] font-mono text-muted-foreground leading-none">{pitchStr}</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Severity badge */}
+            <span
+              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
+              style={{ backgroundColor: `${severityColor}22`, color: severityColor, border: `1px solid ${severityColor}44` }}
+            >
+              {getSeverityText(advisory.severity)}
+            </span>
+
+            {/* Dismiss X */}
+            {onDismiss && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onDismiss(advisory.id)}
+                      aria-label={`Dismiss ${freqStr}Hz issue`}
+                      className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted/60 transition-colors"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    Dismiss (re-shows if re-detected)
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <span
-            className="text-[10px] font-semibold uppercase px-1 py-0.5 rounded"
-            style={{ backgroundColor: severityColor, color: '#000' }}
-          >
-            {getSeverityText(advisory.severity)}
-          </span>
-          {hasEq && onApply && (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => !isApplied && onApply(advisory)}
-                    disabled={isApplied}
-                    aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
-                    className={`h-5 w-5 p-0 transition-colors ${
-                      isApplied
-                        ? 'text-primary cursor-default'
-                        : 'text-muted-foreground hover:text-primary'
-                    }`}
-                  >
-                    {isApplied
-                      ? <CheckCircle2 className="w-3 h-3" />
-                      : <Circle className="w-3 h-3" />
-                    }
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="text-xs">
-                  {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
+
+        {/* Row 2: runaway / warning alert */}
+        {(isRunaway || isWarning) && !isApplied && (
+          <div className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wide ${
+            isRunaway ? 'text-red-400' : 'text-amber-400'
+          }`}>
+            <AlertTriangle className={`w-2.5 h-2.5 flex-shrink-0 ${isRunaway ? 'animate-pulse' : ''}`} />
+            <span>{isRunaway ? 'Runaway feedback' : 'Growing — act now'}</span>
+            {timeToClipStr && <span className="font-mono opacity-80 ml-0.5">{timeToClipStr}</span>}
+            <span className="font-mono ml-auto opacity-60">+{velocity.toFixed(0)} dB/s</span>
+          </div>
+        )}
+
+        {/* Row 3: EQ suggestion + send button */}
+        {hasEq && (
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
+              <span>
+                GEQ <span className="text-foreground">{geq!.suggestedDb}dB</span>
+                {' @ '}{geq!.bandHz}
+              </span>
+              <span className="text-border">|</span>
+              <span>
+                PEQ Q{(peq!.q ?? 1).toFixed(0)} <span className="text-foreground">{peq!.gainDb ?? 0}dB</span>
+              </span>
+            </div>
+
+            {onApply && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => !isApplied && onApply(advisory)}
+                      disabled={isApplied}
+                      aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
+                      className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                        isApplied
+                          ? 'text-primary cursor-default'
+                          : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                      }`}
+                    >
+                      {isApplied
+                        ? <><CheckCircle2 className="w-3 h-3" /><span>Sent</span></>
+                        : <><Circle className="w-3 h-3" /><span>Notepad</span></>
+                      }
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* EQ line */}
-      {geq && peq && (
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-          <span className="font-mono">
-            GEQ {geq.bandHz} <span className="text-foreground">{geq.suggestedDb}dB</span>
-          </span>
-          <span className="font-mono">
-            PEQ Q{(peq.q ?? 1).toFixed(0)} <span className="text-foreground">{peq.gainDb ?? 0}dB</span>
-          </span>
-        </div>
-      )}
     </div>
   )
 }
