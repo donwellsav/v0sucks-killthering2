@@ -3,6 +3,7 @@
 // Enhanced with MSD, Phase Coherence, Spectral Flatness, and Comb Filter algorithms
 
 import { A_WEIGHTING, LN10_OVER_10, HARMONIC_SETTINGS } from './constants'
+import { clamp } from '@/lib/utils/mathHelpers'
 import {
   MSDHistoryBuffer,
   PhaseHistoryBuffer,

@@ -275,6 +275,12 @@ export interface SpectrumData {
   fftSize: number
   timestamp: number
   peak: number // Peak level in dB for metering
+  // Advanced algorithm state (from DAFx-16, DBX, KU Leuven research)
+  algorithmMode?: AlgorithmMode
+  contentType?: ContentType
+  msdFrameCount?: number
+  isCompressed?: boolean
+  compressionRatio?: number
 }
 
 export interface AnalyzerState {

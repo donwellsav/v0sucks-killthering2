@@ -19,6 +19,7 @@ import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
+import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Menu, X, RotateCcw } from 'lucide-react'
@@ -460,6 +461,21 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               Done
             </Button>
           </div>
+        </div>
+      )}
+
+      {/* ── Algorithm Status Bar (when enabled) ─────────────────── */}
+      {settings.showAlgorithmScores && (
+        <div className="border-b border-border bg-card/50 backdrop-blur-sm">
+          <AlgorithmStatusBar
+            algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
+            contentType={spectrum?.contentType}
+            msdFrameCount={spectrum?.msdFrameCount}
+            isCompressed={spectrum?.isCompressed}
+            compressionRatio={spectrum?.compressionRatio}
+            isRunning={isRunning}
+            showDetailed
+          />
         </div>
       )}
 
