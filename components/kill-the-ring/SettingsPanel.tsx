@@ -56,6 +56,7 @@ export function SettingsPanel({
   advisories = [],
   isRunning = false,
 }: SettingsPanelProps) {
+  // Settings panel state
   const [logs, setLogs] = useState<LogEntry[]>([])
   const logger = getEventLogger()
 
@@ -354,7 +355,7 @@ export function SettingsPanel({
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Room Volume</span>
-                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m³</span>
+                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m��</span>
                       </div>
                       <Slider
                         value={[settings.roomVolume ?? 250]}
