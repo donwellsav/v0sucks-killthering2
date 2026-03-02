@@ -24,7 +24,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           <SelectTrigger className="h-5 w-full text-[10px] bg-input border-border px-2">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="text-[10px] !p-0 [&_[role=option]]:!py-1 [&_[data-radix-select-viewport]]:!p-0.5">
+          <SelectContent size="compact" className="text-[10px]">
             <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
             <SelectItem value="vocalRing">Vocal Ring</SelectItem>
             <SelectItem value="musicAware">Music-Aware</SelectItem>
