@@ -215,8 +215,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ── Header ─────────────────────────────────────────────── */}
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
-        {/* Row 1: Gain slider + Logo wordmark (right-aligned, leaves room for button) */}
-        <div className="flex items-stretch justify-between px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        {/* Row 1: Gain slider + Logo wordmark (centered above icons) */}
+        <div className="flex items-stretch justify-center px-2 sm:px-4 gap-2 sm:gap-4 h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
@@ -230,8 +230,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </div>
           </div>
 
-          {/* Logo wordmark — right-aligned */}
-          <div className="flex items-center ml-auto gap-0">
+          {/* Logo wordmark — centered */}
+          <div className="flex items-center gap-0">
             <div className="flex flex-col justify-center gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
