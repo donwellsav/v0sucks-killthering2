@@ -36,10 +36,11 @@ export function HelpMenu() {
             <TabsTrigger value="modes">Modes</TabsTrigger>
             <TabsTrigger value="readings">Readings</TabsTrigger>
           </TabsList>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="tips">Tips</TabsTrigger>
             <TabsTrigger value="troubleshoot">Troubleshoot</TabsTrigger>
             <TabsTrigger value="technical">Technical</TabsTrigger>
+            <TabsTrigger value="math">The Math</TabsTrigger>
           </TabsList>
 
           {/* OVERVIEW */}
@@ -55,7 +56,8 @@ export function HelpMenu() {
 
             <Section title="Quick Start">
               <ol className="list-decimal list-inside space-y-2">
-                <li>Click <strong>Start</strong> in the header to begin monitoring</li>
+                <li>Look for the flashing <strong>START</strong> text over the speaker button in the header — click it to begin monitoring</li>
+                <li>Before analysis starts, the RTA graph shows a placeholder image with "Press Start to begin analysis"</li>
                 <li>Detected issues appear in the <strong>Active Issues</strong> sidebar, sorted by frequency</li>
                 <li>Each issue card shows frequency, pitch, and recommended GEQ/PEQ cuts</li>
                 <li>Tap <strong>Apply</strong> on a card to log the cut — it moves to the <strong>EQ Notepad</strong> tab</li>
@@ -81,7 +83,7 @@ export function HelpMenu() {
             <Section title="Header Controls">
               <ul className="space-y-3">
                 <li>
-                  <strong>Start / Stop:</strong> Begins or pauses audio analysis. The LIVE indicator appears while running.
+                  <strong>Start / Stop (Speaker Button):</strong> The speaker icon button with a flashing white "START" overlay begins or pauses audio analysis. The LIVE indicator appears while running. Once started, the placeholder image disappears and the real-time spectrum is shown.
                 </li>
                 <li>
                   <strong>Input Gain (meter slider):</strong> Digital boost applied before analysis (+0 to +30 dB). Increase if feedback is not being detected; reduce if clipping. Does not affect audio output.
@@ -386,6 +388,207 @@ export function HelpMenu() {
                 <li><strong>Supported:</strong> Chrome 74+, Firefox 76+, Safari 14.1+, Edge 79+</li>
                 <li><strong>Sample rate:</strong> Uses system default (typically 44.1 kHz or 48 kHz)</li>
                 <li><strong>HTTPS:</strong> Required for microphone access in production</li>
+              </ul>
+            </Section>
+          </TabsContent>
+
+          {/* THE MATH - Deep dive into algorithms */}
+          <TabsContent value="math" className="mt-4 space-y-4">
+            <Section title="FFT & Spectral Analysis">
+              <p className="mb-2">
+                The core analysis uses the <strong>Fast Fourier Transform</strong> to decompose the time-domain audio signal into frequency bins. Given an FFT size of <em>N</em> and sample rate <em>fs</em>:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>Frequency resolution: <strong>Δf = fs / N</strong></p>
+                <p>At 8192pt @ 48kHz: Δf = 48000 / 8192 ≈ <strong>5.86 Hz/bin</strong></p>
+                <p>Bin → Hz conversion: <strong>f = bin × (fs / N)</strong></p>
+              </div>
+              <p className="mt-2 text-xs">
+                Quadratic interpolation refines peak frequency beyond bin resolution using the classic 3-point parabolic fit on the log-magnitude spectrum (Grandke, 1983):
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p>δ = 0.5 × (y[k-1] - y[k+1]) / (y[k-1] - 2×y[k] + y[k+1])</p>
+                <p>True frequency: <strong>f_true = (k + δ) × Δf</strong></p>
+              </div>
+            </Section>
+
+            <Section title="Peak Detection & Prominence">
+              <p className="mb-2">
+                A bin is a candidate peak if it's a <strong>local maximum</strong> (higher than both immediate neighbors) AND exceeds the effective threshold. Prominence is computed using neighborhood averaging with Blackman window exclusion:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>Neighborhood span: ±nb bins (default nb = 8)</p>
+                <p>Exclusion zone: ±2 bins around peak (Blackman mainlobe)</p>
+                <p>Average power: P_avg = Σ power[i] / count (excluding ±2 bins)</p>
+                <p>Prominence (dB): <strong>P = 10 × log10(power[peak]) - 10 × log10(P_avg)</strong></p>
+              </div>
+              <p className="mt-2 text-xs">
+                Peaks must exceed the <strong>prominenceDb</strong> threshold (default 6 dB) above the neighborhood average to be flagged.
+              </p>
+            </Section>
+
+            <Section title="A-Weighting (IEC 61672-1)">
+              <p className="mb-2">
+                Optional A-weighting emphasizes frequencies where human hearing is most sensitive (2–5 kHz), matching perceived loudness. The transfer function:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>R_A(f) = (12194² × f⁴) / [(f² + 20.6²)(f² + 12194²) × √((f² + 107.7²)(f² + 737.9²))]</p>
+                <p>A(f) = 20 × log10(R_A(f)) + 2.0 dB</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Constants: C1=20.6, C2=107.7, C3=737.9, C4=12194 Hz per IEC/CD 1672.
+              </p>
+            </Section>
+
+            <Section title="Schroeder Frequency (Hopkins, 2007)">
+              <p className="mb-2">
+                Below the <strong>Schroeder frequency</strong>, individual room modes dominate and statistical analysis breaks down. From <em>Sound Insulation</em> (Carl Hopkins, 2007), Eq. 1.111:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs">
+                <p><strong>f_S = 2000 × √(T / V)</strong></p>
+                <p>T = RT60 reverberation time (seconds)</p>
+                <p>V = room volume (m³)</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Example: Conference room with T=0.7s, V=250m³ → f_S ≈ 106 Hz. Below this, peaks are likely room modes rather than feedback.
+              </p>
+            </Section>
+
+            <Section title="Modal Overlap Factor (Hopkins, 2007)">
+              <p className="mb-2">
+                The <strong>modal overlap factor</strong> indicates whether a resonance is isolated (feedback-like) or diffuse (room noise). From textbook Section 1.2.6.7:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>Classic: M = f × η × n (modal density × loss factor)</p>
+                <p>Simplified for single peaks: <strong>M ≈ 1/Q</strong></p>
+              </div>
+              <p className="mt-2 text-xs">Interpretation based on textbook Fig 1.23:</p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li><strong>M &lt; 0.03 (Q &gt; 33):</strong> Isolated peak — high feedback risk</li>
+                <li><strong>M ≈ 0.1 (Q ≈ 10):</strong> Moderate resonance — possible feedback</li>
+                <li><strong>M &gt; 0.33 (Q &lt; 3):</strong> Diffuse field — unlikely feedback</li>
+              </ul>
+            </Section>
+
+            <Section title="Q Factor Estimation">
+              <p className="mb-2">
+                Q (quality factor) measures resonance sharpness. Estimated from the −3 dB bandwidth:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p><strong>Q = f_center / Δf_3dB</strong></p>
+                <p>Where Δf_3dB = frequency span where amplitude drops 3 dB from peak</p>
+              </div>
+              <p className="mt-2 text-xs">
+                High Q (&gt;40) = narrow resonance = likely feedback. Low Q (&lt;4) = broad peak = room mode or instrument.
+              </p>
+            </Section>
+
+            <Section title="Growth Rate & Velocity Tracking">
+              <p className="mb-2">
+                Feedback builds exponentially. The <strong>instantaneous velocity</strong> tracks frame-to-frame amplitude change:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>v_inst = (dB_now - dB_prev) / Δt</p>
+                <p>Smoothed via EMA: v = α × v_inst + (1-α) × v_prev</p>
+              </div>
+              <p className="mt-2 text-xs">Thresholds (configurable):</p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li><strong>RUNAWAY:</strong> v ≥ 8 dB/s — immediate action required</li>
+                <li><strong>GROWING:</strong> v ≥ 2 dB/s — building, act soon</li>
+                <li><strong>RESONANCE:</strong> v &lt; 2 dB/s — stable resonance</li>
+              </ul>
+            </Section>
+
+            <Section title="Cumulative Growth Analysis">
+              <p className="mb-2">
+                Some feedback builds slowly over seconds. <strong>Cumulative growth</strong> catches this even when instantaneous velocity is low:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>ΔdB_total = dB_now - dB_onset</p>
+                <p>v_avg = ΔdB_total / (t_now - t_onset)</p>
+              </div>
+              <p className="mt-2 text-xs">Thresholds:</p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li><strong>+3 dB:</strong> Building — early warning</li>
+                <li><strong>+6 dB:</strong> Growing — act soon</li>
+                <li><strong>+10 dB:</strong> Runaway — critical</li>
+              </ul>
+            </Section>
+
+            <Section title="Harmonic Detection (Cents-Based)">
+              <p className="mb-2">
+                To suppress harmonics of detected fundamentals, we use <strong>musically-uniform cents tolerance</strong> rather than percentage (which is too coarse at high frequencies):
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>cents = 1200 × log2(f_actual / f_expected)</p>
+                <p>Tolerance: ±50 cents (half a semitone)</p>
+                <p>Check harmonics k = 2 through 8 of each active fundamental</p>
+              </div>
+              <p className="mt-2 text-xs">
+                If a new peak is within 50 cents of k × f_fundamental, it's flagged as a harmonic and suppressed from the issue list.
+              </p>
+            </Section>
+
+            <Section title="Classification Model">
+              <p className="mb-2">
+                A <strong>weighted Bayesian classifier</strong> distinguishes feedback, whistle, and instrument based on extracted features:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-2">
+                <p><strong>Features & Weights:</strong></p>
+                <p>• Pitch stability (&lt;12 cents std) → +0.30 P(feedback)</p>
+                <p>• Harmonicity (&gt;0.65) → +0.25 P(instrument)</p>
+                <p>• Vibrato/modulation (&gt;0.45) → +0.20 P(whistle)</p>
+                <p>• Breath noise sidebands → +0.10 P(whistle)</p>
+                <p>• Growth rate (&gt;4 dB/s) → +0.25 P(feedback)</p>
+                <p>• High Q (&gt;40) → +0.15 P(feedback)</p>
+                <p>• Modal overlap boost → ±0.15 P(feedback)</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Probabilities are normalized: P_total = P(feedback) + P(whistle) + P(instrument). Confidence = max(P) after normalization.
+              </p>
+            </Section>
+
+            <Section title="Vibrato Detection for Whistle Discrimination">
+              <p className="mb-2">
+                Human whistle has characteristic 4–8 Hz vibrato; feedback is rock-steady. Detection via zero-crossing rate of frequency deviation:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>f_deviation[i] = f[i] - f_mean</p>
+                <p>Zero crossings = count(sign changes)</p>
+                <p>Vibrato rate ≈ zero_crossings / (2 × duration_sec)</p>
+                <p>Vibrato depth (cents) = 1200 × log2((μ + σ) / (μ - σ))</p>
+              </div>
+              <p className="mt-2 text-xs">
+                Match criteria: Rate 4–8 Hz, Depth 20–100 cents. Strong match → +0.3–0.5 P(whistle).
+              </p>
+            </Section>
+
+            <Section title="Confidence Calibration">
+              <p className="mb-2">
+                Raw probabilities are calibrated using modal overlap and cumulative growth to produce a well-calibrated confidence score:
+              </p>
+              <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                <p>P_adjusted = P_feedback + modal_boost + cumulative_boost</p>
+                <p>Confidence = max(P_adjusted, P_whistle, P_instrument)</p>
+              </div>
+              <p className="mt-2 text-xs">Labels:</p>
+              <ul className="text-xs mt-1 space-y-1">
+                <li><strong>≥85%:</strong> VERY_HIGH — high certainty</li>
+                <li><strong>70–84%:</strong> HIGH — likely correct</li>
+                <li><strong>55–69%:</strong> MEDIUM — probable</li>
+                <li><strong>&lt;55%:</strong> LOW — uncertain</li>
+              </ul>
+              <p className="mt-2 text-xs">
+                Default confidence threshold: 55% (aggressive). Peaks below this are filtered out unless severity is RUNAWAY or GROWING.
+              </p>
+            </Section>
+
+            <Section title="References">
+              <ul className="text-xs space-y-1">
+                <li>Hopkins, C. (2007). <em>Sound Insulation</em>. Butterworth-Heinemann. ISBN: 978-0750665261</li>
+                <li>Grandke, T. (1983). Interpolation algorithms for discrete Fourier transforms. <em>IEEE Trans. Instrum. Meas.</em>, 32(2), 350-355.</li>
+                <li>IEC 61672-1:2013. Electroacoustics — Sound level meters — Part 1: Specifications.</li>
+                <li>Schroeder, M.R. (1996). The "Schroeder frequency" revisited. <em>J. Acoust. Soc. Am.</em>, 99(5), 3240-3241.</li>
               </ul>
             </Section>
           </TabsContent>
