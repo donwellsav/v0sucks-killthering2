@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
+import Image from 'next/image'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
 import { freqToLogPosition, clamp } from '@/lib/utils/mathHelpers'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
@@ -21,6 +22,14 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
+
+  // Track whether analysis has ever started; once true the placeholder is gone for good
+  const [hasEverStarted, setHasEverStarted] = useState(false)
+  useEffect(() => {
+    if (isRunning) setHasEverStarted(true)
+  }, [isRunning])
+
+  const showPlaceholder = !hasEverStarted
 
   // Handle resize
   useEffect(() => {
@@ -243,8 +252,20 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
   useAnimationFrame(render, isRunning || spectrum !== null)
 
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full">
       <canvas ref={canvasRef} className="w-full h-full" />
+      {showPlaceholder && (
+        <div className="absolute inset-0 pointer-events-none">
+          <Image
+            src="/rta-placeholder.jpg"
+            alt="RTA spectrum placeholder"
+            fill
+            className="object-fill"
+            priority
+            sizes="100vw"
+          />
+        </div>
+      )}
     </div>
   )
 }
