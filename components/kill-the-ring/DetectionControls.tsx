@@ -80,32 +80,38 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </button>
         </div>
 
-        {/* Sliders — label+value row above full-width track */}
-        <div className="space-y-1.5">
-          <SliderRow
-            label="Threshold"
-            value={`${settings.feedbackThresholdDb}dB`}
-            tooltip={settings.showTooltips ? 'Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.' : undefined}
-            min={2} max={20} step={1}
-            sliderValue={settings.feedbackThresholdDb}
-            onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
-          />
-          <SliderRow
-            label="Ring"
-            value={`${settings.ringThresholdDb}dB`}
-            tooltip={settings.showTooltips ? 'Resonance detection. 2-4dB calibration, 5-7dB normal, 8+dB shows.' : undefined}
-            min={1} max={12} step={0.5}
-            sliderValue={settings.ringThresholdDb}
-            onChange={(v) => onSettingsChange({ ringThresholdDb: v })}
-          />
-          <SliderRow
-            label="Growth"
-            value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
-            tooltip={settings.showTooltips ? 'How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.' : undefined}
-            min={0.5} max={8} step={0.5}
-            sliderValue={settings.growthRateThreshold}
-            onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
-          />
+        {/* Sliders — label+value row above full-width track, divided by border */}
+        <div className="divide-y divide-border">
+          <div className="pb-1.5">
+            <SliderRow
+              label="Threshold"
+              value={`${settings.feedbackThresholdDb}dB`}
+              tooltip={settings.showTooltips ? 'Primary sensitivity. 4-8dB aggressive, 10-14dB balanced, 16+dB conservative.' : undefined}
+              min={2} max={20} step={1}
+              sliderValue={settings.feedbackThresholdDb}
+              onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
+            />
+          </div>
+          <div className="py-1.5">
+            <SliderRow
+              label="Ring"
+              value={`${settings.ringThresholdDb}dB`}
+              tooltip={settings.showTooltips ? 'Resonance detection. 2-4dB calibration, 5-7dB normal, 8+dB shows.' : undefined}
+              min={1} max={12} step={0.5}
+              sliderValue={settings.ringThresholdDb}
+              onChange={(v) => onSettingsChange({ ringThresholdDb: v })}
+            />
+          </div>
+          <div className="pt-1.5">
+            <SliderRow
+              label="Growth"
+              value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
+              tooltip={settings.showTooltips ? 'How fast feedback must grow. 0.5-1dB/s catches early, 3+dB/s only runaway.' : undefined}
+              min={0.5} max={8} step={0.5}
+              sliderValue={settings.growthRateThreshold}
+              onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
+            />
+          </div>
         </div>
 
       </div>
