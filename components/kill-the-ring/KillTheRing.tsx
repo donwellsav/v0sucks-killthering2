@@ -149,6 +149,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     return () => { document.body.style.overflow = '' }
   }, [mobileMenuOpen])
 
+  // Session start/stop effect - only depends on isRunning to prevent orphan sessions
+  // Settings changes while running should NOT create new sessions
   useEffect(() => {
     if (isRunning) {
       logger.logAnalysisStarted({ mode: settings.mode, fftSize: settings.fftSize })
@@ -173,7 +175,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         sessionIdRef.current = null
       }
     }
-  }, [isRunning, settings.mode, settings.fftSize, logger, flushEventsToDB])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only react to isRunning
+  }, [isRunning])
 
   useEffect(() => {
     if (!isRunning) return

@@ -1,7 +1,7 @@
 // KillTheRing2 Types - Full type definitions for the feedback detection system
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
-export type OperatingMode = 'feedbackHunt' | 'vocalRingAssist' | 'musicAware' | 'aggressive' | 'calibration'
+// Unified operation mode type - use 'vocalRing' everywhere (not 'vocalRingAssist')
 export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
 export type Preset = 'surgical' | 'heavy'
 export type SeverityLevel = 'RUNAWAY' | 'GROWING' | 'RESONANCE' | 'POSSIBLE_RING' | 'WHISTLE' | 'INSTRUMENT'
@@ -26,7 +26,7 @@ export interface AnalysisConfig {
   maxIssues: number
   ignoreWhistle: boolean
   preset: Preset
-  mode: OperatingMode
+  mode: OperationMode
   aWeightingEnabled: boolean
   // Noise floor settings
   noiseFloorEnabled: boolean
@@ -272,7 +272,7 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
-  mode: 'aggressive', // Aggressive by default for maximum detection
+  mode: 'feedbackHunt', // Matches DEFAULT_SETTINGS.mode for consistency
   aWeightingEnabled: false,
   noiseFloorEnabled: true,
   noiseFloorSampleCount: 160, // Faster noise floor sampling

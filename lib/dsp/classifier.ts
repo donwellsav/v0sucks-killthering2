@@ -186,7 +186,6 @@ export function shouldReportIssue(
       // Report feedback and possible rings, not instruments
       return label !== 'INSTRUMENT'
 
-    case 'vocalRingAssist':
     case 'vocalRing':
       // Report all issues including possible rings
       return true

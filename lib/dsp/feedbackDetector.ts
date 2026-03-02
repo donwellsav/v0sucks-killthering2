@@ -78,6 +78,13 @@ export class FeedbackDetector {
   // Harmonic detection — runtime override (set via updateSettings)
   private harmonicToleranceCents: number = HARMONIC_SETTINGS.TOLERANCE_CENTS
 
+  // Smoothing time constant for AnalyserNode (0-1, default 0.6)
+  private smoothingTimeConstant: number = 0.6
+
+  // Ring/growth detection thresholds (mapped from DetectorSettings)
+  private ringThresholdDb: number = -10
+  private growthRateThreshold: number = 1.5
+
   constructor(config: Partial<AnalysisConfig> = {}, callbacks: FeedbackDetectorCallbacks = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
     this.callbacks = callbacks
@@ -120,8 +127,9 @@ export class FeedbackDetector {
       this.analyser = this.audioContext.createAnalyser()
       this.analyser.minDecibels = -100
       this.analyser.maxDecibels = 0
-      this.analyser.smoothingTimeConstant = 0
     }
+    // Always apply smoothingTimeConstant from settings (it may have changed)
+    this.analyser.smoothingTimeConstant = this.smoothingTimeConstant
 
     // Set FFT size and allocate buffers
     this.setFftSize(this.config.fftSize)
@@ -234,28 +242,38 @@ export class FeedbackDetector {
     if (settings.feedbackThresholdDb !== undefined) {
       mappedConfig.relativeThresholdDb = settings.feedbackThresholdDb
     }
-    if (settings.holdTimeMs !== undefined) {
-      mappedConfig.clearMs = settings.holdTimeMs
-    }
+    // NOTE: holdTimeMs is UI-side "how long to show advisory cards after peak clears"
+    // clearMs is DSP-side "how long to wait before declaring a peak dead"
+    // These are DIFFERENT concepts - holdTimeMs should NOT be mapped to clearMs
+    // The UI handles holdTimeMs display logic in KillTheRing.tsx advisory rendering
     if (settings.eqPreset !== undefined) {
       mappedConfig.preset = settings.eqPreset
     }
     if (settings.mode !== undefined) {
-      // Map OperationMode to OperatingMode
-      const modeMap: Record<string, AnalysisConfig['mode']> = {
-        feedbackHunt: 'feedbackHunt',
-        vocalRing: 'vocalRingAssist',
-        musicAware: 'musicAware',
-        aggressive: 'aggressive',
-        calibration: 'calibration',
-      }
-      mappedConfig.mode = modeMap[settings.mode] ?? 'feedbackHunt'
+      // Direct assignment - OperationMode now matches AnalysisConfig['mode']
+      mappedConfig.mode = settings.mode
     }
     if (settings.inputGainDb !== undefined) {
       mappedConfig.inputGainDb = settings.inputGainDb
     }
     if (settings.harmonicToleranceCents !== undefined) {
       this.harmonicToleranceCents = settings.harmonicToleranceCents
+    }
+
+    // Smoothing time constant - apply directly to analyser if it exists
+    if (settings.smoothingTimeConstant !== undefined) {
+      this.smoothingTimeConstant = settings.smoothingTimeConstant
+      if (this.analyser) {
+        this.analyser.smoothingTimeConstant = settings.smoothingTimeConstant
+      }
+    }
+
+    // Ring and growth thresholds - used in classification
+    if (settings.ringThresholdDb !== undefined) {
+      this.ringThresholdDb = settings.ringThresholdDb
+    }
+    if (settings.growthRateThreshold !== undefined) {
+      this.growthRateThreshold = settings.growthRateThreshold
     }
 
     if (Object.keys(mappedConfig).length > 0) {
