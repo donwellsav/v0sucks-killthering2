@@ -82,7 +82,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
 
         {/* Sliders — label+value row above full-width track, divided by border */}
         <div className="divide-y divide-border">
-          <div className="pb-1.5">
+          <div className="pb-3">
             <SliderRow
               label="Threshold"
               value={`${settings.feedbackThresholdDb}dB`}
@@ -92,7 +92,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
             />
           </div>
-          <div className="py-1.5">
+          <div className="py-3">
             <SliderRow
               label="Ring"
               value={`${settings.ringThresholdDb}dB`}
@@ -102,7 +102,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               onChange={(v) => onSettingsChange({ ringThresholdDb: v })}
             />
           </div>
-          <div className="pt-1.5">
+          <div className="pt-3">
             <SliderRow
               label="Growth"
               value={`${settings.growthRateThreshold.toFixed(1)}dB/s`}
