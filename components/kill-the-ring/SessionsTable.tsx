@@ -38,7 +38,7 @@ function ClientDate({ dateStr }: { dateStr: string }) {
   useEffect(() => {
     setFormatted(formatDate(dateStr))
   }, [dateStr])
-  return <>{formatted}</>
+  return <span suppressHydrationWarning>{formatted}</span>
 }
 
 const MODE_LABELS: Record<string, string> = {
