@@ -80,8 +80,8 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
           </button>
         </div>
 
-        {/* Sliders — label+value row above full-width track, divided by border */}
-        <div className="divide-y divide-border">
+        {/* Sliders — label+value row above full-width track */}
+        <div className="space-y-0">
           <div className="pb-3">
             <SliderRow
               label="Threshold"
