@@ -251,8 +251,11 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                       </svg>
                     </button>
                     {!isRunning && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <span className="text-3xl font-black animate-flash-slow whitespace-nowrap">
+                      <div 
+                        onClick={start}
+                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      >
+                        <span className="text-sm font-black animate-flash-slow whitespace-nowrap">
                           KILL
                         </span>
                       </div>
