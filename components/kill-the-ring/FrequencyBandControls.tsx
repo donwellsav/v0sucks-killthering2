@@ -1,5 +1,5 @@
 'use client'
-// v2 - single definition, no duplicates
+
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -103,7 +103,6 @@ export function FrequencyBandControls({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Band buttons */}
       <div className="space-y-2">
         <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Frequency Bands</div>
         <div className="grid grid-cols-3 gap-1.5">
@@ -121,15 +120,14 @@ export function FrequencyBandControls({
             >
               {band.label}
               <span className="block text-[8px] opacity-60">
-                {band.minHz < 1000 ? band.minHz : `${(band.minHz / 1000).toFixed(1)}k`}–
-                {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz / 1000).toFixed(0)}k`}
+                {band.minHz < 1000 ? band.minHz : `${(band.minHz/1000).toFixed(1)}k`}–
+                {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz/1000).toFixed(0)}k`}
               </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Quick presets */}
       <div className="space-y-2">
         <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Quick Presets</div>
         <div className="flex flex-wrap gap-1">
@@ -150,7 +148,6 @@ export function FrequencyBandControls({
         </div>
       </div>
 
-      {/* Custom range - saveable as Speech */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Custom Range</div>
@@ -187,7 +184,6 @@ export function FrequencyBandControls({
         </div>
       </div>
 
-      {/* Active range readout */}
       <div className="p-2 rounded bg-muted/50 text-center">
         <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Active Range</div>
         <div className="text-sm font-mono font-medium">
