@@ -21,15 +21,15 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
 
         {/* Mode select */}
         <Select value={settings.mode} onValueChange={(v) => onModeChange(v as OperationMode)}>
-          <SelectTrigger className="h-6 w-full text-[10px] bg-input border-border px-2">
+          <SelectTrigger className="h-5 w-full text-[10px] bg-input border-border px-2">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="text-[10px]">
-            <SelectItem value="feedbackHunt" className="py-1">Feedback Hunt</SelectItem>
-            <SelectItem value="vocalRing" className="py-1">Vocal Ring</SelectItem>
-            <SelectItem value="musicAware" className="py-1">Music-Aware</SelectItem>
-            <SelectItem value="aggressive" className="py-1">Aggressive</SelectItem>
-            <SelectItem value="calibration" className="py-1">Calibration</SelectItem>
+            <SelectItem value="feedbackHunt" className="py-0.5">Feedback Hunt</SelectItem>
+            <SelectItem value="vocalRing" className="py-0.5">Vocal Ring</SelectItem>
+            <SelectItem value="musicAware" className="py-0.5">Music-Aware</SelectItem>
+            <SelectItem value="aggressive" className="py-0.5">Aggressive</SelectItem>
+            <SelectItem value="calibration" className="py-0.5">Calibration</SelectItem>
           </SelectContent>
         </Select>
 
