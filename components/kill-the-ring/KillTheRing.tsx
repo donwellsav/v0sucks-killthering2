@@ -432,7 +432,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         {/* Desktop: Always-visible left sidebar */}
         <aside className="hidden md:flex w-56 lg:w-64 xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3 overflow-y-auto max-h-96">
-            <DetectionControls />
+            <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
           </div>
           {/* Issues / Notepad tab bar */}
           <div className="flex-shrink-0 flex border-b border-border">
