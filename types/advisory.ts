@@ -98,6 +98,11 @@ export interface ClassificationResult {
   severity: SeverityLevel
   confidence: number
   reasons: string[]
+  // Enhanced fields from acoustic analysis
+  modalOverlapFactor?: number // M = π / Q (isolated < 0.3, coupled ≈ 1, diffuse > 3)
+  cumulativeGrowthDb?: number // Total dB growth since onset
+  frequencyBand?: 'LOW' | 'MID' | 'HIGH' // Which frequency band this falls into
+  confidenceLabel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' // Human-readable confidence
 }
 
 export interface PitchInfo {
@@ -155,6 +160,11 @@ export interface Advisory {
   // Feedback prediction fields
   isRunaway?: boolean
   predictedTimeToClipMs?: number
+  // Enhanced detection fields (from textbook research)
+  modalOverlapFactor?: number // M = π / Q (isolated < 0.3, overlapping ≈ 1, diffuse > 3)
+  cumulativeGrowthDb?: number // Total dB growth since onset
+  frequencyBand?: 'LOW' | 'MID' | 'HIGH' // Which frequency band this falls into
+  schroederFrequency?: number // Calculated Schroeder frequency for reference
 }
 
 export interface SpectrumData {
@@ -255,6 +265,11 @@ export interface DetectorSettings {
   harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–100, default 50)
   showTooltips: boolean // Show/hide all help tooltips throughout the UI
   aWeightingEnabled: boolean // Apply A-weighting curve to analysis (per IEC 61672-1)
+  // Confidence and filtering
+  confidenceThreshold: number // Minimum confidence to display (0.5-0.95, default 0.65)
+  // Room acoustics for Schroeder frequency calculation
+  roomRT60: number // Reverberation time in seconds (0.3-3.0, default 1.2)
+  roomVolume: number // Room volume in m³ (50-5000, default 500)
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

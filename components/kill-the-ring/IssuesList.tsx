@@ -115,6 +115,24 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Confidence badge */}
+            {advisory.confidence != null && (
+              <span
+                className={`text-[9px] font-mono px-1 py-0.5 rounded-sm leading-none ${
+                  advisory.confidence >= 0.85
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : advisory.confidence >= 0.70
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : advisory.confidence >= 0.55
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'bg-muted text-muted-foreground border border-border'
+                }`}
+                title={`${Math.round(advisory.confidence * 100)}% confidence`}
+              >
+                {Math.round(advisory.confidence * 100)}%
+              </span>
+            )}
+            
             {/* Severity badge */}
             <span
               className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
@@ -154,6 +172,27 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             <span>{isRunaway ? 'Runaway feedback' : 'Growing — act now'}</span>
             {timeToClipStr && <span className="font-mono opacity-80 ml-0.5">{timeToClipStr}</span>}
             <span className="font-mono ml-auto opacity-60">+{velocity.toFixed(0)} dB/s</span>
+          </div>
+        )}
+
+        {/* Row 2b: Modal overlap and cumulative growth indicators */}
+        {(advisory.modalOverlapFactor != null || advisory.cumulativeGrowthDb != null) && !isApplied && (
+          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+            {advisory.modalOverlapFactor != null && advisory.modalOverlapFactor < 0.3 && (
+              <span className="text-amber-400" title="Isolated mode - high feedback risk">
+                M={advisory.modalOverlapFactor.toFixed(2)} isolated
+              </span>
+            )}
+            {advisory.cumulativeGrowthDb != null && advisory.cumulativeGrowthDb > 3 && (
+              <span className="text-amber-400" title={`Total growth since onset: +${advisory.cumulativeGrowthDb.toFixed(1)}dB`}>
+                +{advisory.cumulativeGrowthDb.toFixed(1)}dB buildup
+              </span>
+            )}
+            {advisory.frequencyBand && (
+              <span className="text-muted-foreground/60" title={`Frequency band: ${advisory.frequencyBand}`}>
+                [{advisory.frequencyBand}]
+              </span>
+            )}
           </div>
         )}
 

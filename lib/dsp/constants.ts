@@ -25,6 +25,98 @@ export const LN10_OVER_10 = Math.LN10 / 10 // For dB to power conversion
 export const LOG10_E = Math.LOG10E // For power to dB conversion
 export const TWO_PI = Math.PI * 2
 
+// ============================================================================
+// ACOUSTIC CONSTANTS (from Sound Insulation textbook, Carl Hopkins 2007)
+// ============================================================================
+
+// Schroeder frequency calculation: f_S = 2000 * sqrt(T/V)
+// Below this frequency, individual room modes dominate
+// T = reverberation time (seconds), V = room volume (m³)
+export const SCHROEDER_CONSTANTS = {
+  COEFFICIENT: 2000, // From textbook Equation 1.111
+  // Default estimates for typical venues when room data unavailable
+  DEFAULT_RT60: 1.2, // seconds - typical for medium venue
+  DEFAULT_VOLUME: 500, // m³ - typical conference room / small venue
+  // Pre-calculated default Schroeder frequency
+  get DEFAULT_FREQUENCY() {
+    return this.COEFFICIENT * Math.sqrt(this.DEFAULT_RT60 / this.DEFAULT_VOLUME)
+  },
+} as const
+
+// Frequency band definitions for frequency-dependent thresholds
+// Based on textbook + acoustic principles for PA feedback detection
+export const FREQUENCY_BANDS = {
+  // Low band: Below Schroeder frequency, room modes dominate
+  // Requires longer sustain, higher prominence to distinguish from bass content
+  LOW: {
+    minHz: 20,
+    maxHz: 300, // Approximate - adjusted by Schroeder calculation
+    prominenceMultiplier: 1.4, // Require 40% more prominence
+    sustainMultiplier: 1.5, // Require 50% longer sustain
+    qThresholdMultiplier: 0.6, // Lower Q threshold (broader peaks expected)
+    description: 'Sub-bass to low-mid (room modes)',
+  },
+  // Mid band: Primary speech/vocal range, most feedback-prone
+  // Standard thresholds, fastest response
+  MID: {
+    minHz: 300,
+    maxHz: 3000,
+    prominenceMultiplier: 1.0, // Standard prominence
+    sustainMultiplier: 1.0, // Standard sustain
+    qThresholdMultiplier: 1.0, // Standard Q threshold
+    description: 'Mid range (speech fundamental + harmonics)',
+  },
+  // High band: Sibilance and high harmonics
+  // More sensitive to high-Q peaks, A-weighting affects perception
+  HIGH: {
+    minHz: 3000,
+    maxHz: 20000,
+    prominenceMultiplier: 0.85, // Slightly less prominence needed (more audible)
+    sustainMultiplier: 0.8, // Faster response (high freq feedback builds fast)
+    qThresholdMultiplier: 1.2, // Higher Q threshold (expect narrower peaks)
+    description: 'High range (sibilance, harmonics)',
+  },
+} as const
+
+// Modal overlap factor thresholds (M = π / Q for single resonance)
+// From textbook Section 1.2.6.7, Equation 1.109
+export const MODAL_OVERLAP = {
+  ISOLATED: 0.3, // M < 0.3: Isolated mode, deep troughs between peaks (feedback prone)
+  COUPLED: 1.0, // M ≈ 1: Modes overlap, smoother response
+  DIFFUSE: 3.0, // M > 3: Diffuse field behavior (noise-like)
+} as const
+
+// Cumulative growth tracking for slow-building feedback
+export const CUMULATIVE_GROWTH = {
+  WARNING_THRESHOLD_DB: 3, // Flag as "building" after 3dB cumulative growth
+  ALERT_THRESHOLD_DB: 6, // Flag as "growing" after 6dB cumulative growth
+  RUNAWAY_THRESHOLD_DB: 10, // Flag as "runaway" after 10dB cumulative growth
+  MIN_DURATION_MS: 500, // Minimum duration to consider cumulative growth
+  MAX_DURATION_MS: 10000, // Maximum window for cumulative growth calculation
+} as const
+
+// Vocal formant frequencies for whistle/vocal discrimination
+// Based on average adult formant frequencies
+export const VOCAL_FORMANTS = {
+  F1_CENTER: 500, // First formant (jaw opening)
+  F1_RANGE: 200, // ±200Hz
+  F2_CENTER: 1500, // Second formant (tongue position)
+  F2_RANGE: 500, // ±500Hz
+  F3_CENTER: 2500, // Third formant (lip rounding)
+  F3_RANGE: 500, // ±500Hz
+  // Formant detection requires multiple peaks at these ratios
+  MIN_FORMANTS_FOR_VOICE: 2, // Need at least 2 formants to classify as voice
+} as const
+
+// Vibrato detection for whistle discrimination
+export const VIBRATO_DETECTION = {
+  MIN_RATE_HZ: 4, // Minimum vibrato rate
+  MAX_RATE_HZ: 8, // Maximum vibrato rate
+  MIN_DEPTH_CENTS: 20, // Minimum vibrato depth
+  MAX_DEPTH_CENTS: 100, // Maximum vibrato depth (wider = more likely whistle)
+  DETECTION_WINDOW_MS: 500, // Window for vibrato analysis
+} as const
+
 // A-weighting constants (IEC/CD 1672)
 export const A_WEIGHTING = {
   C1: 20.6,
@@ -206,6 +298,11 @@ export const DEFAULT_SETTINGS = {
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
   showTooltips: true, // Show help tooltips throughout the UI (disable for experienced engineers)
   aWeightingEnabled: false, // A-weighting off by default - enable for human-perceived loudness weighting
+  // Confidence and filtering
+  confidenceThreshold: 0.65, // 65% confidence minimum - good balance of sensitivity vs noise
+  // Room acoustics for automatic frequency-dependent thresholds
+  roomRT60: 1.2, // Default reverberation time (typical venue)
+  roomVolume: 500, // Default room volume in m³ (typical conference/small venue)
 }
 
 // Frequency range presets — quick switching for different use cases

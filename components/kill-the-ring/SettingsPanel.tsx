@@ -232,6 +232,76 @@ export function SettingsPanel({
               </div>
             </Section>
 
+            <Section
+              title="Confidence Threshold"
+              showTooltip={settings.showTooltips}
+              tooltip="Minimum confidence level to display an alert. Lower values show more alerts (some may be false positives). Higher values show only high-confidence detections (may miss subtle feedback). 65% is a good balance."
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Min. Confidence</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.65) * 100)}%</span>
+                </div>
+                <Slider
+                  value={[(settings.confidenceThreshold ?? 0.65) * 100]}
+                  onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
+                  min={50}
+                  max={95}
+                  step={5}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>More alerts</span>
+                  <span>High confidence only</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="Room Acoustics"
+              showTooltip={settings.showTooltips}
+              tooltip="Room parameters for automatic frequency-dependent thresholds. The Schroeder frequency (f_S = 2000√(T/V)) determines where room modes dominate. Below this frequency, the algorithm uses adjusted thresholds to reduce false positives from room resonances."
+            >
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">RT60 (reverb time)</span>
+                    <span className="text-xs font-mono">{(settings.roomRT60 ?? 1.2).toFixed(1)}s</span>
+                  </div>
+                  <Slider
+                    value={[(settings.roomRT60 ?? 1.2) * 10]}
+                    onValueChange={([v]) => onSettingsChange({ roomRT60: v / 10 })}
+                    min={3}
+                    max={30}
+                    step={1}
+                  />
+                  <div className="flex justify-between text-[9px] text-muted-foreground">
+                    <span>Dead (studio)</span>
+                    <span>Live (cathedral)</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Room Volume</span>
+                    <span className="text-xs font-mono">{settings.roomVolume ?? 500}m³</span>
+                  </div>
+                  <Slider
+                    value={[settings.roomVolume ?? 500]}
+                    onValueChange={([v]) => onSettingsChange({ roomVolume: v })}
+                    min={50}
+                    max={5000}
+                    step={50}
+                  />
+                  <div className="flex justify-between text-[9px] text-muted-foreground">
+                    <span>Small room</span>
+                    <span>Large venue</span>
+                  </div>
+                </div>
+                <div className="text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                  Schroeder freq: {Math.round(2000 * Math.sqrt((settings.roomRT60 ?? 1.2) / (settings.roomVolume ?? 500)))}Hz
+                </div>
+              </div>
+            </Section>
+
           </TabsContent>
 
           <TabsContent value="display" className="mt-4 space-y-5">
