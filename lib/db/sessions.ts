@@ -116,23 +116,31 @@ export async function bulkInsertEvents(
     }
   })
 
-  // Neon tagged template can't splat dynamic arrays — build a single INSERT
-  // by looping the sql tag per row but batching via Promise.all (parallel, not serial)
-  await Promise.all(
-    rows.map((r) =>
-      sql`
-        INSERT INTO session_events (
-          id, session_id, occurred_at, event_type,
-          frequency, amplitude, severity, classification,
-          q_factor, bandwidth, growth_rate, metadata
-        ) VALUES (
-          ${r.id}, ${r.session_id}, ${r.occurred_at}, ${r.event_type},
-          ${r.frequency}, ${r.amplitude}, ${r.severity}, ${r.classification},
-          ${r.q_factor}, ${r.bandwidth}, ${r.growth_rate}, ${r.metadata}
-        )
-        ON CONFLICT (id) DO NOTHING
-      `,
-    ),
+  // Build a single multi-row INSERT — one DB round-trip regardless of batch size.
+  // The neon client supports sql(queryString, params[]) as an alternative to tagged templates,
+  // which lets us construct dynamic parameter placeholders safely.
+  const COL_COUNT = 12
+  const placeholders = rows
+    .map((_, i) => {
+      const b = i * COL_COUNT
+      return `($${b+1},$${b+2},$${b+3},$${b+4},$${b+5},$${b+6},$${b+7},$${b+8},$${b+9},$${b+10},$${b+11},$${b+12})`
+    })
+    .join(',\n')
+
+  const values = rows.flatMap((r) => [
+    r.id, r.session_id, r.occurred_at, r.event_type,
+    r.frequency, r.amplitude, r.severity, r.classification,
+    r.q_factor, r.bandwidth, r.growth_rate, r.metadata,
+  ])
+
+  await sql(
+    `INSERT INTO session_events (
+       id, session_id, occurred_at, event_type,
+       frequency, amplitude, severity, classification,
+       q_factor, bandwidth, growth_rate, metadata
+     ) VALUES ${placeholders}
+     ON CONFLICT (id) DO NOTHING`,
+    values,
   )
 }
 

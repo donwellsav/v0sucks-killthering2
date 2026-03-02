@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSession, listSessions } from '@/lib/db/sessions'
+import { rateLimit, getClientIp } from '@/lib/rateLimit'
 
 export async function GET() {
   try {
@@ -12,6 +13,13 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const { allowed, retryAfterMs } = rateLimit(getClientIp(req))
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } },
+    )
+  }
   try {
     const body = await req.json()
     const { id, mode, fftSize } = body as { id: string; mode: string; fftSize: number }

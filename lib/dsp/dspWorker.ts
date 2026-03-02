@@ -82,14 +82,16 @@ function getSeverityUrgency(severity: string): number {
 }
 
 function isHarmonicOfExisting(freqHz: number): boolean {
-  const HARMONIC_TOLERANCE = 0.03
+  // Use the same cents-based tolerance as FeedbackDetector to stay consistent.
+  const toleranceCents = settings.harmonicToleranceCents ?? 50
   const MAX_HARMONIC = 8
   for (const advisory of advisories.values()) {
     const fundamental = advisory.trueFrequencyHz
     if (fundamental >= freqHz) continue
     for (let n = 2; n <= MAX_HARMONIC; n++) {
       const harmonic = fundamental * n
-      if (Math.abs(freqHz / harmonic - 1) < HARMONIC_TOLERANCE) return true
+      const cents = Math.abs(1200 * Math.log2(freqHz / harmonic))
+      if (cents <= toleranceCents) return true
     }
   }
   return false

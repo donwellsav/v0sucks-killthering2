@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bulkInsertEvents } from '@/lib/db/sessions'
+import { rateLimit, getClientIp } from '@/lib/rateLimit'
 
 interface Params {
   params: Promise<{ id: string }>
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const { allowed, retryAfterMs } = rateLimit(getClientIp(req))
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } },
+    )
+  }
   const { id } = await params
   try {
     const body = await req.json()

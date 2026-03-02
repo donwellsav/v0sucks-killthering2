@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { endSession, getSession, getSessionEvents, deleteSession } from '@/lib/db/sessions'
+import { rateLimit, getClientIp } from '@/lib/rateLimit'
 
 interface Params {
   params: Promise<{ id: string }>
@@ -32,6 +33,13 @@ export async function PATCH(_req: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
+  const { allowed, retryAfterMs } = rateLimit(getClientIp(_req))
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(retryAfterMs / 1000)) } },
+    )
+  }
   const { id } = await params
   try {
     await deleteSession(id)
