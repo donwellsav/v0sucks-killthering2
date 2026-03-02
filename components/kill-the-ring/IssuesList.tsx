@@ -129,54 +129,57 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
           >
             {getSeverityText(advisory.severity)}
           </span>
-          {hasEq && onApply && (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => !isApplied && onApply(advisory)}
-                    disabled={isApplied}
-                    aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
-                    className={`h-5 w-5 p-0 transition-colors ${
-                      isApplied
-                        ? 'text-primary cursor-default'
-                        : 'text-muted-foreground hover:text-primary'
-                    }`}
-                  >
-                    {isApplied
-                      ? <CheckCircle2 className="w-3 h-3" />
-                      : <Circle className="w-3 h-3" />
-                    }
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="text-xs">
-                  {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {onDismiss && (
-            <TooltipProvider delayDuration={300}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDismiss(advisory.id)}
-                    aria-label={`Dismiss ${freqStr}Hz issue`}
-                    className="h-5 w-5 p-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="left" className="text-xs">
-                  Dismiss (re-shows if re-detected)
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          {/* Stacked action column: X on top, apply below */}
+          <div className="flex flex-col items-center gap-0.5">
+            {onDismiss && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDismiss(advisory.id)}
+                      aria-label={`Dismiss ${freqStr}Hz issue`}
+                      className="h-5 w-5 p-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    Dismiss (re-shows if re-detected)
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {hasEq && onApply && (
+              <TooltipProvider delayDuration={300}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => !isApplied && onApply(advisory)}
+                      disabled={isApplied}
+                      aria-label={isApplied ? 'Cut sent to EQ Notepad' : `Send cut to EQ Notepad (${freqStr}Hz)`}
+                      className={`h-5 w-5 p-0 transition-colors ${
+                        isApplied
+                          ? 'text-primary cursor-default'
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
+                    >
+                      {isApplied
+                        ? <CheckCircle2 className="w-3 h-3" />
+                        : <Circle className="w-3 h-3" />
+                      }
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs">
+                    {isApplied ? 'Sent to EQ Notepad' : 'Send to EQ Notepad'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       </div>
 
