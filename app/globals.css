@@ -113,11 +113,11 @@
   @keyframes flash-slow {
     0%, 100% {
       opacity: 1;
-      color: #dc2626;
+      color: #ffffff;
     }
     50% {
       opacity: 0.2;
-      color: #dc2626;
+      color: #ffffff;
     }
   }
 
