@@ -56,7 +56,7 @@ export class AudioAnalyzer {
     this.settings = { ...DEFAULT_SETTINGS, ...settings }
     this.callbacks = callbacks
 
-    this.detector = new FeedbackDetector(this.settings, {
+    this.detector = new FeedbackDetector({}, {
       onPeakDetected: (peak: DetectedPeak) => {
         // Route to worker via callback — spectrum is read from detector
         const spectrum = this.detector.getSpectrum()
@@ -69,6 +69,9 @@ export class AudioAnalyzer {
         this.callbacks.onPeakCleared?.(peak)
       },
     })
+
+    // Apply initial settings via the mapping layer (DetectorSettings → AnalysisConfig)
+    this.detector.updateSettings(this.settings)
 
     this.spectrumLoop = this.spectrumLoop.bind(this)
   }

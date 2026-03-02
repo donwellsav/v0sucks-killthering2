@@ -25,6 +25,99 @@ export const LN10_OVER_10 = Math.LN10 / 10 // For dB to power conversion
 export const LOG10_E = Math.LOG10E // For power to dB conversion
 export const TWO_PI = Math.PI * 2
 
+// ============================================================================
+// ACOUSTIC CONSTANTS (from Sound Insulation textbook, Carl Hopkins 2007)
+// ============================================================================
+
+// Schroeder frequency calculation: f_S = 2000 * sqrt(T/V)
+// Below this frequency, individual room modes dominate
+// T = reverberation time (seconds), V = room volume (m³)
+export const SCHROEDER_CONSTANTS = {
+  COEFFICIENT: 2000, // From textbook Equation 1.111
+  // Default estimates for typical venues when room data unavailable
+  DEFAULT_RT60: 1.2, // seconds - typical for medium venue
+  DEFAULT_VOLUME: 500, // m³ - typical conference room / small venue
+  // Pre-calculated default Schroeder frequency
+  get DEFAULT_FREQUENCY() {
+    return this.COEFFICIENT * Math.sqrt(this.DEFAULT_RT60 / this.DEFAULT_VOLUME)
+  },
+} as const
+
+// Frequency band definitions for frequency-dependent thresholds
+// Based on textbook + acoustic principles for PA feedback detection
+export const FREQUENCY_BANDS = {
+  // Low band: Below Schroeder frequency, room modes dominate
+  // Requires longer sustain, higher prominence to distinguish from bass content
+  LOW: {
+    minHz: 20,
+    maxHz: 300, // Approximate - adjusted by Schroeder calculation
+    prominenceMultiplier: 1.4, // Require 40% more prominence
+    sustainMultiplier: 1.5, // Require 50% longer sustain
+    qThresholdMultiplier: 0.6, // Lower Q threshold (broader peaks expected)
+    description: 'Sub-bass to low-mid (room modes)',
+  },
+  // Mid band: Primary speech/vocal range, most feedback-prone
+  // Standard thresholds, fastest response
+  MID: {
+    minHz: 300,
+    maxHz: 3000,
+    prominenceMultiplier: 1.0, // Standard prominence
+    sustainMultiplier: 1.0, // Standard sustain
+    qThresholdMultiplier: 1.0, // Standard Q threshold
+    description: 'Mid range (speech fundamental + harmonics)',
+  },
+  // High band: Sibilance and high harmonics
+  // More sensitive to high-Q peaks, A-weighting affects perception
+  HIGH: {
+    minHz: 3000,
+    maxHz: 20000,
+    prominenceMultiplier: 0.85, // Slightly less prominence needed (more audible)
+    sustainMultiplier: 0.8, // Faster response (high freq feedback builds fast)
+    qThresholdMultiplier: 1.2, // Higher Q threshold (expect narrower peaks)
+    description: 'High range (sibilance, harmonics)',
+  },
+} as const
+
+// Modal overlap indicator thresholds (M = 1/Q)
+// Based on textbook Section 1.2.6.7 adapted for feedback detection
+// With M = 1/Q: high Q (feedback-like) gives low M, low Q (broad) gives high M
+export const MODAL_OVERLAP = {
+  ISOLATED: 0.03, // M < 0.03 (Q > 33): Sharp isolated peak, high feedback risk
+  COUPLED: 0.1, // M ≈ 0.1 (Q ≈ 10): Moderate resonance
+  DIFFUSE: 0.33, // M > 0.33 (Q < 3): Broad peak, low feedback risk
+} as const
+
+// Cumulative growth tracking for slow-building feedback
+export const CUMULATIVE_GROWTH = {
+  WARNING_THRESHOLD_DB: 3, // Flag as "building" after 3dB cumulative growth
+  ALERT_THRESHOLD_DB: 6, // Flag as "growing" after 6dB cumulative growth
+  RUNAWAY_THRESHOLD_DB: 10, // Flag as "runaway" after 10dB cumulative growth
+  MIN_DURATION_MS: 500, // Minimum duration to consider cumulative growth
+  MAX_DURATION_MS: 10000, // Maximum window for cumulative growth calculation
+} as const
+
+// Vocal formant frequencies for whistle/vocal discrimination
+// Based on average adult formant frequencies
+export const VOCAL_FORMANTS = {
+  F1_CENTER: 500, // First formant (jaw opening)
+  F1_RANGE: 200, // ±200Hz
+  F2_CENTER: 1500, // Second formant (tongue position)
+  F2_RANGE: 500, // ±500Hz
+  F3_CENTER: 2500, // Third formant (lip rounding)
+  F3_RANGE: 500, // ±500Hz
+  // Formant detection requires multiple peaks at these ratios
+  MIN_FORMANTS_FOR_VOICE: 2, // Need at least 2 formants to classify as voice
+} as const
+
+// Vibrato detection for whistle discrimination
+export const VIBRATO_DETECTION = {
+  MIN_RATE_HZ: 4, // Minimum vibrato rate
+  MAX_RATE_HZ: 8, // Maximum vibrato rate
+  MIN_DEPTH_CENTS: 20, // Minimum vibrato depth
+  MAX_DEPTH_CENTS: 100, // Maximum vibrato depth (wider = more likely whistle)
+  DETECTION_WINDOW_MS: 500, // Window for vibrato analysis
+} as const
+
 // A-weighting constants (IEC/CD 1672)
 export const A_WEIGHTING = {
   C1: 20.6,
@@ -182,30 +275,81 @@ export const OPERATION_MODES = {
   },
 } as const
 
-// Default settings for the analyzer - optimized for Corporate/Conference PA feedback detection
-// with Feedback Hunt mode default and Vocal-Focused frequency range (200Hz-8kHz)
+// Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
+// AGGRESSIVE DETECTION - better to have false positives than miss real feedback!
 export const DEFAULT_SETTINGS = {
   mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
-  fftSize: 8192 as const, // Good balance of resolution and response time
-  smoothingTimeConstant: 0.6, // Less smoothing for faster transient response
-  minFrequency: 200, // Vocal-focused lower bound
+  fftSize: 8192 as const, // Good frequency resolution for accurate detection
+  smoothingTimeConstant: 0.5, // Faster response for quick detection
+  minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble)
   maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 8, // Feedback Hunt threshold for balanced PA detection
-  ringThresholdDb: 5, // Resonance detection balanced for general use
-  growthRateThreshold: 2, // Responsive detection without excessive false positives
+  feedbackThresholdDb: 6, // AGGRESSIVE - catch feedback early, before it's dangerous
+  ringThresholdDb: 4, // AGGRESSIVE - catch resonances before they become feedback
+  growthRateThreshold: 1.5, // FAST - detect growing peaks quickly
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
-  noiseFloorDecay: 0.98, // Fast noise floor adaptation for dynamic environments
+  noiseFloorDecay: 0.98, // Fast adaptation for dynamic environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues, can adjust up to 12
-  eqPreset: 'surgical' as const, // Precise cuts for corporate/conference
-  musicAware: false, // Disabled by default for maximum detection
-  autoMusicAware: false, // Auto music-aware mode off by default
+  maxDisplayedIssues: 8, // Show more issues - don't hide potential problems
+  eqPreset: 'surgical' as const, // Precise narrow cuts for speech (preserve clarity)
+  musicAware: false, // Disabled - no music in corporate/conference
+  autoMusicAware: false, // Auto music-aware mode off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15dB above noise floor = band is playing
   inputGainDb: 12, // Default gain for speech systems (adjustable -40 to +40 dB)
   graphFontSize: 15, // Default label size for canvas graphs (8-26px range, 15px center)
-  harmonicToleranceCents: 50, // ±50 cents for harmonic matching; matches HARMONIC_SETTINGS default
-  showTooltips: true, // Show help tooltips throughout the UI (disable for experienced engineers)
+  harmonicToleranceCents: 50, // ±50 cents for harmonic matching
+  showTooltips: true, // Show help tooltips (useful for AV techs)
+  aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes speech frequencies (2-5kHz)
+  // Confidence filtering - LOW threshold, better false positives than missing real feedback
+  confidenceThreshold: 0.55, // 55% - aggressive, show more alerts
+  // Room acoustics - defaults to medium conference room
+  roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
+  roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)
+  // Room preset identifier
+  roomPreset: 'medium' as const, // Default to medium conference room
 }
+
+// Room size presets for quick switching in corporate/conference environments
+// AGGRESSIVE THRESHOLDS - better false positives than missing real feedback!
+export const ROOM_PRESETS = {
+  small: {
+    label: 'Small Boardroom',
+    description: '10-20 people, huddle rooms, small meeting spaces',
+    roomRT60: 0.5, // Well-treated small room
+    roomVolume: 80, // ~80m³ (approx 20x15x10 ft)
+    schroederFreq: 158, // Pre-calculated: 2000 * sqrt(0.5/80)
+    feedbackThresholdDb: 5, // AGGRESSIVE - quiet rooms need early warning
+    ringThresholdDb: 3,
+  },
+  medium: {
+    label: 'Medium Conference Room',
+    description: '20-50 people, standard conference/training rooms',
+    roomRT60: 0.7, // Typical treated conference room
+    roomVolume: 250, // ~250m³ (approx 30x25x12 ft)
+    schroederFreq: 106, // Pre-calculated: 2000 * sqrt(0.7/250)
+    feedbackThresholdDb: 6, // AGGRESSIVE - catch problems early
+    ringThresholdDb: 4,
+  },
+  large: {
+    label: 'Large Auditorium',
+    description: '50-200 people, ballrooms, auditoriums, town halls',
+    roomRT60: 1.0, // Larger spaces have more reverb
+    roomVolume: 1000, // ~1000m³ (approx 50x40x20 ft)
+    schroederFreq: 63, // Pre-calculated: 2000 * sqrt(1.0/1000)
+    feedbackThresholdDb: 7, // Slightly less aggressive due to ambient noise
+    ringThresholdDb: 5,
+  },
+  custom: {
+    label: 'Custom',
+    description: 'Manual RT60 and volume settings',
+    roomRT60: 0.7,
+    roomVolume: 250,
+    schroederFreq: 106,
+    feedbackThresholdDb: 6,
+    ringThresholdDb: 4,
+  },
+} as const
+
+export type RoomPresetKey = keyof typeof ROOM_PRESETS
 
 // Frequency range presets — quick switching for different use cases
 export const FREQ_RANGE_PRESETS = [

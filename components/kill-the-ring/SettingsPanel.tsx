@@ -187,6 +187,28 @@ export function SettingsPanel({
             </Section>
 
             <Section
+              title="A-Weighting"
+              showTooltip={settings.showTooltips}
+              tooltip="Applies IEC 61672-1 A-weighting curve to match human hearing sensitivity. Reduces low-frequency emphasis (below ~500Hz is attenuated). Enable for perceived-loudness analysis; disable for flat-response detection of all feedback regardless of audibility."
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Apply A-weighting curve</span>
+                <button
+                  role="switch"
+                  aria-checked={settings.aWeightingEnabled}
+                  onClick={() => onSettingsChange({ aWeightingEnabled: !settings.aWeightingEnabled })}
+                  className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                    settings.aWeightingEnabled ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+                    settings.aWeightingEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+            </Section>
+
+            <Section
               title="Harmonic Tolerance"
               showTooltip={settings.showTooltips}
               tooltip="Cents window used when matching overtones and sub-harmonics. Tighten for calibration in controlled rooms (25–35¢). Widen for live performance with reverb or temperature drift (65–100¢). Default 50¢ = half a semitone."
@@ -206,6 +228,132 @@ export function SettingsPanel({
                 <div className="flex justify-between text-[9px] text-muted-foreground">
                   <span>Tight (calibration)</span>
                   <span>Wide (live)</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="Confidence Threshold"
+              showTooltip={settings.showTooltips}
+              tooltip="Minimum confidence to display. LOWER = more alerts (better to catch everything). HIGHER = fewer alerts (may miss real feedback). 55% is aggressive - better safe than sorry!"
+            >
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">Min. Confidence</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.55) * 100)}%</span>
+                </div>
+                <Slider
+                  value={[(settings.confidenceThreshold ?? 0.55) * 100]}
+                  onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
+                  min={40}
+                  max={90}
+                  step={5}
+                />
+                <div className="flex justify-between text-[9px] text-muted-foreground">
+                  <span>Catch everything</span>
+                  <span>High confidence only</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="Room Acoustics"
+              showTooltip={settings.showTooltips}
+              tooltip="Room parameters for automatic frequency-dependent thresholds. The Schroeder frequency (f_S = 2000√(T/V)) determines where room modes dominate. Select a preset or use Custom for manual control."
+            >
+              <div className="space-y-3">
+                {/* Room Preset Selector */}
+                <div className="space-y-2">
+                  <span className="text-xs text-muted-foreground">Room Size Preset</span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['small', 'medium', 'large', 'custom'] as const).map((preset) => {
+                      const presetLabels = {
+                        small: 'Small',
+                        medium: 'Medium',
+                        large: 'Large',
+                        custom: 'Custom',
+                      }
+                      const presetDescriptions = {
+                        small: '10-20 people',
+                        medium: '20-50 people',
+                        large: '50-200 people',
+                        custom: 'Manual',
+                      }
+                      const isSelected = (settings.roomPreset ?? 'medium') === preset
+                      return (
+                        <button
+                          key={preset}
+                          onClick={() => {
+                            if (preset === 'custom') {
+                              onSettingsChange({ roomPreset: 'custom' })
+                            } else {
+                              // AGGRESSIVE thresholds - better false positives than missing feedback!
+                              const presetValues = {
+                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 5, ringThresholdDb: 3 },
+                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 6, ringThresholdDb: 4 },
+                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 7, ringThresholdDb: 5 },
+                              }[preset]
+                              onSettingsChange({ roomPreset: preset, ...presetValues })
+                            }
+                          }}
+                          className={`flex flex-col items-start px-2 py-1.5 rounded-md text-left transition-colors ${
+                            isSelected
+                              ? 'bg-primary/20 border border-primary/50 text-primary'
+                              : 'bg-muted/50 border border-transparent hover:bg-muted'
+                          }`}
+                        >
+                          <span className="text-xs font-medium">{presetLabels[preset]}</span>
+                          <span className="text-[9px] text-muted-foreground">{presetDescriptions[preset]}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Manual controls - only show for Custom preset */}
+                {(settings.roomPreset ?? 'medium') === 'custom' && (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">RT60 (reverb time)</span>
+                        <span className="text-xs font-mono">{(settings.roomRT60 ?? 0.7).toFixed(1)}s</span>
+                      </div>
+                      <Slider
+                        value={[(settings.roomRT60 ?? 0.7) * 10]}
+                        onValueChange={([v]) => onSettingsChange({ roomRT60: v / 10 })}
+                        min={3}
+                        max={30}
+                        step={1}
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>Dead (studio)</span>
+                        <span>Live (cathedral)</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Room Volume</span>
+                        <span className="text-xs font-mono">{settings.roomVolume ?? 250}m³</span>
+                      </div>
+                      <Slider
+                        value={[settings.roomVolume ?? 250]}
+                        onValueChange={([v]) => onSettingsChange({ roomVolume: v })}
+                        min={50}
+                        max={5000}
+                        step={50}
+                      />
+                      <div className="flex justify-between text-[9px] text-muted-foreground">
+                        <span>Small room</span>
+                        <span>Large venue</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Schroeder frequency display */}
+                <div className="text-[9px] text-muted-foreground bg-muted/50 rounded px-2 py-1 flex justify-between">
+                  <span>Schroeder freq:</span>
+                  <span className="font-mono">{Math.round(2000 * Math.sqrt((settings.roomRT60 ?? 0.7) / (settings.roomVolume ?? 250)))}Hz</span>
                 </div>
               </div>
             </Section>

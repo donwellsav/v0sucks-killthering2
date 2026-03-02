@@ -1,7 +1,7 @@
 // KillTheRing2 Types - Full type definitions for the feedback detection system
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
-export type OperatingMode = 'feedbackHunt' | 'vocalRingAssist' | 'musicAware' | 'aggressive' | 'calibration'
+// Unified operation mode type - use 'vocalRing' everywhere (not 'vocalRingAssist')
 export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
 export type Preset = 'surgical' | 'heavy'
 export type SeverityLevel = 'RUNAWAY' | 'GROWING' | 'RESONANCE' | 'POSSIBLE_RING' | 'WHISTLE' | 'INSTRUMENT'
@@ -26,8 +26,13 @@ export interface AnalysisConfig {
   maxIssues: number
   ignoreWhistle: boolean
   preset: Preset
-  mode: OperatingMode
+  mode: OperationMode
   aWeightingEnabled: boolean
+  // Room acoustics for Schroeder frequency calculation
+  roomRT60?: number
+  roomVolume?: number
+  // Confidence threshold for filtering
+  confidenceThreshold?: number
   // Noise floor settings
   noiseFloorEnabled: boolean
   noiseFloorSampleCount: number
@@ -98,6 +103,11 @@ export interface ClassificationResult {
   severity: SeverityLevel
   confidence: number
   reasons: string[]
+  // Enhanced fields from acoustic analysis
+  modalOverlapFactor?: number // M = 1/Q (isolated < 0.03, coupled < 0.1, diffuse > 0.33)
+  cumulativeGrowthDb?: number // Total dB growth since onset
+  frequencyBand?: 'LOW' | 'MID' | 'HIGH' // Which frequency band this falls into
+  confidenceLabel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' // Human-readable confidence
 }
 
 export interface PitchInfo {
@@ -155,6 +165,11 @@ export interface Advisory {
   // Feedback prediction fields
   isRunaway?: boolean
   predictedTimeToClipMs?: number
+  // Enhanced detection fields (from textbook research)
+  modalOverlapFactor?: number // M = π / Q (isolated < 0.3, overlapping ≈ 1, diffuse > 3)
+  cumulativeGrowthDb?: number // Total dB growth since onset
+  frequencyBand?: 'LOW' | 'MID' | 'HIGH' // Which frequency band this falls into
+  schroederFrequency?: number // Calculated Schroeder frequency for reference
 }
 
 export interface SpectrumData {
@@ -254,6 +269,13 @@ export interface DetectorSettings {
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
   harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–100, default 50)
   showTooltips: boolean // Show/hide all help tooltips throughout the UI
+  aWeightingEnabled: boolean // Apply A-weighting curve to analysis (per IEC 61672-1)
+  // Confidence and filtering
+  confidenceThreshold: number // Minimum confidence to display (0.5-0.95, default 0.70)
+  // Room acoustics for Schroeder frequency calculation
+  roomRT60: number // Reverberation time in seconds (0.3-3.0, default 0.7)
+  roomVolume: number // Room volume in m³ (50-5000, default 250)
+  roomPreset: 'small' | 'medium' | 'large' | 'custom' // Quick room size preset
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)
@@ -272,7 +294,7 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
-  mode: 'aggressive', // Aggressive by default for maximum detection
+  mode: 'feedbackHunt', // Matches DEFAULT_SETTINGS.mode for consistency
   aWeightingEnabled: false,
   noiseFloorEnabled: true,
   noiseFloorSampleCount: 160, // Faster noise floor sampling

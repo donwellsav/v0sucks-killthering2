@@ -1,7 +1,17 @@
 // KillTheRing2 Classifier - Distinguishes feedback vs whistle vs instrument
+// Enhanced with acoustic research from "Sound Insulation" (Carl Hopkins, 2007)
 
-import { CLASSIFIER_WEIGHTS, SEVERITY_THRESHOLDS } from './constants'
+import { CLASSIFIER_WEIGHTS, SEVERITY_THRESHOLDS, SCHROEDER_CONSTANTS } from './constants'
 import type { Track, ClassificationResult, SeverityLevel, IssueLabel, TrackedPeak, DetectorSettings } from '@/types/advisory'
+import {
+  calculateSchroederFrequency,
+  getFrequencyBand,
+  calculateModalOverlap,
+  classifyModalOverlap,
+  analyzeCumulativeGrowth,
+  calculateCalibratedConfidence,
+  analyzeVibrato,
+} from './acousticUtils'
 
 // Type union for track input
 type TrackInput = Track | TrackedPeak
@@ -11,6 +21,10 @@ function normalizeTrackInput(input: TrackInput) {
   // Check if it's a TrackedPeak (has 'frequency' field) or Track (has 'trueFrequencyHz')
   if ('trueFrequencyHz' in input) {
     return {
+      frequencyHz: input.trueFrequencyHz,
+      amplitudeDb: input.trueAmplitudeDb,
+      onsetDb: input.onsetDb,
+      onsetTime: input.onsetTime,
       velocityDbPerSec: input.velocityDbPerSec,
       stabilityCentsStd: input.features.stabilityCentsStd,
       harmonicityScore: input.features.harmonicityScore,
@@ -19,10 +33,15 @@ function normalizeTrackInput(input: TrackInput) {
       maxVelocityDbPerSec: input.features.maxVelocityDbPerSec,
       minQ: input.features.minQ,
       persistenceMs: input.features.persistenceMs,
+      prominenceDb: input.prominenceDb,
     }
   }
   // TrackedPeak
   return {
+    frequencyHz: input.frequency,
+    amplitudeDb: input.amplitude,
+    onsetDb: input.history[0]?.amplitude ?? input.amplitude,
+    onsetTime: input.onsetTime,
     velocityDbPerSec: input.features.velocityDbPerSec,
     stabilityCentsStd: input.features.stabilityCentsStd,
     harmonicityScore: input.features.harmonicityScore,
@@ -31,16 +50,39 @@ function normalizeTrackInput(input: TrackInput) {
     maxVelocityDbPerSec: Math.abs(input.features.velocityDbPerSec),
     minQ: input.qEstimate,
     persistenceMs: input.lastUpdateTime - input.onsetTime,
+    prominenceDb: input.prominenceDb,
   }
 }
 
 /**
  * Classify a track as feedback, whistle, or instrument
  * Uses weighted scoring model based on extracted features
+ * Enhanced with acoustic research from "Sound Insulation" (Carl Hopkins, 2007)
  */
 export function classifyTrack(track: TrackInput, settings?: DetectorSettings): ClassificationResult {
   const features = normalizeTrackInput(track)
   const reasons: string[] = []
+
+  // ==================== Acoustic Context ====================
+  
+  // Calculate Schroeder frequency for frequency-dependent analysis
+  const roomRT60 = settings?.roomRT60 ?? 1.2
+  const roomVolume = settings?.roomVolume ?? 500
+  const schroederFreq = calculateSchroederFrequency(roomRT60, roomVolume)
+  
+  // Get frequency band and modifiers
+  const freqBand = getFrequencyBand(features.frequencyHz, schroederFreq)
+  
+  // Calculate modal overlap indicator (M = 1/Q, based on textbook Section 1.2.6.7)
+  const modalOverlap = calculateModalOverlap(features.minQ)
+  const modalAnalysis = classifyModalOverlap(modalOverlap)
+  
+  // Analyze cumulative growth for slow-building feedback
+  const cumulativeGrowth = analyzeCumulativeGrowth(
+    features.onsetDb,
+    features.amplitudeDb,
+    features.persistenceMs
+  )
 
   // Initialize probabilities
   let pFeedback = 0.33
@@ -50,7 +92,9 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   // ==================== Feature Analysis ====================
 
   // 1. Stationarity (low pitch variation = feedback)
-  const stabilityScore = features.stabilityCentsStd < CLASSIFIER_WEIGHTS.STABILITY_THRESHOLD_CENTS ? 1 : 0
+  // Apply frequency-dependent threshold
+  const stabilityThreshold = CLASSIFIER_WEIGHTS.STABILITY_THRESHOLD_CENTS * freqBand.sustainMultiplier
+  const stabilityScore = features.stabilityCentsStd < stabilityThreshold ? 1 : 0
   if (stabilityScore > 0) {
     pFeedback += CLASSIFIER_WEIGHTS.STABILITY_FEEDBACK * stabilityScore
     reasons.push(`Pitch stability: ${features.stabilityCentsStd.toFixed(1)} cents std dev`)
@@ -78,26 +122,81 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     reasons.push(`Breath noise detected: ${(features.noiseSidebandScore * 100).toFixed(0)}%`)
   }
 
+  // 4b. NEW: Enhanced vibrato detection for whistle discrimination
+  // Check frequency history for characteristic 4-8 Hz vibrato
+  if ('history' in track && Array.isArray(track.history) && track.history.length >= 10) {
+    const frequencyHistory = track.history.map((h: { time: number; frequency?: number; freqHz?: number }) => ({
+      time: h.time,
+      frequency: h.frequency ?? h.freqHz ?? 0,
+    }))
+    const vibratoAnalysis = analyzeVibrato(frequencyHistory)
+    if (vibratoAnalysis.hasVibrato) {
+      pWhistle += vibratoAnalysis.whistleProbability
+      pFeedback -= vibratoAnalysis.whistleProbability * 0.5 // Reduce feedback probability
+      reasons.push(`Vibrato detected: ${vibratoAnalysis.vibratoRateHz?.toFixed(1)}Hz rate, ${vibratoAnalysis.vibratoDepthCents?.toFixed(0)}¢ depth`)
+    }
+  }
+
   // 5. Runaway growth (high velocity = feedback)
-  if (features.maxVelocityDbPerSec > CLASSIFIER_WEIGHTS.GROWTH_THRESHOLD) {
+  // Use settings.growthRateThreshold if provided, otherwise fall back to constant
+  const growthThreshold = settings?.growthRateThreshold ?? CLASSIFIER_WEIGHTS.GROWTH_THRESHOLD
+  if (features.maxVelocityDbPerSec > growthThreshold) {
     const growthFactor = Math.min(features.maxVelocityDbPerSec / 20, 1)
     pFeedback += CLASSIFIER_WEIGHTS.GROWTH_FEEDBACK * growthFactor
     reasons.push(`Rapid growth: ${features.maxVelocityDbPerSec.toFixed(1)} dB/sec`)
   }
 
-  // 6. Q factor (very narrow = feedback)
-  if (features.minQ > SEVERITY_THRESHOLDS.HIGH_Q) {
+  // 6. Q factor with frequency-dependent threshold
+  const qThreshold = SEVERITY_THRESHOLDS.HIGH_Q * freqBand.qThresholdMultiplier
+  if (features.minQ > qThreshold) {
     pFeedback += 0.15
-    reasons.push(`Narrow Q: ${features.minQ.toFixed(1)}`)
+    reasons.push(`Narrow Q: ${features.minQ.toFixed(1)} (band: ${freqBand.band})`)
   }
 
   // 7. Persistence without modulation
-  if (features.persistenceMs > 1000 && features.modulationScore < 0.2) {
+  const persistenceThreshold = 1000 * freqBand.sustainMultiplier
+  if (features.persistenceMs > persistenceThreshold && features.modulationScore < 0.2) {
     pFeedback += 0.1
     reasons.push(`Sustained without modulation: ${(features.persistenceMs / 1000).toFixed(1)}s`)
   }
 
+  // 8. NEW: Modal overlap analysis (from textbook)
+  // Isolated modes (M < 0.3) are more likely feedback
+  pFeedback += modalAnalysis.feedbackProbabilityBoost
+  if (modalAnalysis.classification === 'ISOLATED') {
+    reasons.push(`Isolated mode (M=${modalOverlap.toFixed(2)}) - high feedback risk`)
+  } else if (modalAnalysis.classification === 'DIFFUSE') {
+    reasons.push(`Diffuse field (M=${modalOverlap.toFixed(2)}) - likely room noise`)
+  }
+
+  // 9. NEW: Cumulative growth analysis (slow-building feedback)
+  if (cumulativeGrowth.shouldAlert) {
+    if (cumulativeGrowth.severity === 'RUNAWAY') {
+      pFeedback += 0.25
+      reasons.push(`Cumulative growth: +${cumulativeGrowth.totalGrowthDb.toFixed(1)}dB (RUNAWAY)`)
+    } else if (cumulativeGrowth.severity === 'GROWING') {
+      pFeedback += 0.15
+      reasons.push(`Cumulative growth: +${cumulativeGrowth.totalGrowthDb.toFixed(1)}dB (growing)`)
+    } else if (cumulativeGrowth.severity === 'BUILDING') {
+      pFeedback += 0.08
+      reasons.push(`Cumulative growth: +${cumulativeGrowth.totalGrowthDb.toFixed(1)}dB (building)`)
+    }
+  }
+
+  // 10. NEW: Frequency band context
+  if (freqBand.band === 'LOW' && features.frequencyHz < schroederFreq) {
+    // Below Schroeder frequency - more likely room mode than feedback
+    pFeedback -= 0.1
+    pInstrument += 0.05
+    reasons.push(`Below Schroeder freq (${schroederFreq.toFixed(0)}Hz) - possible room mode`)
+  }
+
   // ==================== Normalization ====================
+
+  // Clamp probabilities to valid range before normalization
+  pFeedback = Math.max(0, Math.min(1, pFeedback))
+  pWhistle = Math.max(0, Math.min(1, pWhistle))
+  pInstrument = Math.max(0, Math.min(1, pInstrument))
 
   const total = pFeedback + pWhistle + pInstrument
   if (total > 0) {
@@ -106,8 +205,16 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     pInstrument /= total
   }
 
-  // Calculate unknown probability
-  const confidence = Math.max(pFeedback, pWhistle, pInstrument)
+  // Calculate calibrated confidence using new utility
+  const calibratedResult = calculateCalibratedConfidence(
+    pFeedback,
+    pWhistle,
+    pInstrument,
+    modalAnalysis.feedbackProbabilityBoost,
+    cumulativeGrowth.severity
+  )
+  
+  const confidence = calibratedResult.confidence
   const pUnknown = 1 - confidence
 
   // ==================== Classification ====================
@@ -115,17 +222,41 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   let label: IssueLabel
   let severity: SeverityLevel
 
-  // Determine severity based on velocity and other factors
-  if (features.maxVelocityDbPerSec >= SEVERITY_THRESHOLDS.RUNAWAY_VELOCITY) {
+  // Determine severity based on velocity, cumulative growth, prominence, and other factors
+  // Use settings thresholds if provided, otherwise fall back to constants
+  const runawayVelocity = SEVERITY_THRESHOLDS.RUNAWAY_VELOCITY
+  const growingVelocity = settings?.growthRateThreshold ?? SEVERITY_THRESHOLDS.GROWING_VELOCITY
+  const ringThreshold = settings?.ringThresholdDb ?? 5 // Default 5dB prominence for ring
+  
+  // Priority 1: Check for runaway (instantaneous OR cumulative)
+  if (features.maxVelocityDbPerSec >= runawayVelocity || cumulativeGrowth.severity === 'RUNAWAY') {
     severity = 'RUNAWAY'
-    pFeedback = Math.max(pFeedback, 0.7) // Runaway almost always feedback
-  } else if (features.maxVelocityDbPerSec >= SEVERITY_THRESHOLDS.GROWING_VELOCITY) {
+    pFeedback = Math.max(pFeedback, 0.85) // Runaway almost always feedback
+  }
+  // Priority 2: Check for growing (instantaneous OR cumulative)
+  else if (features.maxVelocityDbPerSec >= growingVelocity || cumulativeGrowth.severity === 'GROWING') {
     severity = 'GROWING'
-  } else if (features.minQ > SEVERITY_THRESHOLDS.HIGH_Q) {
+    pFeedback = Math.max(pFeedback, 0.7)
+  }
+  // Priority 3: Check cumulative building (slow but steady growth)
+  else if (cumulativeGrowth.severity === 'BUILDING') {
+    severity = 'GROWING' // Treat as growing for early warning
+    reasons.push('Early warning: slow buildup detected')
+  }
+  // Priority 4: High Q resonance
+  else if (features.minQ > qThreshold) {
     severity = 'RESONANCE'
-  } else if (features.persistenceMs < SEVERITY_THRESHOLDS.PERSISTENCE_MS) {
+  }
+  // Priority 5: Prominent but short-lived = ring
+  else if (features.prominenceDb >= ringThreshold && features.persistenceMs < SEVERITY_THRESHOLDS.PERSISTENCE_MS) {
     severity = 'POSSIBLE_RING'
-  } else {
+  }
+  // Priority 6: Prominent and persisting = resonance
+  else if (features.prominenceDb >= ringThreshold) {
+    severity = 'RESONANCE'
+  }
+  // Default: resonance
+  else {
     severity = 'RESONANCE'
   }
 
@@ -156,11 +287,17 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     severity,
     confidence,
     reasons,
+    // Enhanced fields from acoustic analysis
+    modalOverlapFactor: modalOverlap,
+    cumulativeGrowthDb: cumulativeGrowth.totalGrowthDb,
+    frequencyBand: freqBand.band,
+    confidenceLabel: calibratedResult.confidenceLabel,
   }
 }
 
 /**
- * Determine if an issue should be reported based on mode and classification
+ * Determine if an issue should be reported based on mode, classification, and confidence
+ * Enhanced with confidence threshold filtering to reduce false positives
  */
 export function shouldReportIssue(
   classification: ClassificationResult,
@@ -168,11 +305,24 @@ export function shouldReportIssue(
 ): boolean {
   const mode = settings.mode
   const ignoreWhistle = !settings.musicAware // If music aware, don't filter whistles
-  const { label, severity } = classification
+  const { label, severity, confidence } = classification
+  
+  // Get confidence threshold from settings (default 0.65 = 65%)
+  const confidenceThreshold = settings.confidenceThreshold ?? 0.65
 
-  // Always report runaway regardless of mode
+  // Always report runaway regardless of mode or confidence
   if (severity === 'RUNAWAY') {
     return true
+  }
+  
+  // Always report GROWING severity regardless of confidence (early warning)
+  if (severity === 'GROWING') {
+    return true
+  }
+
+  // Filter by confidence threshold (reduces low-confidence alerts)
+  if (confidence < confidenceThreshold) {
+    return false
   }
 
   // Handle whistle filtering
@@ -186,7 +336,6 @@ export function shouldReportIssue(
       // Report feedback and possible rings, not instruments
       return label !== 'INSTRUMENT'
 
-    case 'vocalRingAssist':
     case 'vocalRing':
       // Report all issues including possible rings
       return true

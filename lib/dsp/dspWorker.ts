@@ -205,6 +205,10 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         harmonicityScore: track.features.harmonicityScore,
         modulationScore: track.features.modulationScore,
         advisory: eqAdvisory,
+        // Enhanced detection fields from acoustic analysis
+        modalOverlapFactor: classification.modalOverlapFactor,
+        cumulativeGrowthDb: classification.cumulativeGrowthDb,
+        frequencyBand: classification.frequencyBand,
       }
 
       advisories.set(advisoryId, advisory)

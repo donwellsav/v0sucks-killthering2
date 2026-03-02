@@ -18,9 +18,10 @@ import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
+import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Menu, X, History, RotateCcw } from 'lucide-react'
+import { Menu, X, RotateCcw } from 'lucide-react'
 import Link from 'next/link'
 import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
@@ -52,6 +53,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   } = useAudioAnalyzer()
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
+  const [bottomLeftGraph, setBottomLeftGraph] = useState<GraphView>('geq')
+  const [bottomRightGraph, setBottomRightGraph] = useState<GraphView>('waterfall')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false)
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad'>('issues')
@@ -147,6 +150,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     return () => { document.body.style.overflow = '' }
   }, [mobileMenuOpen])
 
+  // Session start/stop effect - only depends on isRunning to prevent orphan sessions
+  // Settings changes while running should NOT create new sessions
   useEffect(() => {
     if (isRunning) {
       logger.logAnalysisStarted({ mode: settings.mode, fftSize: settings.fftSize })
@@ -171,7 +176,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         sessionIdRef.current = null
       }
     }
-  }, [isRunning, settings.mode, settings.fftSize, logger, flushEventsToDB])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only react to isRunning
+  }, [isRunning])
 
   useEffect(() => {
     if (!isRunning) return
@@ -213,26 +219,57 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
+      {/* Mobile: two-row stacked layout with full-height circle button */}
+      {/* Desktop (sm:): single-row layout, logo left, actions right    */}
+      <header className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-border bg-card/80 backdrop-blur-sm sm:px-4 sm:py-2 sm:gap-4">
 
-        {/* Row 1: Gain slider + Logo wordmark (logo left edge aligns with icons) */}
-        <div className="flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-10 sm:h-12">
+        {/* ── MOBILE Row 1: Logo wordmark (right-aligned, above icons) ── */}
+        {/* ── DESKTOP: Logo + button group (left side) ───────────────── */}
+        <div className="flex items-stretch justify-end pr-12 px-2 gap-2 h-10 sm:h-auto sm:justify-start sm:pr-0 sm:px-0 sm:gap-3 sm:flex-shrink-0">
 
-          {/* Center: Gain slider */}
-          <div className="hidden landscape:flex items-center flex-1 min-w-0">
-            <div className="flex-1 flex flex-col gap-2 min-w-0">
-              <InputMeterSlider
-                value={settings.inputGainDb}
-                onChange={(v) => handleSettingsChange({ inputGainDb: v })}
-                level={inputLevel}
-                fullWidth
-              />
+          {/* Desktop-only: button inside logo group */}
+          <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
+            <TooltipProvider delayDuration={400}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={isRunning ? stop : start}
+                    aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+                    className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                  >
+                    <div className={`absolute inset-1 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+                    {isRunning && (
+                      <div className="absolute inset-1 rounded-full border-2 border-primary animate-ping opacity-30" />
+                    )}
+                    <svg
+                      className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {isRunning ? 'Stop analysis' : 'Start analysis'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <div className="flex flex-col justify-center gap-[3px]">
+              <div className="flex items-baseline gap-1.5 leading-none">
+                <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
+                <span className="text-xl font-black tracking-tight text-primary">RING</span>
+              </div>
+              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+                Don Wells AV
+              </span>
             </div>
           </div>
 
-          {/* Logo wordmark */}
-          <div className="flex items-center gap-0">
-            <div className="flex flex-col justify-center gap-0 sm:gap-[3px]">
+          {/* Mobile-only: wordmark (button is the absolute circle) */}
+          <div className="flex sm:hidden items-center gap-0">
+            <div className="flex flex-col justify-center gap-0">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
@@ -244,20 +281,28 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </div>
         </div>
 
-        {/* Row 2: Action icons (leaves room for button) */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 pb-1 text-xs text-muted-foreground">
+        {/* Desktop center: Gain slider */}
+        <div className="hidden landscape:sm:flex items-center flex-1 min-w-0">
+          <div className="flex-1 flex flex-col gap-2 min-w-0">
+            <InputMeterSlider
+              value={settings.inputGainDb}
+              onChange={(v) => handleSettingsChange({ inputGainDb: v })}
+              level={inputLevel}
+              fullWidth
+            />
+          </div>
+        </div>
+
+        {/* ── MOBILE Row 2: Action icons ───────────────────────────── */}
+        {/* ── DESKTOP: Action icons (right side) ──────────────────── */}
+        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-0 pb-1 sm:pb-0 text-xs text-muted-foreground sm:flex-shrink-0">
           {noiseFloorDb !== null && (
-            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
+            <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto sm:mr-0">
               Floor: {noiseFloorDb.toFixed(0)}dB
             </span>
           )}
 
-          <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground h-7 px-2" aria-label="Session History">
-            <Link href="/sessions">
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">History</span>
-            </Link>
-          </Button>
+          <FeedbackHistoryPanel />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
@@ -304,21 +349,21 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </Button>
         </div>
 
-        {/* Full-height start/stop button — spans both rows, flush left */}
+        {/* Mobile-only: full-height circle button flush left */}
         <TooltipProvider delayDuration={400}>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={isRunning ? stop : start}
                 aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                className="absolute left-1 sm:left-2 top-0 bottom-0 aspect-square flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
+                className="sm:hidden absolute left-1 top-0 bottom-0 aspect-square flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
               >
                 <div className={`absolute inset-[6px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                 {isRunning && (
                   <div className="absolute inset-[6px] rounded-full border-2 border-primary animate-ping opacity-30" />
                 )}
                 <svg
-                  className={`w-5 sm:w-6 h-5 sm:h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                  className={`w-5 h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -571,20 +616,54 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
           {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
           <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
+            {/* Bottom-Left Graph */}
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">GEQ</span>
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {GRAPH_CHIPS.map((chip) => (
+                    <button
+                      key={`bottom-left-${chip.value}`}
+                      onClick={() => setBottomLeftGraph(chip.value)}
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-medium border transition-colors whitespace-nowrap ${
+                        bottomLeftGraph === chip.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex-1 min-h-0 pointer-events-none">
-                <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+                {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomLeftGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
               </div>
             </div>
+            {/* Bottom-Right Graph */}
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20">
-                <span className="text-[9px] sm:text-[10px] font-medium text-muted-foreground">Waterfall</span>
+              <div className="flex-shrink-0 px-2 py-1 border-b border-border bg-muted/20 flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
+                  {GRAPH_CHIPS.map((chip) => (
+                    <button
+                      key={`bottom-right-${chip.value}`}
+                      onClick={() => setBottomRightGraph(chip.value)}
+                      className={`px-2 py-0.5 rounded-full text-[9px] font-medium border transition-colors whitespace-nowrap ${
+                        bottomRightGraph === chip.value
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-transparent text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex-1 min-h-0 pointer-events-none">
-                <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />
+                {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomRightGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
               </div>
             </div>
           </div>

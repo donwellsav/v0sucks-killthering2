@@ -5,7 +5,16 @@ import { HelpCircle } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
-import { FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
+import { FREQ_RANGE_PRESETS, OPERATION_MODES } from '@/lib/dsp/constants'
+
+// Mode labels for UI display
+const MODE_LABELS: Record<OperationMode, string> = {
+  feedbackHunt: 'Feedback Hunt',
+  vocalRing: 'Vocal Ring',
+  musicAware: 'Music-Aware',
+  aggressive: 'Aggressive',
+  calibration: 'Calibration',
+}
 
 interface DetectionControlsProps {
   settings: DetectorSettings
@@ -17,6 +26,27 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
   return (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-1.5">
+
+        {/* Mode selector pills */}
+        <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
+          {(Object.keys(OPERATION_MODES) as OperationMode[]).map((mode) => {
+            const isActive = settings.mode === mode
+            return (
+              <button
+                key={mode}
+                onClick={() => onModeChange(mode)}
+                className={`px-1.5 py-px rounded text-xs font-medium border transition-colors whitespace-nowrap flex-shrink-0 leading-4 ${
+                  isActive
+                    ? 'bg-primary/15 text-primary border-primary/40'
+                    : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
+                }`}
+                aria-pressed={isActive}
+              >
+                {MODE_LABELS[mode]}
+              </button>
+            )
+          })}
+        </div>
 
         {/* Freq range pills — single scrollable row, no wrapping */}
         <div className="flex gap-1 overflow-x-auto scrollbar-none">

@@ -3,7 +3,8 @@
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { getSeverityText } from '@/lib/dsp/classifier'
-import { AlertTriangle, CheckCircle2, Circle, X } from 'lucide-react'
+import { getFeedbackHistory } from '@/lib/dsp/feedbackHistory'
+import { AlertTriangle, CheckCircle2, Circle, X, TrendingUp } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Advisory } from '@/types/advisory'
 
@@ -103,7 +104,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
       {/* Card body */}
       <div className="pl-3 pr-2 pt-2 pb-2 flex flex-col gap-1.5">
 
-        {/* Row 1: frequency + pitch + dismiss */}
+        {/* Row 1: frequency + pitch + repeat offender + dismiss */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="font-mono text-sm font-semibold text-foreground leading-none">
@@ -112,9 +113,49 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             {pitchStr && (
               <span className="text-[10px] font-mono text-muted-foreground leading-none">{pitchStr}</span>
             )}
+            {/* Repeat offender indicator */}
+            {(() => {
+              const occurrences = getFeedbackHistory().getOccurrenceCount(advisory.trueFrequencyHz)
+              if (occurrences >= 3) {
+                return (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
+                          <TrendingUp className="w-2.5 h-2.5" />
+                          {occurrences}x
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        Repeat offender: detected {occurrences} times this session
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )
+              }
+              return null
+            })()}
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Confidence badge */}
+            {advisory.confidence != null && (
+              <span
+                className={`text-[9px] font-mono px-1 py-0.5 rounded-sm leading-none ${
+                  advisory.confidence >= 0.85
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : advisory.confidence >= 0.70
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                      : advisory.confidence >= 0.55
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'bg-muted text-muted-foreground border border-border'
+                }`}
+                title={`${Math.round(advisory.confidence * 100)}% confidence`}
+              >
+                {Math.round(advisory.confidence * 100)}%
+              </span>
+            )}
+            
             {/* Severity badge */}
             <span
               className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
@@ -154,6 +195,27 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             <span>{isRunaway ? 'Runaway feedback' : 'Growing — act now'}</span>
             {timeToClipStr && <span className="font-mono opacity-80 ml-0.5">{timeToClipStr}</span>}
             <span className="font-mono ml-auto opacity-60">+{velocity.toFixed(0)} dB/s</span>
+          </div>
+        )}
+
+        {/* Row 2b: Modal overlap and cumulative growth indicators */}
+        {(advisory.modalOverlapFactor != null || advisory.cumulativeGrowthDb != null) && !isApplied && (
+          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+            {advisory.modalOverlapFactor != null && advisory.modalOverlapFactor < 0.3 && (
+              <span className="text-amber-400" title="Isolated mode - high feedback risk">
+                M={advisory.modalOverlapFactor.toFixed(2)} isolated
+              </span>
+            )}
+            {advisory.cumulativeGrowthDb != null && advisory.cumulativeGrowthDb > 3 && (
+              <span className="text-amber-400" title={`Total growth since onset: +${advisory.cumulativeGrowthDb.toFixed(1)}dB`}>
+                +{advisory.cumulativeGrowthDb.toFixed(1)}dB buildup
+              </span>
+            )}
+            {advisory.frequencyBand && (
+              <span className="text-muted-foreground/60" title={`Frequency band: ${advisory.frequencyBand}`}>
+                [{advisory.frequencyBand}]
+              </span>
+            )}
           </div>
         )}
 
