@@ -3,7 +3,8 @@
 import { formatFrequency, formatPitch } from '@/lib/utils/pitchUtils'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { getSeverityText } from '@/lib/dsp/classifier'
-import { AlertTriangle, CheckCircle2, Circle, X } from 'lucide-react'
+import { getFeedbackHistory } from '@/lib/dsp/feedbackHistory'
+import { AlertTriangle, CheckCircle2, Circle, X, TrendingUp } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Advisory } from '@/types/advisory'
 
@@ -103,7 +104,7 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
       {/* Card body */}
       <div className="pl-3 pr-2 pt-2 pb-2 flex flex-col gap-1.5">
 
-        {/* Row 1: frequency + pitch + dismiss */}
+        {/* Row 1: frequency + pitch + repeat offender + dismiss */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <span className="font-mono text-sm font-semibold text-foreground leading-none">
@@ -112,6 +113,26 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
             {pitchStr && (
               <span className="text-[10px] font-mono text-muted-foreground leading-none">{pitchStr}</span>
             )}
+            {/* Repeat offender indicator */}
+            {(() => {
+              const occurrences = getFeedbackHistory().getOccurrenceCount(advisory.trueFrequencyHz)
+              if (occurrences >= 3) {
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
+                        <TrendingUp className="w-2.5 h-2.5" />
+                        {occurrences}x
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      Repeat offender: detected {occurrences} times this session
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              }
+              return null
+            })()}
           </div>
 
           <div className="flex items-center gap-1 flex-shrink-0">

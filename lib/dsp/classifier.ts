@@ -10,6 +10,8 @@ import {
   classifyModalOverlap,
   analyzeCumulativeGrowth,
   calculateCalibratedConfidence,
+  analyzeFormantStructure,
+  analyzeVibrato,
 } from './acousticUtils'
 
 // Type union for track input
@@ -119,6 +121,21 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
   if (features.noiseSidebandScore > CLASSIFIER_WEIGHTS.SIDEBAND_THRESHOLD) {
     pWhistle += CLASSIFIER_WEIGHTS.SIDEBAND_WHISTLE * features.noiseSidebandScore
     reasons.push(`Breath noise detected: ${(features.noiseSidebandScore * 100).toFixed(0)}%`)
+  }
+
+  // 4b. NEW: Enhanced vibrato detection for whistle discrimination
+  // Check frequency history for characteristic 4-8 Hz vibrato
+  if ('history' in track && Array.isArray(track.history) && track.history.length >= 10) {
+    const frequencyHistory = track.history.map((h: { time: number; frequency?: number; freqHz?: number }) => ({
+      time: h.time,
+      frequency: h.frequency ?? h.freqHz ?? 0,
+    }))
+    const vibratoAnalysis = analyzeVibrato(frequencyHistory)
+    if (vibratoAnalysis.hasVibrato) {
+      pWhistle += vibratoAnalysis.whistleProbability
+      pFeedback -= vibratoAnalysis.whistleProbability * 0.5 // Reduce feedback probability
+      reasons.push(`Vibrato detected: ${vibratoAnalysis.vibratoRateHz?.toFixed(1)}Hz rate, ${vibratoAnalysis.vibratoDepthCents?.toFixed(0)}¢ depth`)
+    }
   }
 
   // 5. Runaway growth (high velocity = feedback)

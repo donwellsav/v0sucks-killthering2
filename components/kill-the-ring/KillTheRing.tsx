@@ -18,6 +18,8 @@ import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
+import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
+import { recordFeedbackFromAdvisory } from '@/lib/dsp/feedbackHistory'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Menu, X, History, RotateCcw } from 'lucide-react'
@@ -301,12 +303,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </span>
           )}
 
-          <Button variant="ghost" size="sm" asChild className="gap-1.5 text-muted-foreground hover:text-foreground h-7 px-2" aria-label="Session History">
-            <Link href="/sessions">
-              <History className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">History</span>
-            </Link>
-          </Button>
+          <FeedbackHistoryPanel />
           <HelpMenu />
           <SettingsPanel
             settings={settings}
