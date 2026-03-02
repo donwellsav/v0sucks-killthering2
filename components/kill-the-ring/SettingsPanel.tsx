@@ -235,22 +235,22 @@ export function SettingsPanel({
             <Section
               title="Confidence Threshold"
               showTooltip={settings.showTooltips}
-              tooltip="Minimum confidence level to display an alert. The improved classifier handles false positives well, so 65% is a good balance. Raise to 75%+ only if you still see too many false alerts."
+              tooltip="Minimum confidence to display. LOWER = more alerts (better to catch everything). HIGHER = fewer alerts (may miss real feedback). 55% is aggressive - better safe than sorry!"
             >
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-muted-foreground">Min. Confidence</span>
-                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.65) * 100)}%</span>
+                  <span className="text-xs font-mono">{Math.round((settings.confidenceThreshold ?? 0.55) * 100)}%</span>
                 </div>
                 <Slider
-                  value={[(settings.confidenceThreshold ?? 0.65) * 100]}
+                  value={[(settings.confidenceThreshold ?? 0.55) * 100]}
                   onValueChange={([v]) => onSettingsChange({ confidenceThreshold: v / 100 })}
-                  min={50}
-                  max={95}
+                  min={40}
+                  max={90}
                   step={5}
                 />
                 <div className="flex justify-between text-[9px] text-muted-foreground">
-                  <span>More alerts</span>
+                  <span>Catch everything</span>
                   <span>High confidence only</span>
                 </div>
               </div>
@@ -287,11 +287,11 @@ export function SettingsPanel({
                             if (preset === 'custom') {
                               onSettingsChange({ roomPreset: 'custom' })
                             } else {
-                              // Apply preset values - SENSITIVE thresholds, classifier handles accuracy
+                              // AGGRESSIVE thresholds - better false positives than missing feedback!
                               const presetValues = {
-                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 7, ringThresholdDb: 4 },
-                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 8, ringThresholdDb: 5 },
-                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 9, ringThresholdDb: 6 },
+                                small: { roomRT60: 0.5, roomVolume: 80, feedbackThresholdDb: 5, ringThresholdDb: 3 },
+                                medium: { roomRT60: 0.7, roomVolume: 250, feedbackThresholdDb: 6, ringThresholdDb: 4 },
+                                large: { roomRT60: 1.0, roomVolume: 1000, feedbackThresholdDb: 7, ringThresholdDb: 5 },
                               }[preset]
                               onSettingsChange({ roomPreset: preset, ...presetValues })
                             }

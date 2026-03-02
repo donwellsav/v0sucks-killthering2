@@ -276,21 +276,20 @@ export const OPERATION_MODES = {
 } as const
 
 // Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
-// The algorithm improvements (modal overlap, cumulative growth, vibrato) handle false positives
-// so we keep SENSITIVE detection thresholds while using A-weighting for speech optimization
+// AGGRESSIVE DETECTION - better to have false positives than miss real feedback!
 export const DEFAULT_SETTINGS = {
   mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
   fftSize: 8192 as const, // Good frequency resolution for accurate detection
-  smoothingTimeConstant: 0.6, // Fast response - algorithm handles false positives
+  smoothingTimeConstant: 0.5, // Faster response for quick detection
   minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble)
   maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
-  feedbackThresholdDb: 8, // SENSITIVE - let the classifier filter false positives
-  ringThresholdDb: 5, // SENSITIVE - catch resonances early
-  growthRateThreshold: 2, // RESPONSIVE - quick detection, classifier handles accuracy
+  feedbackThresholdDb: 6, // AGGRESSIVE - catch feedback early, before it's dangerous
+  ringThresholdDb: 4, // AGGRESSIVE - catch resonances before they become feedback
+  growthRateThreshold: 1.5, // FAST - detect growing peaks quickly
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic environments
   peakMergeCents: 50,
-  maxDisplayedIssues: 6, // Focused workflow — prioritize worst issues
+  maxDisplayedIssues: 8, // Show more issues - don't hide potential problems
   eqPreset: 'surgical' as const, // Precise narrow cuts for speech (preserve clarity)
   musicAware: false, // Disabled - no music in corporate/conference
   autoMusicAware: false, // Auto music-aware mode off for speech systems
@@ -300,8 +299,8 @@ export const DEFAULT_SETTINGS = {
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching
   showTooltips: true, // Show help tooltips (useful for AV techs)
   aWeightingEnabled: true, // A-WEIGHTING ON - prioritizes speech frequencies (2-5kHz)
-  // Confidence filtering - the classifier improvements handle accuracy
-  confidenceThreshold: 0.65, // 65% - balanced, classifier is smarter now
+  // Confidence filtering - LOW threshold, better false positives than missing real feedback
+  confidenceThreshold: 0.55, // 55% - aggressive, show more alerts
   // Room acoustics - defaults to medium conference room
   roomRT60: 0.7, // Typical treated conference room (0.5-0.8s)
   roomVolume: 250, // Medium conference room ~250m³ (seats ~30 people)
@@ -310,7 +309,7 @@ export const DEFAULT_SETTINGS = {
 }
 
 // Room size presets for quick switching in corporate/conference environments
-// NOTE: Thresholds are kept SENSITIVE - the classifier handles false positive filtering
+// AGGRESSIVE THRESHOLDS - better false positives than missing real feedback!
 export const ROOM_PRESETS = {
   small: {
     label: 'Small Boardroom',
@@ -318,8 +317,8 @@ export const ROOM_PRESETS = {
     roomRT60: 0.5, // Well-treated small room
     roomVolume: 80, // ~80m³ (approx 20x15x10 ft)
     schroederFreq: 158, // Pre-calculated: 2000 * sqrt(0.5/80)
-    feedbackThresholdDb: 7, // Very sensitive - quiet room, less masking
-    ringThresholdDb: 4,
+    feedbackThresholdDb: 5, // AGGRESSIVE - quiet rooms need early warning
+    ringThresholdDb: 3,
   },
   medium: {
     label: 'Medium Conference Room',
@@ -327,8 +326,8 @@ export const ROOM_PRESETS = {
     roomRT60: 0.7, // Typical treated conference room
     roomVolume: 250, // ~250m³ (approx 30x25x12 ft)
     schroederFreq: 106, // Pre-calculated: 2000 * sqrt(0.7/250)
-    feedbackThresholdDb: 8, // Sensitive - classifier handles accuracy
-    ringThresholdDb: 5,
+    feedbackThresholdDb: 6, // AGGRESSIVE - catch problems early
+    ringThresholdDb: 4,
   },
   large: {
     label: 'Large Auditorium',
@@ -336,8 +335,8 @@ export const ROOM_PRESETS = {
     roomRT60: 1.0, // Larger spaces have more reverb
     roomVolume: 1000, // ~1000m³ (approx 50x40x20 ft)
     schroederFreq: 63, // Pre-calculated: 2000 * sqrt(1.0/1000)
-    feedbackThresholdDb: 9, // Slightly higher for ambient noise
-    ringThresholdDb: 6,
+    feedbackThresholdDb: 7, // Slightly less aggressive due to ambient noise
+    ringThresholdDb: 5,
   },
   custom: {
     label: 'Custom',
@@ -345,8 +344,8 @@ export const ROOM_PRESETS = {
     roomRT60: 0.7,
     roomVolume: 250,
     schroederFreq: 106,
-    feedbackThresholdDb: 8,
-    ringThresholdDb: 5,
+    feedbackThresholdDb: 6,
+    ringThresholdDb: 4,
   },
 } as const
 
