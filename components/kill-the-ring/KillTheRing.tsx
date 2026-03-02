@@ -253,7 +253,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                   onClick={start}
                   className="absolute inset-0 flex items-center justify-center cursor-pointer"
                 >
-                  <span className="font-black whitespace-nowrap text-white" style={{ fontSize: '22px' }}>
+                  <span className="font-black whitespace-nowrap text-white" style={{ fontSize: '20px' }}>
                     START
                   </span>
                 </div>
