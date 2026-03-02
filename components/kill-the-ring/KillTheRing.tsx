@@ -20,6 +20,8 @@ import { GBFEstimator } from './GBFEstimator'
 import { SettingsPanel } from './SettingsPanel'
 import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
+import { SessionRecorder } from './SessionRecorder'
+import { ParametricEQExport } from './ParametricEQExport'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
@@ -316,6 +318,13 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           )}
 
           <FeedbackHistoryPanel />
+          <SessionRecorder
+            spectrum={spectrum}
+            advisories={advisories}
+            isRunning={isRunning}
+            settings={settings}
+          />
+          <ParametricEQExport advisories={advisories} />
           <HelpMenu />
           <SettingsPanel
             settings={settings}

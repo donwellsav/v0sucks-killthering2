@@ -27,7 +27,10 @@ import {
 } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu } from 'lucide-react'
+import { MicPresets } from './MicPresets'
+import { ABComparison } from './ABComparison'
+import { FrequencyBandControls } from './FrequencyBandControls'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
 import { ALGORITHM_MODES } from '@/lib/dsp/constants'
 import type { AlgorithmMode } from '@/types/advisory'
 import { getEventLogger, type LogEntry, type FeedbackIssueLog } from '@/lib/logging/eventLogger'
@@ -97,7 +100,7 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="analysis" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="analysis" className="gap-1 text-xs px-2">
               <BarChart3 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Analysis</span>
@@ -110,10 +113,14 @@ export function SettingsPanel({
               <Monitor className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Display</span>
             </TabsTrigger>
+<TabsTrigger value="tools" className="gap-1 text-xs px-2">
+              <Mic className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Tools</span>
+            </TabsTrigger>
             <TabsTrigger value="export" className="gap-1 text-xs px-2">
               <Download className="w-3.5 h-3.5" />
               {issueLogs.length > 0 && (
-                <span className="ml-1 px-1 py-px bg-primary/20 text-primary text-[9px] rounded-full font-medium leading-none">
+                <span className="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full">
                   {issueLogs.length}
                 </span>
               )}
@@ -691,6 +698,25 @@ export function SettingsPanel({
             </div>
           </TabsContent>
 
+          {/* Tools Tab - Mic Presets, A/B Comparison, Frequency Band Controls */}
+          <TabsContent value="tools" className="mt-4 space-y-5">
+            <MicPresets
+              settings={settings}
+              onSettingsChange={onSettingsChange}
+            />
+            
+            <ABComparison
+              currentSettings={settings}
+              onApplySettings={onSettingsChange}
+            />
+            
+            <FrequencyBandControls
+              minFrequency={settings.minFrequency ?? 150}
+              maxFrequency={settings.maxFrequency ?? 10000}
+              onRangeChange={(min, max) => onSettingsChange({ minFrequency: min, maxFrequency: max })}
+            />
+          </TabsContent>
+          
           <TabsContent value="export" className="mt-4 space-y-4">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
