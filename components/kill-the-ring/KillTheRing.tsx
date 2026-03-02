@@ -247,14 +247,22 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               </Tooltip>
             </TooltipProvider>
 
-            <div className="flex flex-col justify-center gap-[3px]">
-              <div className="flex items-baseline gap-1.5 leading-none">
+            <div className="flex items-center gap-1.5">
+              {/* Mobile: single line lockup */}
+              <div className="flex items-baseline gap-1 leading-none sm:hidden">
                 <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
                 <span className="text-base font-black tracking-tight text-primary">RING</span>
               </div>
-              <span className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
-                Don Wells AV
-              </span>
+              {/* Desktop: stacked with tagline */}
+              <div className="hidden sm:flex flex-col justify-center gap-[3px]">
+                <div className="flex items-baseline gap-1.5 leading-none">
+                  <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
+                  <span className="text-base font-black tracking-tight text-primary">RING</span>
+                </div>
+                <span className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
+                  Don Wells AV
+                </span>
+              </div>
             </div>
           </div>
 
@@ -272,7 +280,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         {/* Row 2: Action icons */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 border-t border-border/50 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center sm:justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 border-t border-border/50 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
