@@ -1,9 +1,8 @@
 'use client'
 
-// BUILD v3.0 - Force Full Rebuild (Cache Buster)
-// This version fixes: window.innerWidth SSR error, GRAPH_LABELS undefined, sidebarOpen JSX
-// Guaranteed correct: GRAPH_CHIPS usage, CSS-only layout, no SSR window access
-// Built: 2026-02-28
+// BUILD v3.1 - Cache Buster (FrequencyBandControls removed)
+// Fixed: Removed corrupt FrequencyBandControls import, advisories prop passed correctly
+// Built: 2026-03-02
 
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
