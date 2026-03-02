@@ -28,6 +28,11 @@ export interface AnalysisConfig {
   preset: Preset
   mode: OperationMode
   aWeightingEnabled: boolean
+  // Room acoustics for Schroeder frequency calculation
+  roomRT60?: number
+  roomVolume?: number
+  // Confidence threshold for filtering
+  confidenceThreshold?: number
   // Noise floor settings
   noiseFloorEnabled: boolean
   noiseFloorSampleCount: number

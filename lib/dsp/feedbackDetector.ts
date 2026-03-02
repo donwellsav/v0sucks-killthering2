@@ -281,6 +281,19 @@ export class FeedbackDetector {
       mappedConfig.aWeightingEnabled = settings.aWeightingEnabled
     }
 
+    // Room acoustics for Schroeder frequency calculation
+    if (settings.roomRT60 !== undefined) {
+      mappedConfig.roomRT60 = settings.roomRT60
+    }
+    if (settings.roomVolume !== undefined) {
+      mappedConfig.roomVolume = settings.roomVolume
+    }
+
+    // Confidence threshold for filtering
+    if (settings.confidenceThreshold !== undefined) {
+      mappedConfig.confidenceThreshold = settings.confidenceThreshold
+    }
+
     if (Object.keys(mappedConfig).length > 0) {
       this.updateConfig(mappedConfig)
     }

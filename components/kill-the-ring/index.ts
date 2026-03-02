@@ -8,3 +8,4 @@ export { HelpMenu } from "./HelpMenu";
 export { InputMeterSlider } from "./InputMeterSlider";
 export { ResetConfirmDialog } from "./ResetConfirmDialog";
 export { DetectionControls } from "./DetectionControls";
+export { FeedbackHistoryPanel } from "./FeedbackHistoryPanel";

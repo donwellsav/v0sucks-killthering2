@@ -118,17 +118,19 @@ function IssueCard({ advisory, rank, isApplied, onApply, onDismiss }: IssueCardP
               const occurrences = getFeedbackHistory().getOccurrenceCount(advisory.trueFrequencyHz)
               if (occurrences >= 3) {
                 return (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
-                        <TrendingUp className="w-2.5 h-2.5" />
-                        {occurrences}x
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
-                      Repeat offender: detected {occurrences} times this session
-                    </TooltipContent>
-                  </Tooltip>
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
+                          <TrendingUp className="w-2.5 h-2.5" />
+                          {occurrences}x
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        Repeat offender: detected {occurrences} times this session
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )
               }
               return null
