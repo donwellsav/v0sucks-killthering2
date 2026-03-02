@@ -16,7 +16,7 @@ import { Download, Trash2, FileJson, FileText, Sheet, BarChart3 } from 'lucide-r
 
 export function LogsViewer() {
   const [logs, setLogs] = useState<LogEntry[]>([])
-  const [stats, setStats] = useState<ReturnType<typeof getEventLogger>['getStats']>({
+  const [stats, setStats] = useState<ReturnType<ReturnType<typeof getEventLogger>['getStats']>>({
     totalEvents: 0,
     issuesDetected: 0,
     sessionDuration: 0,

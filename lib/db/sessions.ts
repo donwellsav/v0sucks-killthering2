@@ -133,7 +133,7 @@ export async function bulkInsertEvents(
     r.q_factor, r.bandwidth, r.growth_rate, r.metadata,
   ])
 
-  await sql(
+  await sql.query(
     `INSERT INTO session_events (
        id, session_id, occurred_at, event_type,
        frequency, amplitude, severity, classification,
