@@ -245,13 +245,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           </TooltipProvider>
 
           <div className="flex flex-col justify-center gap-[3px]">
-            {/* Mobile: KTR abbreviation */}
-            <div className="flex items-baseline gap-0.5 leading-none sm:hidden">
-              <span className="text-base font-black tracking-tight text-foreground">KT</span>
-              <span className="text-base font-black tracking-tight text-primary">R</span>
-            </div>
-            {/* Desktop: full wordmark */}
-            <div className="hidden sm:flex items-baseline gap-1.5 leading-none">
+            <div className="flex items-baseline gap-1.5 leading-none">
               <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
               <span className="text-base font-black tracking-tight text-primary">RING</span>
             </div>
