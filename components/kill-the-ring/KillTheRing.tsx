@@ -245,7 +245,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         {/* Row 2: Action icons (leaves room for button) */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 pb-1 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
