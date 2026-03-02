@@ -29,7 +29,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
 import { MicPresets } from './MicPresets'
 import { ABComparison } from './ABComparison'
-
+import { FrequencyBandControls } from './FrequencyBandControls'
 import { SessionRecorderContent } from './SessionRecorder'
 import { ParametricEQExportContent } from './ParametricEQExport'
 import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Cpu, Mic, ToggleLeft } from 'lucide-react'
@@ -717,6 +717,12 @@ export function SettingsPanel({
               onApplySettings={onSettingsChange}
             />
             
+            <FrequencyBandControls
+              minFrequency={settings.minFrequency ?? 150}
+              maxFrequency={settings.maxFrequency ?? 10000}
+              onRangeChange={(min, max) => onSettingsChange({ minFrequency: min, maxFrequency: max })}
+            />
+
             {/* Session Recorder inline */}
             <div className="space-y-2">
               <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Session Recorder</p>

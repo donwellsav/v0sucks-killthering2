@@ -14,6 +14,10 @@ interface SpectrumCanvasProps {
   advisories: Advisory[]
   isRunning: boolean
   graphFontSize?: number
+  /** Enable peak hold overlay (shows maximum values with decay) */
+  showPeakHold?: boolean
+  /** Peak hold decay rate in dB/second (default 20) */
+  peakHoldDecayRate?: number
   /** Historical feedback heatmap data (accumulated problem frequencies) */
   feedbackHeatmap?: Map<number, number> | null
   /** Show comb pattern predictions from DBX algorithm */
@@ -27,18 +31,56 @@ export function SpectrumCanvas({
   advisories, 
   isRunning, 
   graphFontSize = 11,
+  showPeakHold = true,
+  peakHoldDecayRate = 20,
   feedbackHeatmap = null,
   combPatternFrequencies = null,
 }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
+  
+  // Peak hold state - stores max dB values per frequency bin with decay
+  const peakHoldRef = useRef<Float32Array | null>(null)
+  const lastPeakUpdateRef = useRef<number>(0)
 
   // Track whether analysis has ever started; once true the placeholder is gone for good
   const [hasEverStarted, setHasEverStarted] = useState(false)
   useEffect(() => {
     if (isRunning) setHasEverStarted(true)
   }, [isRunning])
+
+  // Update peak hold values
+  useEffect(() => {
+    if (!spectrum?.freqDb || !showPeakHold) return
+    
+    const now = performance.now()
+    const dt = (now - lastPeakUpdateRef.current) / 1000 // seconds
+    lastPeakUpdateRef.current = now
+    
+    const freqDb = spectrum.freqDb
+    const n = freqDb.length
+    
+    // Initialize peak hold array if needed
+    if (!peakHoldRef.current || peakHoldRef.current.length !== n) {
+      peakHoldRef.current = new Float32Array(n)
+      peakHoldRef.current.fill(-120) // Start at very low dB
+    }
+    
+    const peaks = peakHoldRef.current
+    const decayAmount = peakHoldDecayRate * dt
+    
+    for (let i = 0; i < n; i++) {
+      const current = freqDb[i]
+      if (current > peaks[i]) {
+        // New peak - snap to current value
+        peaks[i] = current
+      } else {
+        // Decay existing peak
+        peaks[i] = Math.max(peaks[i] - decayAmount, current, -120)
+      }
+    }
+  }, [spectrum, showPeakHold, peakHoldDecayRate])
 
   const showPlaceholder = !hasEverStarted
 
@@ -192,6 +234,34 @@ export function SpectrumCanvas({
       }
       ctx.stroke()
 
+      // Draw peak hold overlay (yellow dashed line above spectrum)
+      if (showPeakHold && peakHoldRef.current) {
+        const peaks = peakHoldRef.current
+        ctx.strokeStyle = VIZ_COLORS.PEAK_MARKER
+        ctx.lineWidth = 1
+        ctx.setLineDash([3, 3])
+        ctx.beginPath()
+
+        let peakStarted = false
+        for (let i = 1; i < n; i++) {
+          const freq = i * hzPerBin
+          if (freq < RTA_FREQ_MIN || freq > RTA_FREQ_MAX) continue
+
+          const x = freqToLogPosition(freq, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+          const peakDb = clamp(peaks[i], RTA_DB_MIN, RTA_DB_MAX)
+          const y = ((RTA_DB_MAX - peakDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
+
+          if (!peakStarted) {
+            ctx.moveTo(x, y)
+            peakStarted = true
+          } else {
+            ctx.lineTo(x, y)
+          }
+        }
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+
       // Draw feedback heatmap background (shows accumulated problem frequencies)
       if (feedbackHeatmap && feedbackHeatmap.size > 0) {
         const maxCount = Math.max(...feedbackHeatmap.values())
@@ -291,7 +361,7 @@ export function SpectrumCanvas({
     ctx.textAlign = 'center'
     ctx.fillText('Hz', width / 2, height - 2)
 
-  }, [spectrum, advisories, graphFontSize, feedbackHeatmap, combPatternFrequencies])
+  }, [spectrum, advisories, graphFontSize, showPeakHold, feedbackHeatmap, combPatternFrequencies])
 
   useAnimationFrame(render, isRunning || spectrum !== null)
 
