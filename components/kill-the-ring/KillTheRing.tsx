@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
         {/* Row 1: Gain slider + Logo wordmark (logo left edge aligns with icons) */}
-        <div className="flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        <div className="flex items-stretch justify-end pr-12 px-2 sm:px-4 gap-2 sm:gap-4 h-10 sm:h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
@@ -232,7 +232,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
           {/* Logo wordmark */}
           <div className="flex items-center gap-0">
-            <div className="flex flex-col justify-center gap-[3px]">
+            <div className="flex flex-col justify-center gap-0 sm:gap-[3px]">
               <div className="flex items-baseline gap-1.5 leading-none">
                 <span className="text-lg font-black tracking-tight text-foreground">KILL THE</span>
                 <span className="text-xl font-black tracking-tight text-primary">RING</span>
@@ -311,14 +311,14 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               <button
                 onClick={isRunning ? stop : start}
                 aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                className="absolute left-2 top-0 bottom-0 aspect-square flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
+                className="absolute left-1 sm:left-2 top-0 bottom-0 aspect-square flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
               >
                 <div className={`absolute inset-[6px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                 {isRunning && (
                   <div className="absolute inset-[6px] rounded-full border-2 border-primary animate-ping opacity-30" />
                 )}
                 <svg
-                  className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                  className={`w-5 sm:w-6 h-5 sm:h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
