@@ -1,19 +1,19 @@
 'use client'
 
-import React from 'react'
-import { HelpCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { HelpCircle, ChevronDown } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
 import { FREQ_RANGE_PRESETS, OPERATION_MODES } from '@/lib/dsp/constants'
 
-// Mode labels for UI display
-const MODE_LABELS: Record<OperationMode, string> = {
-  feedbackHunt: 'Feedback Hunt',
-  vocalRing: 'Vocal Ring',
-  musicAware: 'Music-Aware',
-  aggressive: 'Aggressive',
-  calibration: 'Calibration',
+// Mode labels and descriptions for UI display
+const MODE_INFO: Record<OperationMode, { label: string; desc: string }> = {
+  feedbackHunt: { label: 'Feedback Hunt', desc: 'Balanced detection' },
+  vocalRing: { label: 'Vocal Ring', desc: 'Speech resonance' },
+  musicAware: { label: 'Music-Aware', desc: 'Harmonic filtering' },
+  aggressive: { label: 'Aggressive', desc: 'Maximum sensitivity' },
+  calibration: { label: 'Calibration', desc: 'Room analysis' },
 }
 
 interface DetectionControlsProps {
@@ -23,52 +23,97 @@ interface DetectionControlsProps {
 }
 
 export function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
+  const [modeOpen, setModeOpen] = useState(false)
+  const [freqOpen, setFreqOpen] = useState(false)
+
+  const currentMode = OPERATION_MODES[settings.mode]
+  const currentModeInfo = MODE_INFO[settings.mode]
+  
+  const currentFreqPreset = FREQ_RANGE_PRESETS.find(
+    p => p.minFrequency === settings.minFrequency && p.maxFrequency === settings.maxFrequency
+  ) || { label: 'Custom', minFrequency: settings.minFrequency, maxFrequency: settings.maxFrequency }
+
   return (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-1.5">
 
-        {/* Mode selector pills */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-none pb-1">
-          {(Object.keys(OPERATION_MODES) as OperationMode[]).map((mode) => {
-            const isActive = settings.mode === mode
-            return (
-              <button
-                key={mode}
-                onClick={() => onModeChange(mode)}
-                className={`px-1.5 py-px rounded text-xs font-medium border transition-colors whitespace-nowrap flex-shrink-0 leading-4 ${
-                  isActive
-                    ? 'bg-primary/15 text-primary border-primary/40'
-                    : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
-                }`}
-                aria-pressed={isActive}
-              >
-                {MODE_LABELS[mode]}
-              </button>
-            )
-          })}
+        {/* Mode selector - collapsible */}
+        <div className="relative">
+          <button
+            onClick={() => { setModeOpen(!modeOpen); setFreqOpen(false) }}
+            className="w-full flex items-center justify-between px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-medium text-foreground truncate">{currentModeInfo.label}</span>
+              <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">{currentModeInfo.desc}</span>
+            </div>
+            <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform flex-shrink-0 ${modeOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {modeOpen && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-background border border-border rounded shadow-lg overflow-hidden">
+              {(Object.keys(OPERATION_MODES) as OperationMode[]).map((mode) => {
+                const info = MODE_INFO[mode]
+                const modeSettings = OPERATION_MODES[mode]
+                const isActive = settings.mode === mode
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => { onModeChange(mode); setModeOpen(false) }}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors ${
+                      isActive ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium truncate">{info.label}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{info.desc}</div>
+                    </div>
+                    <div className="text-[9px] font-mono text-muted-foreground flex-shrink-0 ml-2">
+                      {modeSettings.feedbackThreshold}/{modeSettings.ringThreshold}/{modeSettings.growthRateThreshold}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Freq range pills — single scrollable row, no wrapping */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-none">
-          {FREQ_RANGE_PRESETS.map((preset) => {
-            const isActive =
-              settings.minFrequency === preset.minFrequency &&
-              settings.maxFrequency === preset.maxFrequency
-            return (
-              <button
-                key={preset.label}
-                onClick={() => onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency })}
-                className={`px-1.5 py-px rounded text-xs font-medium border transition-colors whitespace-nowrap flex-shrink-0 leading-4 ${
-                  isActive
-                    ? 'bg-primary/15 text-primary border-primary/40'
-                    : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
-                }`}
-                aria-pressed={isActive}
-              >
-                {preset.label}
-              </button>
-            )
-          })}
+        {/* Freq range - collapsible */}
+        <div className="relative">
+          <button
+            onClick={() => { setFreqOpen(!freqOpen); setModeOpen(false) }}
+            className="w-full flex items-center justify-between px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xs font-medium text-foreground">{currentFreqPreset.label}</span>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {currentFreqPreset.minFrequency}-{currentFreqPreset.maxFrequency}Hz
+              </span>
+            </div>
+            <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform flex-shrink-0 ${freqOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {freqOpen && (
+            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-background border border-border rounded shadow-lg overflow-hidden">
+              {FREQ_RANGE_PRESETS.map((preset) => {
+                const isActive = settings.minFrequency === preset.minFrequency && settings.maxFrequency === preset.maxFrequency
+                return (
+                  <button
+                    key={preset.label}
+                    onClick={() => { onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency }); setFreqOpen(false) }}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors ${
+                      isActive ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-foreground'
+                    }`}
+                  >
+                    <span className="text-xs font-medium">{preset.label}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {preset.minFrequency}-{preset.maxFrequency}Hz
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Auto Music-Aware toggle */}

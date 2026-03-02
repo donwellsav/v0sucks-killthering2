@@ -341,9 +341,9 @@ export function shouldReportIssue(
       return true
 
     case 'musicAware':
-      // Skip instruments unless severity is RUNAWAY
+      // Skip instruments (RUNAWAY severity already handled above)
       if (label === 'INSTRUMENT') {
-        return severity === 'RUNAWAY'
+        return false
       }
       return true
 
