@@ -216,42 +216,41 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
 
         {/* Logo / start-stop */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
-          <div className="flex items-center gap-1 sm:gap-2.5 pl-2 sm:pl-3 border-l border-border/50">
-            <TooltipProvider delayDuration={400}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={isRunning ? stop : start}
-                    aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                    className="relative w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+        <div className="flex items-center gap-2.5 flex-shrink-0">
+          <TooltipProvider delayDuration={400}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={isRunning ? stop : start}
+                  aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+                  className="relative w-9 h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
+                >
+                  <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
+                  {isRunning && (
+                    <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
+                  )}
+                  <svg
+                    className={`w-5 h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/70 hover:text-primary'}`}
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
                   >
-                    <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
-                    {isRunning && (
-                      <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
-                    )}
-                    <svg
-                      className={`w-4 sm:w-5 h-4 sm:h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/70 hover:text-primary'}`}
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                    >
-                      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                    </svg>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
-                  {isRunning ? 'Stop analysis' : 'Start analysis'}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                  </svg>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {isRunning ? 'Stop analysis' : 'Start analysis'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-            <div className="hidden sm:flex flex-col gap-0.5">
-              <div className="leading-none">
-                <span className="text-sm font-black tracking-tight text-foreground">KILL THE </span>
-                <span className="text-base font-black tracking-tight text-primary">RING</span>
-              </div>
-              <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase">Don Wells AV</span>
-            </div>
+          <div className="flex flex-col justify-center gap-0.5">
+            <span className="text-sm font-black tracking-tight leading-none text-foreground">
+              KILL THE <span className="text-primary">RING</span>
+            </span>
+            <span className="text-[9px] font-medium tracking-[0.18em] text-muted-foreground uppercase leading-none hidden sm:block">
+              Don Wells AV
+            </span>
           </div>
         </div>
 
