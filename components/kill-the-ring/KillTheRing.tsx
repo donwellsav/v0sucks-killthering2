@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="flex items-stretch justify-between px-2 sm:px-4 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4 h-12">
 
         {/* Logo / start-stop */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <TooltipProvider delayDuration={400}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -244,12 +244,12 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </Tooltip>
           </TooltipProvider>
 
-          <div className="hidden sm:flex flex-col justify-center gap-[3px]">
+          <div className="flex flex-col justify-center gap-[3px]">
             <div className="flex items-baseline gap-1.5 leading-none">
               <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
               <span className="text-base font-black tracking-tight text-primary">RING</span>
             </div>
-            <span className="text-[7.5px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
+            <span className="text-[9px] font-semibold tracking-wider text-muted-foreground uppercase leading-none">
               Don Wells AV
             </span>
           </div>
