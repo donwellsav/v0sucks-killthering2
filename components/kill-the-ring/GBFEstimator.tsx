@@ -235,8 +235,11 @@ export function GBFEstimator({
 }
 
 /**
- * GBFHeaderChip - Ultra-compact single-line version for the header bar.
- * Renders as a pill: "+8.3dB SAFE" with color coding. Zero height impact.
+ * GBFHeaderChip - Compact 4-line stacked box for the header bar.
+ * Line 1: "Gain Before"
+ * Line 2: "Feedback"
+ * Line 3: "+20.0 dB"
+ * Line 4: "SAFE" (color-coded)
  */
 export function GBFHeaderChip({
   spectrum,
@@ -248,25 +251,32 @@ export function GBFHeaderChip({
     [spectrum, advisories, feedbackThresholdDb]
   )
 
-  const chipColors = {
-    safe:     'text-green-400 border-green-500/30 bg-green-500/10',
-    caution:  'text-yellow-400 border-yellow-500/30 bg-yellow-500/10',
-    danger:   'text-orange-400 border-orange-500/30 bg-orange-500/10',
-    critical: 'text-red-400 border-red-500/40 bg-red-500/15 animate-pulse',
+  const borderColors = {
+    safe:     'border-green-500/40',
+    caution:  'border-yellow-500/40',
+    danger:   'border-orange-500/40',
+    critical: 'border-red-500/50',
+  }
+
+  const statusColors = {
+    safe:     'text-green-400',
+    caution:  'text-yellow-400',
+    danger:   'text-orange-400',
+    critical: 'text-red-400 animate-pulse',
   }
 
   return (
     <div
       className={cn(
-        'hidden landscape:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono font-semibold leading-none whitespace-nowrap',
-        chipColors[gbf.riskLevel]
+        'hidden landscape:flex flex-col items-center justify-center px-3 py-1 rounded border bg-card/80',
+        borderColors[gbf.riskLevel]
       )}
       title={`Gain Before Feedback — ${gbf.limitingFactor}`}
     >
-      <span className="opacity-60 font-sans font-medium">GBF</span>
-      <span>+{gbf.gbfDb.toFixed(1)}</span>
-      <span className="opacity-50">dB</span>
-      <span className="font-sans font-bold text-[9px] uppercase opacity-80">
+      <span className="text-[8px] text-muted-foreground font-medium leading-tight">Gain Before</span>
+      <span className="text-[8px] text-muted-foreground font-medium leading-tight">Feedback</span>
+      <span className="text-[11px] font-mono font-bold leading-tight">+{gbf.gbfDb.toFixed(1)} dB</span>
+      <span className={cn('text-[9px] font-bold uppercase leading-tight', statusColors[gbf.riskLevel])}>
         {gbf.riskLevel}
       </span>
     </div>

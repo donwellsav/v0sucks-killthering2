@@ -16,7 +16,7 @@ import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
 import { FeedbackHeatmapCanvas } from './FeedbackHeatmapCanvas'
 import { MSDTrendGraph } from './MSDTrendGraph'
-import { GBFEstimator, GBFHeaderChip } from './GBFEstimator'
+import { GBFHeaderChip } from './GBFEstimator'
 import { SettingsPanel } from './SettingsPanel'
 import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
@@ -541,15 +541,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         <aside className="hidden landscape:flex w-64 xl:w-72 2xl:w-80 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3">
             <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-          </div>
-          {/* GBF Estimator - Gain Before Feedback */}
-          <div className="flex-shrink-0 border-b border-border p-2">
-            <GBFEstimator
-              spectrum={spectrum}
-              advisories={advisories}
-              feedbackThresholdDb={settings.feedbackThresholdDb}
-              showDetails={false}
-            />
           </div>
           {/* Issues / Notepad tab bar */}
           <div className="flex-shrink-0 flex border-b border-border">
