@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { HelpCircle } from 'lucide-react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
@@ -18,20 +17,6 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
   return (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-2">
-
-        {/* Mode select */}
-        <Select value={settings.mode} onValueChange={(v) => onModeChange(v as OperationMode)}>
-          <SelectTrigger className="h-5 w-full bg-input border-border px-2">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent size="compact">
-            <SelectItem value="feedbackHunt">Feedback Hunt</SelectItem>
-            <SelectItem value="vocalRing">Vocal Ring</SelectItem>
-            <SelectItem value="musicAware">Music-Aware</SelectItem>
-            <SelectItem value="aggressive">Aggressive</SelectItem>
-            <SelectItem value="calibration">Calibration</SelectItem>
-          </SelectContent>
-        </Select>
 
         {/* Freq range pills — single row, no label overhead */}
         <div className="flex items-center gap-1 flex-wrap">
