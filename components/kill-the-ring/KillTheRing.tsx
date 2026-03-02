@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       <header className="relative flex flex-col border-b border-border bg-card/80 backdrop-blur-sm">
 
         {/* Row 1: Gain slider + Logo wordmark (right-aligned, leaves room for button) */}
-        <div className="flex items-stretch justify-between pl-14 px-2 sm:px-4 gap-2 sm:gap-4 h-12">
+        <div className="flex items-stretch justify-between px-2 sm:px-4 gap-2 sm:gap-4 h-12">
 
           {/* Center: Gain slider */}
           <div className="hidden landscape:flex items-center flex-1 min-w-0">
@@ -245,7 +245,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
 
         {/* Row 2: Action icons (leaves room for button) */}
-        <div className="flex items-center justify-end gap-1 sm:gap-2 pl-14 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-end gap-1 sm:gap-2 px-2 sm:px-4 py-1 text-xs text-muted-foreground">
           {noiseFloorDb !== null && (
             <span className="font-mono text-[9px] sm:text-[10px] hidden landscape:inline mr-auto">
               Floor: {noiseFloorDb.toFixed(0)}dB
@@ -311,7 +311,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               <button
                 onClick={isRunning ? stop : start}
                 aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                className="absolute left-0 top-0 bottom-0 w-14 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset border-r border-border/50"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset rounded-full"
               >
                 <div className={`absolute inset-[6px] rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
                 {isRunning && (
