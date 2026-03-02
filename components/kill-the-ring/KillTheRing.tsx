@@ -213,7 +213,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
-      <header className="flex items-stretch justify-between px-2 sm:px-4 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4 h-12">
+      <header className="flex items-center justify-between px-2 sm:px-4 py-2 border-b border-border bg-card/80 backdrop-blur-sm gap-2 sm:gap-4">
 
         {/* Logo / start-stop */}
         <div className="flex items-center gap-2.5 flex-shrink-0">
@@ -223,16 +223,14 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <button
                   onClick={isRunning ? stop : start}
                   aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-                  className="relative self-stretch w-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="relative w-9 h-9 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"
                 >
-                  <div className={`absolute inset-x-0 inset-y-2 rounded-none border-x-0 border-t-0 border-b-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/40'}`} />
+                  <div className={`absolute inset-0 rounded-full border transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/60'}`} />
                   {isRunning && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full border border-primary animate-ping opacity-30" />
-                    </div>
+                    <div className="absolute inset-0 rounded-full border border-primary animate-ping opacity-40" />
                   )}
                   <svg
-                    className={`w-6 h-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+                    className={`w-5 h-5 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/70 hover:text-primary'}`}
                     viewBox="0 0 24 24"
                     fill="currentColor"
                   >
@@ -246,8 +244,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </Tooltip>
           </TooltipProvider>
 
-          <div className="hidden sm:flex flex-col justify-center gap-[3px]">
-            <div className="flex items-baseline gap-1.5 leading-none">
+          <div className="hidden sm:flex flex-col justify-center gap-0.5">
+            <div className="flex items-baseline gap-1 leading-none">
               <span className="text-sm font-black tracking-tight text-foreground">KILL THE</span>
               <span className="text-base font-black tracking-tight text-primary">RING</span>
             </div>
