@@ -28,7 +28,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               <button
                 key={preset.label}
                 onClick={() => onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency })}
-                className={`px-1.5 py-px rounded text-[11px] font-medium border transition-colors leading-tight ${
+                className={`px-1.5 py-px rounded text-xs font-medium border transition-colors leading-tight ${
                   isActive
                     ? 'bg-primary/15 text-primary border-primary/40'
                     : 'bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground'
@@ -44,7 +44,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
         {/* Auto Music-Aware — inline single row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 min-w-0">
-            <span className="text-[11px] text-muted-foreground truncate">Music-Aware</span>
+            <span className="text-xs text-muted-foreground truncate">Music-Aware</span>
             {settings.showTooltips && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -56,7 +56,7 @@ export function DetectionControls({ settings, onModeChange, onSettingsChange }: 
               </Tooltip>
             )}
             {settings.autoMusicAware && (
-              <span className={`px-1 py-px rounded text-[10px] font-medium border leading-tight flex-shrink-0 ${
+              <span className={`px-1 py-px rounded text-[11px] font-medium border leading-tight flex-shrink-0 ${
                 settings.musicAware
                   ? 'bg-primary/10 border-primary/40 text-primary'
                   : 'bg-muted border-border text-muted-foreground'
@@ -132,7 +132,7 @@ function InlineSlider({ label, value, tooltip, children }: {
     <div className="space-y-0.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] text-muted-foreground">{label}</span>
+          <span className="text-xs text-muted-foreground">{label}</span>
           {tooltip && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -144,7 +144,7 @@ function InlineSlider({ label, value, tooltip, children }: {
             </Tooltip>
           )}
         </div>
-        <span className="text-[11px] font-mono text-foreground tabular-nums">{value}</span>
+        <span className="text-xs font-mono text-foreground tabular-nums">{value}</span>
       </div>
       {children}
     </div>
