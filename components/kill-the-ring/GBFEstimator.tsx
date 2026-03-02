@@ -233,3 +233,42 @@ export function GBFEstimator({
     </div>
   )
 }
+
+/**
+ * GBFHeaderChip - Ultra-compact single-line version for the header bar.
+ * Renders as a pill: "+8.3dB SAFE" with color coding. Zero height impact.
+ */
+export function GBFHeaderChip({
+  spectrum,
+  advisories,
+  feedbackThresholdDb,
+}: Pick<GBFEstimatorProps, 'spectrum' | 'advisories' | 'feedbackThresholdDb'>) {
+  const gbf = useMemo(
+    () => calculateGBF(spectrum, advisories, feedbackThresholdDb),
+    [spectrum, advisories, feedbackThresholdDb]
+  )
+
+  const chipColors = {
+    safe:     'text-green-400 border-green-500/30 bg-green-500/10',
+    caution:  'text-yellow-400 border-yellow-500/30 bg-yellow-500/10',
+    danger:   'text-orange-400 border-orange-500/30 bg-orange-500/10',
+    critical: 'text-red-400 border-red-500/40 bg-red-500/15 animate-pulse',
+  }
+
+  return (
+    <div
+      className={cn(
+        'hidden landscape:inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono font-semibold leading-none whitespace-nowrap',
+        chipColors[gbf.riskLevel]
+      )}
+      title={`Gain Before Feedback — ${gbf.limitingFactor}`}
+    >
+      <span className="opacity-60 font-sans font-medium">GBF</span>
+      <span>+{gbf.gbfDb.toFixed(1)}</span>
+      <span className="opacity-50">dB</span>
+      <span className="font-sans font-bold text-[9px] uppercase opacity-80">
+        {gbf.riskLevel}
+      </span>
+    </div>
+  )
+}

@@ -16,7 +16,7 @@ import { GEQBarView } from './GEQBarView'
 import { WaterfallCanvas } from './WaterfallCanvas'
 import { FeedbackHeatmapCanvas } from './FeedbackHeatmapCanvas'
 import { MSDTrendGraph } from './MSDTrendGraph'
-import { GBFEstimator } from './GBFEstimator'
+import { GBFEstimator, GBFHeaderChip } from './GBFEstimator'
 import { SettingsPanel } from './SettingsPanel'
 import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
@@ -315,6 +315,11 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </span>
           )}
 
+          <GBFHeaderChip
+            spectrum={spectrum}
+            advisories={advisories}
+            feedbackThresholdDb={settings.feedbackThresholdDb}
+          />
           <FeedbackHistoryPanel />
           <HelpMenu />
           <SettingsPanel
@@ -533,7 +538,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         )}
 
         {/* Desktop: Always-visible left sidebar */}
-        <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
+        <aside className="hidden landscape:flex w-64 xl:w-72 2xl:w-80 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
           <div className="flex-shrink-0 border-b border-border p-3">
             <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
           </div>
