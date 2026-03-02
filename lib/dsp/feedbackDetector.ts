@@ -1,7 +1,29 @@
 // KillTheRing2 Feedback Detector - Core DSP engine for peak detection
 // Adapted from FeedbackDetector.js with TypeScript and enhancements
+// Enhanced with MSD, Phase Coherence, Spectral Flatness, and Comb Filter algorithms
 
 import { A_WEIGHTING, LN10_OVER_10, HARMONIC_SETTINGS } from './constants'
+import {
+  MSDHistoryBuffer,
+  PhaseHistoryBuffer,
+  AmplitudeHistoryBuffer,
+  calculateSpectralFlatness,
+  detectCombPattern,
+  fuseAlgorithmResults,
+  detectContentType,
+  type MSDResult,
+  type PhaseCoherenceResult,
+  type SpectralFlatnessResult,
+  type CombPatternResult,
+  type CompressionResult,
+  type AlgorithmScores,
+  type FusedDetectionResult,
+  type AlgorithmMode,
+  type ContentType,
+  type FusionConfig,
+  DEFAULT_FUSION_CONFIG,
+  MSD_CONSTANTS,
+} from './advancedDetection'
 import { 
   medianInPlace, 
   buildPrefixSum, 
@@ -16,6 +38,12 @@ import { DEFAULT_CONFIG } from '@/types/advisory'
 export interface FeedbackDetectorCallbacks {
   onPeakDetected?: (peak: DetectedPeak) => void
   onPeakCleared?: (peak: { binIndex: number; frequencyHz: number; timestamp: number }) => void
+  /** Called with advanced algorithm scores for each detected peak */
+  onAlgorithmScores?: (scores: { binIndex: number; frequencyHz: number; scores: AlgorithmScores; fusion: FusedDetectionResult }) => void
+  /** Called when content type is detected (speech/music/compressed) */
+  onContentTypeDetected?: (contentType: ContentType) => void
+  /** Called when comb filter pattern is detected */
+  onCombPatternDetected?: (pattern: CombPatternResult) => void
 }
 
 export interface FeedbackDetectorState {
@@ -24,6 +52,16 @@ export interface FeedbackDetectorState {
   effectiveThresholdDb: number
   sampleRate: number
   fftSize: number
+  /** Advanced algorithm configuration */
+  algorithmMode: AlgorithmMode
+  /** Current detected content type */
+  contentType: ContentType
+  /** Number of frames in MSD history buffer */
+  msdFrameCount: number
+  /** Whether compression is detected */
+  isCompressed: boolean
+  /** Estimated compression ratio */
+  compressionRatio: number
 }
 
 export class FeedbackDetector {
@@ -84,6 +122,34 @@ export class FeedbackDetector {
   // Ring/growth detection thresholds (mapped from DetectorSettings)
   private ringThresholdDb: number = -10
   private growthRateThreshold: number = 1.5
+
+  // ==================== Advanced Detection Buffers ====================
+  // MSD (Magnitude Slope Deviation) - from DAFx-16 paper
+  private msdBuffer: MSDHistoryBuffer | null = null
+  
+  // Phase coherence tracking
+  private phaseBuffer: PhaseHistoryBuffer | null = null
+  private lastPhaseData: Float32Array | null = null
+  
+  // Compression detection
+  private amplitudeBuffer: AmplitudeHistoryBuffer | null = null
+  private compressionResult: CompressionResult | null = null
+  
+  // Content type detection
+  private detectedContentType: ContentType = 'unknown'
+  private contentTypeConfidence: number = 0
+  
+  // Algorithm configuration
+  private algorithmMode: AlgorithmMode = 'combined'
+  private fusionConfig: FusionConfig = { ...DEFAULT_FUSION_CONFIG }
+  private msdMinFrames: number = MSD_CONSTANTS.MIN_FRAMES_SPEECH
+  
+  // Comb filter pattern tracking
+  private recentPeakFrequencies: number[] = []
+  private lastCombPattern: CombPatternResult | null = null
+  
+  // Peak-level algorithm scores cache
+  private peakAlgorithmScores: Map<number, AlgorithmScores> = new Map()
 
   constructor(config: Partial<AnalysisConfig> = {}, callbacks: FeedbackDetectorCallbacks = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -308,6 +374,12 @@ export class FeedbackDetector {
       effectiveThresholdDb: this.computeEffectiveThresholdDb(),
       sampleRate: this.audioContext?.sampleRate ?? 48000,
       fftSize: this.config.fftSize,
+      // Advanced algorithm state
+      algorithmMode: this.algorithmMode,
+      contentType: this.detectedContentType,
+      msdFrameCount: this.msdBuffer?.getFrameCount() ?? 0,
+      isCompressed: this.compressionResult?.isCompressed ?? false,
+      compressionRatio: this.compressionResult?.estimatedRatio ?? 1,
     }
   }
 
@@ -333,9 +405,9 @@ export class FeedbackDetector {
 
   private allocateBuffers(): void {
     if (!this.analyser) return
-
+    
     const n = this.analyser.frequencyBinCount
-
+    
     this.freqDb = new Float32Array(n)
     this.power = new Float32Array(n)
     this.prefix = new Float64Array(n + 1)
@@ -347,14 +419,29 @@ export class FeedbackDetector {
     this.activeBinPos = new Int32Array(n)
     this.activeBinPos.fill(-1)
     this.activeCount = 0
-
+    
     // Build A-weighting table
     this.aWeightingTable = new Float32Array(n)
     this.computeAWeightingTable()
     this.recomputeAnalysisDbBounds()
-
+    
     this.noiseFloorDb = null
     this.recomputeDerivedIndices()
+    
+    // ==================== Advanced Detection Buffers ====================
+    // MSD history buffer - stores dB magnitude for second derivative analysis
+    this.msdBuffer = new MSDHistoryBuffer(n, this.msdMinFrames * 2)
+    
+    // Phase history buffer - stores phase data for coherence analysis
+    this.phaseBuffer = new PhaseHistoryBuffer(n, 10)
+    this.lastPhaseData = new Float32Array(n)
+    
+    // Amplitude buffer for compression detection
+    this.amplitudeBuffer = new AmplitudeHistoryBuffer(100)
+    
+    // Clear peak algorithm scores cache
+    this.peakAlgorithmScores.clear()
+    this.recentPeakFrequencies = []
   }
 
   private resetHistory(): void {
@@ -364,6 +451,17 @@ export class FeedbackDetector {
     if (this.activeHz) this.activeHz.fill(0)
     if (this.activeBinPos) this.activeBinPos.fill(-1)
     this.activeCount = 0
+    
+    // Reset advanced detection buffers
+    this.msdBuffer?.reset()
+    this.phaseBuffer?.reset()
+    this.amplitudeBuffer?.reset()
+    this.peakAlgorithmScores.clear()
+    this.recentPeakFrequencies = []
+    this.detectedContentType = 'unknown'
+    this.contentTypeConfidence = 0
+    this.compressionResult = null
+    this.lastCombPattern = null
   }
 
   private computeAWeightingTable(): void {
@@ -538,11 +636,48 @@ export class FeedbackDetector {
       prefix[i + 1] = prefix[i] + p
     }
 
-    // Update noise floor
+  // Update noise floor
     if (this.config.noiseFloorEnabled) {
       this.updateNoiseFloorDb(dt)
     }
-
+    
+    // ==================== Advanced Detection Processing ====================
+    // Update MSD history buffer with current frame
+    if (this.msdBuffer) {
+      this.msdBuffer.addFrame(freqDb)
+    }
+    
+    // Update amplitude buffer for compression detection
+    if (this.amplitudeBuffer) {
+      // Calculate peak and RMS for this frame
+      let peakLinear = 0
+      let sumSquares = 0
+      for (let i = 0; i < n; i++) {
+        const linear = power[i]
+        if (linear > peakLinear) peakLinear = linear
+        sumSquares += linear * linear
+      }
+      const rmsLinear = Math.sqrt(sumSquares / n)
+      const peakDb = peakLinear > 0 ? 10 * Math.log10(peakLinear) : -100
+      const rmsDb = rmsLinear > 0 ? 10 * Math.log10(rmsLinear) : -100
+      this.amplitudeBuffer.addSample(peakDb, rmsDb)
+      
+      // Update compression detection periodically
+      if (this.msdBuffer && this.msdBuffer.getFrameCount() % 10 === 0) {
+        this.compressionResult = this.amplitudeBuffer.detectCompression()
+        
+        // Detect content type
+        const avgFlatness = this.calculateGlobalSpectralFlatness(freqDb)
+        const crestFactor = this.compressionResult.crestFactor
+        this.detectedContentType = detectContentType(freqDb, crestFactor, avgFlatness)
+        
+        // Notify content type change
+        if (this.callbacks.onContentTypeDetected) {
+          this.callbacks.onContentTypeDetected(this.detectedContentType)
+        }
+      }
+    }
+    
     const effectiveThresholdDb = this.computeEffectiveThresholdDb()
     const nb = this.effectiveNb
     const start = this.startBin
@@ -689,6 +824,52 @@ export class FeedbackDetector {
           ;(peak as DetectedPeak & { qEstimate: number; bandwidthHz: number }).qEstimate = qEstimate
           ;(peak as DetectedPeak & { qEstimate: number; bandwidthHz: number }).bandwidthHz = bandwidthHz
 
+          // ==================== Advanced Algorithm Scoring ====================
+          // Calculate algorithm scores for this peak
+          const algorithmScores = this.calculateAlgorithmScores(i, trueFrequencyHz, freqDb)
+          
+          // Store for tracking
+          this.peakAlgorithmScores.set(i, algorithmScores)
+          
+          // Track peak frequency for comb pattern detection
+          this.recentPeakFrequencies.push(trueFrequencyHz)
+          if (this.recentPeakFrequencies.length > 20) {
+            this.recentPeakFrequencies.shift()
+          }
+          
+          // Fuse algorithm results
+          const existingScore = prominence / 20 // Normalize prominence to 0-1 range
+          const fusion = fuseAlgorithmResults(
+            algorithmScores,
+            this.detectedContentType,
+            existingScore,
+            this.fusionConfig
+          )
+          
+          // Attach fusion result to peak for downstream use
+          ;(peak as DetectedPeak & { 
+            qEstimate: number
+            bandwidthHz: number
+            algorithmScores: AlgorithmScores
+            fusion: FusedDetectionResult
+          }).algorithmScores = algorithmScores
+          ;(peak as DetectedPeak & { 
+            qEstimate: number
+            bandwidthHz: number
+            algorithmScores: AlgorithmScores
+            fusion: FusedDetectionResult
+          }).fusion = fusion
+
+          // Notify algorithm scores callback
+          if (this.callbacks.onAlgorithmScores) {
+            this.callbacks.onAlgorithmScores({
+              binIndex: i,
+              frequencyHz: trueFrequencyHz,
+              scores: algorithmScores,
+              fusion,
+            })
+          }
+
           this.callbacks.onPeakDetected?.(peak)
         }
       } else {
@@ -808,18 +989,176 @@ export class FeedbackDetector {
 
   private computeEffectiveThresholdDb(): number {
     const absT = this.config.thresholdDb
-
+    
     if (!this.config.noiseFloorEnabled || this.noiseFloorDb === null) {
       return absT
     }
-
+    
     const relT = this.noiseFloorDb + this.config.relativeThresholdDb
-
+    
     switch (this.config.thresholdMode) {
       case 'absolute': return absT
       case 'relative': return relT
       case 'hybrid': return Math.max(absT, relT)
       default: return Math.max(absT, relT)
     }
+  }
+
+  // ==================== Advanced Algorithm Methods ====================
+
+  /**
+   * Calculate all algorithm scores for a detected peak
+   */
+  private calculateAlgorithmScores(
+    binIndex: number,
+    frequencyHz: number,
+    spectrum: Float32Array
+  ): AlgorithmScores {
+    const scores: AlgorithmScores = {
+      msd: null,
+      phase: null,
+      spectral: null,
+      comb: null,
+      compression: this.compressionResult,
+    }
+
+    // MSD Analysis (if enough frames)
+    if (this.msdBuffer && this.msdBuffer.getFrameCount() >= this.msdMinFrames) {
+      scores.msd = this.msdBuffer.calculateMSD(binIndex, this.msdMinFrames)
+    }
+
+    // Phase Coherence Analysis (if we have phase data)
+    if (this.phaseBuffer && this.phaseBuffer.getFrameCount() >= 5) {
+      scores.phase = this.phaseBuffer.calculateCoherence(binIndex)
+    }
+
+    // Spectral Flatness around the peak
+    scores.spectral = calculateSpectralFlatness(spectrum, binIndex, 10)
+
+    // Comb Filter Pattern Detection (if enough peaks)
+    if (this.recentPeakFrequencies.length >= 3) {
+      const combResult = detectCombPattern(
+        this.recentPeakFrequencies,
+        this.getSampleRate()
+      )
+      scores.comb = combResult
+
+      // Notify if pattern detected
+      if (combResult.hasPattern && this.callbacks.onCombPatternDetected) {
+        // Only notify if this is a new pattern or significantly different
+        if (!this.lastCombPattern || 
+            !this.lastCombPattern.hasPattern ||
+            Math.abs((this.lastCombPattern.fundamentalSpacing ?? 0) - (combResult.fundamentalSpacing ?? 0)) > 5) {
+          this.callbacks.onCombPatternDetected(combResult)
+          this.lastCombPattern = combResult
+        }
+      }
+    }
+
+    return scores
+  }
+
+  /**
+   * Calculate global spectral flatness for content type detection
+   */
+  private calculateGlobalSpectralFlatness(spectrum: Float32Array): number {
+    const start = this.startBin
+    const end = this.endBin
+    if (end <= start) return 0.5
+
+    // Convert from dB to linear power
+    const region: number[] = []
+    for (let i = start; i <= end; i++) {
+      const linear = Math.pow(10, spectrum[i] / 10)
+      if (linear > 0 && Number.isFinite(linear)) {
+        region.push(linear)
+      }
+    }
+
+    if (region.length === 0) return 0.5
+
+    // Geometric mean (using log-sum for stability)
+    const logSum = region.reduce((sum, x) => sum + Math.log(x), 0)
+    const geometricMean = Math.exp(logSum / region.length)
+
+    // Arithmetic mean
+    const arithmeticMean = region.reduce((a, b) => a + b, 0) / region.length
+
+    // Spectral flatness
+    return arithmeticMean > 0 ? geometricMean / arithmeticMean : 0.5
+  }
+
+  // ==================== Advanced Algorithm Configuration ====================
+
+  /**
+   * Set the algorithm mode
+   */
+  setAlgorithmMode(mode: AlgorithmMode): void {
+    this.algorithmMode = mode
+    this.fusionConfig.mode = mode
+  }
+
+  /**
+   * Get current algorithm mode
+   */
+  getAlgorithmMode(): AlgorithmMode {
+    return this.algorithmMode
+  }
+
+  /**
+   * Set MSD minimum frames
+   */
+  setMSDMinFrames(frames: number): void {
+    this.msdMinFrames = clamp(frames, MSD_CONSTANTS.MIN_FRAMES_SPEECH, MSD_CONSTANTS.MAX_FRAMES)
+    this.fusionConfig.msdMinFrames = this.msdMinFrames
+  }
+
+  /**
+   * Get current MSD frame count
+   */
+  getMSDFrameCount(): number {
+    return this.msdBuffer?.getFrameCount() ?? 0
+  }
+
+  /**
+   * Get detected content type
+   */
+  getContentType(): ContentType {
+    return this.detectedContentType
+  }
+
+  /**
+   * Get compression detection result
+   */
+  getCompressionResult(): CompressionResult | null {
+    return this.compressionResult
+  }
+
+  /**
+   * Get algorithm scores for a specific bin
+   */
+  getAlgorithmScoresForBin(binIndex: number): AlgorithmScores | undefined {
+    return this.peakAlgorithmScores.get(binIndex)
+  }
+
+  /**
+   * Get recent peak frequencies (for external comb pattern analysis)
+   */
+  getRecentPeakFrequencies(): number[] {
+    return [...this.recentPeakFrequencies]
+  }
+
+  /**
+   * Update fusion configuration
+   */
+  updateFusionConfig(config: Partial<FusionConfig>): void {
+    this.fusionConfig = { ...this.fusionConfig, ...config }
+  }
+
+  /**
+   * Get current fusion configuration
+   */
+  getFusionConfig(): FusionConfig {
+    return { ...this.fusionConfig }
   }
 }

@@ -1,6 +1,100 @@
 // KillTheRing2 Types - Full type definitions for the feedback detection system
+// Enhanced with advanced algorithm types from DAFx-16, DBX, and KU Leuven research
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
+
+// ============================================================================
+// ADVANCED ALGORITHM TYPES (from advancedDetection.ts)
+// ============================================================================
+
+/** Algorithm selection mode */
+export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
+
+/** Detected content type for adaptive thresholds */
+export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
+
+/** MSD (Magnitude Slope Deviation) algorithm result */
+export interface MSDResult {
+  msd: number
+  feedbackScore: number
+  secondDerivative: number
+  isFeedbackLikely: boolean
+  framesAnalyzed: number
+}
+
+/** Phase coherence analysis result */
+export interface PhaseCoherenceResult {
+  coherence: number
+  feedbackScore: number
+  meanPhaseDelta: number
+  phaseDeltaStd: number
+  isFeedbackLikely: boolean
+}
+
+/** Spectral flatness and kurtosis result */
+export interface SpectralFlatnessResult {
+  flatness: number
+  kurtosis: number
+  feedbackScore: number
+  isFeedbackLikely: boolean
+}
+
+/** Comb filter pattern detection result */
+export interface CombPatternResult {
+  hasPattern: boolean
+  fundamentalSpacing: number | null
+  estimatedPathLength: number | null
+  matchingPeaks: number
+  predictedFrequencies: number[]
+  confidence: number
+}
+
+/** Compression detection result */
+export interface CompressionResult {
+  isCompressed: boolean
+  estimatedRatio: number
+  crestFactor: number
+  dynamicRange: number
+  thresholdMultiplier: number
+}
+
+/** Combined algorithm scores */
+export interface AlgorithmScores {
+  msd: MSDResult | null
+  phase: PhaseCoherenceResult | null
+  spectral: SpectralFlatnessResult | null
+  comb: CombPatternResult | null
+  compression: CompressionResult | null
+}
+
+/** Fused detection verdict */
+export type FusionVerdict = 'FEEDBACK' | 'POSSIBLE_FEEDBACK' | 'NOT_FEEDBACK' | 'UNCERTAIN'
+
+/** Fused detection result from all algorithms */
+export interface FusedDetectionResult {
+  feedbackProbability: number
+  confidence: number
+  contributingAlgorithms: string[]
+  algorithmScores: AlgorithmScores
+  verdict: FusionVerdict
+  reasons: string[]
+}
+
+/** Algorithm fusion configuration */
+export interface FusionConfig {
+  mode: AlgorithmMode
+  customWeights?: {
+    msd?: number
+    phase?: number
+    spectral?: number
+    comb?: number
+    existing?: number
+  }
+  msdMinFrames: number
+  phaseThreshold: number
+  enableCompressionDetection: boolean
+  feedbackThreshold: number
+}
 // Unified operation mode type - use 'vocalRing' everywhere (not 'vocalRingAssist')
 export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
 export type Preset = 'surgical' | 'heavy'
@@ -276,6 +370,33 @@ export interface DetectorSettings {
   roomRT60: number // Reverberation time in seconds (0.3-3.0, default 0.7)
   roomVolume: number // Room volume in m³ (50-5000, default 250)
   roomPreset: 'small' | 'medium' | 'large' | 'custom' // Quick room size preset
+  
+  // ==================== ADVANCED ALGORITHM SETTINGS ====================
+  // Based on DAFx-16, DBX, and KU Leuven research papers
+  
+  /** Algorithm mode: auto, msd, phase, combined, or all */
+  algorithmMode: AlgorithmMode
+  
+  /** MSD (Magnitude Slope Deviation) minimum frames for analysis (7-50) */
+  msdMinFrames: number
+  
+  /** Phase coherence threshold (0.4-0.95, higher = stricter) */
+  phaseCoherenceThreshold: number
+  
+  /** Enable compression detection for adaptive thresholds */
+  enableCompressionDetection: boolean
+  
+  /** Enable comb filter pattern detection */
+  enableCombPatternDetection: boolean
+  
+  /** Feedback probability threshold for positive detection (0.4-0.9) */
+  fusionFeedbackThreshold: number
+  
+  /** Show algorithm scores in UI */
+  showAlgorithmScores: boolean
+  
+  /** Show phase coherence display */
+  showPhaseDisplay: boolean
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)
