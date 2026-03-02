@@ -1,5 +1,5 @@
 'use client'
-// v3 — no duplicate definitions; Speech preset included
+
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -120,7 +120,7 @@ export function FrequencyBandControls({
             >
               {band.label}
               <span className="block text-[8px] opacity-60">
-                {band.minHz < 1000 ? band.minHz : `${(band.minHz/1000).toFixed(1)}k`}–
+                {band.minHz < 1000 ? band.minHz : `${(band.minHz/1000).toFixed(1)}k`}-
                 {band.maxHz < 1000 ? band.maxHz : `${(band.maxHz/1000).toFixed(0)}k`}
               </span>
             </button>
@@ -187,7 +187,7 @@ export function FrequencyBandControls({
       <div className="p-2 rounded bg-muted/50 text-center">
         <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Active Range</div>
         <div className="text-sm font-mono font-medium">
-          {fmtHz(currentMinHz)} – {fmtHz(currentMaxHz)}
+          {fmtHz(currentMinHz)} - {fmtHz(currentMaxHz)}
         </div>
       </div>
     </div>
