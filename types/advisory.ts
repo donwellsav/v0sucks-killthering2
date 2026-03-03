@@ -323,6 +323,9 @@ export interface DetectorSettings {
   roomWidthM: number // Room width in meters
   roomHeightM: number // Room height in meters
   roomDimensionsUnit: 'meters' | 'feet' // Unit for dimension input
+  // Algorithm mode and scoring display
+  algorithmMode: AlgorithmMode // Which detection algorithm to use (auto, msd, phase, combined, all)
+  showAlgorithmScores: boolean // Show the algorithm status bar with live scoring metrics
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

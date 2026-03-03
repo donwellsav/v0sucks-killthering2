@@ -318,6 +318,13 @@ export const DEFAULT_SETTINGS = {
   fusionFeedbackThreshold: 0.55, // FAST: Lower threshold = earlier detection
   showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
   showPhaseDisplay: false, // Hide phase visualization by default
+  // Harmonic filter and room mode settings
+  harmonicFilterEnabled: true, // Enable harmonic series detection to filter instruments
+  roomModesEnabled: false, // Room mode calculation disabled by default (advanced feature)
+  roomLengthM: 10, // Default room length in meters
+  roomWidthM: 8, // Default room width in meters
+  roomHeightM: 3, // Default room height in meters
+  roomDimensionsUnit: 'meters' as const, // Default unit for dimension input
 }
 
 // Room size presets for quick switching in corporate/conference environments
