@@ -26,6 +26,8 @@
 // TYPES
 // ============================================================================
 
+import type { AlgorithmMode, ContentType } from '@/types/advisory'
+
 export interface MSDResult {
   msd: number
   feedbackScore: number
@@ -642,8 +644,8 @@ export class AmplitudeHistoryBuffer {
 // ALGORITHM FUSION ENGINE
 // ============================================================================
 
-export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
-export type ContentType   = 'speech' | 'music' | 'compressed' | 'unknown'
+// Re-export from canonical source so existing imports from advancedDetection still work
+export type { AlgorithmMode, ContentType } from '@/types/advisory'
 
 export interface FusionConfig {
   mode: AlgorithmMode
@@ -681,7 +683,7 @@ export function fuseAlgorithmResults(
   const reasons: string[] = []
   const contributingAlgorithms: string[] = []
 
-  let weights: typeof FUSION_WEIGHTS.DEFAULT
+  let weights: { msd: number; phase: number; spectral: number; comb: number; existing: number }
   if (scores.compression?.isCompressed) {
     weights = FUSION_WEIGHTS.COMPRESSED
     reasons.push(`Compression detected (ratio ~${scores.compression.estimatedRatio.toFixed(1)}:1)`)

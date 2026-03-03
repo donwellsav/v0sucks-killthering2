@@ -10,12 +10,14 @@ import {
   isValidFftSize,
   generateId 
 } from '@/lib/utils/mathHelpers'
-import type { DetectedPeak, AnalysisConfig, DetectorSettings } from '@/types/advisory'
+import type { DetectedPeak, AnalysisConfig, DetectorSettings, AlgorithmMode, ContentType } from '@/types/advisory'
 import { DEFAULT_CONFIG } from '@/types/advisory'
+import type { CombPatternResult } from './advancedDetection'
 
 export interface FeedbackDetectorCallbacks {
   onPeakDetected?: (peak: DetectedPeak) => void
   onPeakCleared?: (peak: { binIndex: number; frequencyHz: number; timestamp: number }) => void
+  onCombPatternDetected?: (pattern: CombPatternResult) => void
 }
 
 export interface FeedbackDetectorState {
@@ -24,6 +26,12 @@ export interface FeedbackDetectorState {
   effectiveThresholdDb: number
   sampleRate: number
   fftSize: number
+  // Advanced algorithm state (populated by DSP pipeline)
+  algorithmMode?: AlgorithmMode
+  contentType?: ContentType
+  msdFrameCount?: number
+  isCompressed?: boolean
+  compressionRatio?: number
 }
 
 export class FeedbackDetector {
@@ -109,6 +117,13 @@ export class FeedbackDetector {
   // Ring/growth detection thresholds (mapped from DetectorSettings)
   private ringThresholdDb: number = -10
   private growthRateThreshold: number = 1.5
+
+  // Advanced algorithm state — set externally by DSP pipeline, returned via getState()
+  private _algorithmMode: AlgorithmMode | undefined = undefined
+  private _contentType: ContentType | undefined = undefined
+  private _msdFrameCount: number | undefined = undefined
+  private _isCompressed: boolean | undefined = undefined
+  private _compressionRatio: number | undefined = undefined
 
   constructor(config: Partial<AnalysisConfig> = {}, callbacks: FeedbackDetectorCallbacks = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
@@ -333,7 +348,26 @@ export class FeedbackDetector {
       effectiveThresholdDb: this.computeEffectiveThresholdDb(),
       sampleRate: this.audioContext?.sampleRate ?? 48000,
       fftSize: this.config.fftSize,
+      algorithmMode: this._algorithmMode,
+      contentType: this._contentType,
+      msdFrameCount: this._msdFrameCount,
+      isCompressed: this._isCompressed,
+      compressionRatio: this._compressionRatio,
     }
+  }
+
+  setAlgorithmState(state: {
+    algorithmMode?: AlgorithmMode
+    contentType?: ContentType
+    msdFrameCount?: number
+    isCompressed?: boolean
+    compressionRatio?: number
+  }): void {
+    if (state.algorithmMode !== undefined) this._algorithmMode = state.algorithmMode
+    if (state.contentType !== undefined) this._contentType = state.contentType
+    if (state.msdFrameCount !== undefined) this._msdFrameCount = state.msdFrameCount
+    if (state.isCompressed !== undefined) this._isCompressed = state.isCompressed
+    if (state.compressionRatio !== undefined) this._compressionRatio = state.compressionRatio
   }
 
   getSpectrum(): Float32Array | null {
@@ -966,7 +1000,7 @@ export class FeedbackDetector {
     }
 
     const frameCount = this.msdFrameCount[binIndex]
-    if (frameCount < MSD_SETTINGS.MIN_FRAMES) {
+    if (frameCount < MSD_SETTINGS.DEFAULT_MIN_FRAMES) {
       return { msd: -1, growthRate: 0, isHowl: false, fastConfirm: false }
     }
 
@@ -988,7 +1022,7 @@ export class FeedbackDetector {
     const avgGrowthRate = numFirstDeriv > 0 ? sumFirstDeriv / numFirstDeriv : 0
 
     // If not growing, not feedback
-    if (avgGrowthRate < MSD_SETTINGS.MIN_GROWTH_RATE) {
+    if (avgGrowthRate < this.growthRateThreshold) {
       this.msdConfirmFrames[binIndex] = 0
       return { msd: 999, growthRate: avgGrowthRate, isHowl: false, fastConfirm: false }
     }
