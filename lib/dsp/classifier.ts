@@ -21,6 +21,8 @@ import {
   analyzeCumulativeGrowth,
   calculateCalibratedConfidence,
   analyzeVibrato,
+  reverberationQAdjustment,
+  modalDensityFeedbackAdjustment,
 } from './acousticUtils'
 
 // Type union for track input
@@ -163,6 +165,18 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     reasons.push(`Narrow Q: ${features.minQ.toFixed(1)} (band: ${freqBand.band})`)
   }
 
+  // 6a. Reverberation-aware Q adjustment (Hopkins §1.2.6.3)
+  // Rooms with high RT60 produce naturally high-Q room modes.
+  // A peak Q ≤ Q_room = π·f·T₆₀/6.9 is more likely a room mode than feedback.
+  // A peak Q >> Q_room is unusually sharp → boost pFeedback.
+  {
+    const rt60Adj = reverberationQAdjustment(features.minQ, features.frequencyHz, roomRT60)
+    if (rt60Adj.delta !== 0) {
+      pFeedback += rt60Adj.delta
+      if (rt60Adj.reason) reasons.push(rt60Adj.reason)
+    }
+  }
+
   // 7. Persistence without modulation
   const persistenceThreshold = 1000 * freqBand.sustainMultiplier
   if (features.persistenceMs > persistenceThreshold && features.modulationScore < 0.2) {
@@ -170,13 +184,28 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     reasons.push(`Sustained without modulation: ${(features.persistenceMs / 1000).toFixed(1)}s`)
   }
 
-  // 8. NEW: Modal overlap analysis (from textbook)
+  // 8. Modal overlap analysis (from textbook)
   // Isolated modes (M < 0.3) are more likely feedback
   pFeedback += modalAnalysis.feedbackProbabilityBoost
   if (modalAnalysis.classification === 'ISOLATED') {
     reasons.push(`Isolated mode (M=${modalOverlap.toFixed(2)}) - high feedback risk`)
   } else if (modalAnalysis.classification === 'DIFFUSE') {
     reasons.push(`Diffuse field (M=${modalOverlap.toFixed(2)}) - likely room noise`)
+  }
+
+  // 8a. Hopkins n(f) modal density adjustment (Eq. 1.77)
+  // Sparse modal fields make peaks ambiguous; dense modal fields make sharp
+  // peaks stand out as feedback.  Derives from room volume + frequency.
+  {
+    const nfAdj = modalDensityFeedbackAdjustment(
+      features.frequencyHz,
+      roomVolume,
+      features.minQ
+    )
+    if (nfAdj.delta !== 0) {
+      pFeedback += nfAdj.delta
+      if (nfAdj.note) reasons.push(nfAdj.note)
+    }
   }
 
   // 9. NEW: Cumulative growth analysis (slow-building feedback)
