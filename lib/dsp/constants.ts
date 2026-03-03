@@ -311,13 +311,7 @@ export const DEFAULT_SETTINGS = {
   // Based on DAFx-16, DBX, and KU Leuven research papers
   // TUNED FOR FAST DETECTION (accepts more false positives for speed)
   algorithmMode: 'combined' as const, // MSD + Phase for best accuracy
-  msdMinFrames: 7, // FAST: Minimum frames for MSD (per DAFx-16 paper - 7 frames = 100% for speech)
-  phaseCoherenceThreshold: 0.65, // FAST: Lower threshold = faster detection, more false positives
-  enableCompressionDetection: true, // Detect compressed content for adaptive thresholds
-  enableCombPatternDetection: true, // Detect feedback patterns from DBX research
-  fusionFeedbackThreshold: 0.55, // FAST: Lower threshold = earlier detection
   showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
-  showPhaseDisplay: false, // Hide phase visualization by default
   // Harmonic filter and room mode settings
   harmonicFilterEnabled: true, // Enable harmonic series detection to filter instruments
   roomModesEnabled: false, // Room mode calculation disabled by default (advanced feature)
@@ -410,6 +404,12 @@ export const MSD_SETTINGS = {
    *  After normalizing by numTerms (frameCount - 2), threshold ≈ 1.0/14 ≈ 0.071.
    *  We use 0.1 (slightly loose) for robustness. */
   THRESHOLD: 0.1,
+  /** MSD below this → flag as feedback howl */
+  HOWL_THRESHOLD: 0.1,
+  /** MSD below this threshold on consecutive frames → fast-confirm feedback */
+  FAST_CONFIRM_THRESHOLD: 0.15,
+  /** Number of consecutive frames below FAST_CONFIRM_THRESHOLD to confirm */
+  FAST_CONFIRM_FRAMES: 3,
   /** Minimum frames for speech detection (100% accuracy per paper) */
   MIN_FRAMES_SPEECH: 7,
   /** Minimum frames for classical music (100% accuracy per paper) */
