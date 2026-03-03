@@ -129,43 +129,28 @@ export function harmonicSeries(fundamental: number, count: number = 8): number[]
 }
 
 /**
- * Format a duration to a human-readable string.
- * Accepts either a single value in milliseconds or two date/timestamp
- * arguments (start, end) and computes the elapsed time between them.
+ * Format an ISO date string (or epoch ms as string) into a human-readable date.
+ * e.g. "Mar 2, 2026"
  */
-export function formatDuration(msOrStart: number | string | Date, end?: string | Date | null): string {
-  let ms: number
-  if (end != null) {
-    const startTime = msOrStart instanceof Date ? msOrStart.getTime() : new Date(msOrStart).getTime()
-    const endTime = end instanceof Date ? end.getTime() : new Date(end).getTime()
-    ms = Math.abs(endTime - startTime)
-  } else if (typeof msOrStart === 'number') {
-    ms = msOrStart
-  } else {
-    return '—'
-  }
-
-  if (ms < 1000) return `${Math.round(ms)}ms`
-  const seconds = ms / 1000
-  if (seconds < 60) return `${seconds.toFixed(1)}s`
-  const minutes = Math.floor(seconds / 60)
-  const remainingSec = Math.round(seconds % 60)
-  if (minutes < 60) return `${minutes}m ${remainingSec}s`
-  const hours = Math.floor(minutes / 60)
-  const remainingMin = minutes % 60
-  return `${hours}h ${remainingMin}m`
+export function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 /**
- * Format a Date or timestamp to a locale-appropriate display string
+ * Format the elapsed time between two ISO timestamps.
+ * endedAt may be null (session still running) — returns "In progress" in that case.
+ * e.g. "3m 42s" or "58s"
  */
-export function formatDate(date: Date | number | string): string {
-  const d = date instanceof Date ? date : new Date(date)
-  return d.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+export function formatDuration(startedAt: string, endedAt: string | null): string {
+  if (!endedAt) return 'In progress'
+  const startMs = new Date(startedAt).getTime()
+  const endMs = new Date(endedAt).getTime()
+  if (isNaN(startMs) || isNaN(endMs)) return '—'
+  const totalSeconds = Math.max(0, Math.round((endMs - startMs) / 1000))
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  if (minutes === 0) return `${seconds}s`
+  return `${minutes}m ${seconds}s`
 }

@@ -279,14 +279,14 @@ export const OPERATION_MODES = {
 // Default settings for the analyzer - OPTIMIZED FOR CORPORATE/CONFERENCE SPEECH SYSTEMS
 // AGGRESSIVE DETECTION - better to have false positives than miss real feedback!
 export const DEFAULT_SETTINGS = {
-  mode: 'vocalRing' as const, // Vocal Ring - optimized for speech/vocal feedback detection
+  mode: 'feedbackHunt' as const, // Feedback Hunt is the balanced default for PA systems
   fftSize: 8192 as const, // Good frequency resolution for accurate detection
-  smoothingTimeConstant: 0.4, // Faster response for quick detection (lowered from 0.5)
-  minFrequency: 150, // Lowered from 200Hz to catch male vocal fundamental
-  maxFrequency: 10000, // Raised from 8kHz to catch sibilance/high harmonics
-  feedbackThresholdDb: 4, // MORE AGGRESSIVE - catch feedback very early (lowered from 6)
-  ringThresholdDb: 3, // MORE AGGRESSIVE - catch resonances before they become feedback (lowered from 4)
-  growthRateThreshold: 1.2, // FASTER - detect growing peaks more quickly (lowered from 1.5)
+  smoothingTimeConstant: 0.5, // Faster response for quick detection
+  minFrequency: 200, // Vocal-focused lower bound (below this is mostly HVAC rumble)
+  maxFrequency: 8000, // Vocal-focused upper bound - where most speech feedback occurs
+  feedbackThresholdDb: 6, // AGGRESSIVE - catch feedback early, before it's dangerous
+  ringThresholdDb: 4, // AGGRESSIVE - catch resonances before they become feedback
+  growthRateThreshold: 1.5, // FAST - detect growing peaks quickly
   holdTimeMs: 3000, // Longer hold for reference during EQ adjustments
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic environments
   peakMergeCents: 50,
@@ -310,23 +310,16 @@ export const DEFAULT_SETTINGS = {
   
   // ==================== ADVANCED ALGORITHM SETTINGS ====================
   // Based on DAFx-16, DBX, and KU Leuven research papers
-  // NOTE: Phase coherence is DISABLED - Web Audio API doesn't provide phase data
-  algorithmMode: 'msd' as const, // MSD only - phase disabled (no data from AnalyserNode)
-  msdMinFrames: 7, // Optimized for speech - 100% accuracy per DAFx-16 (lowered from 15)
-  phaseCoherenceThreshold: 0.75, // Kept for future use if phase is implemented
-  enableCompressionDetection: true, // Detect compressed content for adaptive thresholds
-  enableCombPatternDetection: true, // Detect feedback patterns from DBX research
-  fusionFeedbackThreshold: 0.55, // MORE AGGRESSIVE - lower threshold for more detections (lowered from 0.65)
+  // TUNED FOR FAST DETECTION (accepts more false positives for speed)
+  algorithmMode: 'combined' as const, // MSD + Phase for best accuracy
   showAlgorithmScores: false, // Hide advanced scores by default (for advanced users)
-  showPhaseDisplay: false, // Hide phase visualization by default (phase is disabled anyway)
-  // Phase 1: Harmonic Series Filter
-  harmonicFilterEnabled: true, // Filter out harmonic series (reduce instrument false positives)
-  // Phase 4: Room Mode Calculator
-  roomModesEnabled: false, // Disabled by default - requires room dimensions
-  roomLengthM: 10, // Default room length (meters)
-  roomWidthM: 8, // Default room width (meters)
-  roomHeightM: 3, // Default room height (meters)
-  roomDimensionsUnit: 'meters' as const,
+  // Harmonic filter and room mode settings
+  harmonicFilterEnabled: true, // Enable harmonic series detection to filter instruments
+  roomModesEnabled: false, // Room mode calculation disabled by default (advanced feature)
+  roomLengthM: 10, // Default room length in meters
+  roomWidthM: 8, // Default room width in meters
+  roomHeightM: 3, // Default room height in meters
+  roomDimensionsUnit: 'meters' as const, // Default unit for dimension input
 }
 
 // Room size presets for quick switching in corporate/conference environments
@@ -407,8 +400,17 @@ export const VIZ_COLORS = {
 
 // MSD (Magnitude Slope Deviation) from DAFx-16 paper
 export const MSD_SETTINGS = {
-  /** Default MSD threshold (dB²/frame²) - values below indicate feedback */
-  THRESHOLD: 0.5,
+  /** Default MSD threshold (dB²/frame²) - values below indicate feedback
+   *  DAFx-16 paper gives 1.0 dB²/frame² for 16-frame window.
+   *  After normalizing by numTerms (frameCount - 2), threshold ≈ 1.0/14 ≈ 0.071.
+   *  We use 0.1 (slightly loose) for robustness. */
+  THRESHOLD: 0.1,
+  /** MSD below this → flag as feedback howl */
+  HOWL_THRESHOLD: 0.1,
+  /** MSD below this threshold on consecutive frames → fast-confirm feedback */
+  FAST_CONFIRM_THRESHOLD: 0.15,
+  /** Number of consecutive frames below FAST_CONFIRM_THRESHOLD to confirm */
+  FAST_CONFIRM_FRAMES: 3,
   /** Minimum frames for speech detection (100% accuracy per paper) */
   MIN_FRAMES_SPEECH: 7,
   /** Minimum frames for classical music (100% accuracy per paper) */
@@ -419,47 +421,33 @@ export const MSD_SETTINGS = {
   DEFAULT_MIN_FRAMES: 15,
   /** Maximum frames (balance accuracy vs latency) */
   MAX_FRAMES: 50,
-  /** Ring buffer size per frequency bin for MSD history */
-  HISTORY_SIZE: 30,
-  /** Alias for DEFAULT_MIN_FRAMES - minimum frames for MSD calculation */
-  MIN_FRAMES: 7,
-  /** MSD value below which indicates howl (same as THRESHOLD, kept for clarity) */
-  HOWL_THRESHOLD: 0.5,
-  /** Minimum dB/frame growth rate to consider as potential feedback */
-  MIN_GROWTH_RATE: 0.1,
-  /** Stricter MSD threshold for fast confirmation (lower = more certain) */
-  FAST_CONFIRM_THRESHOLD: 0.2,
-  /** Consecutive frames below FAST_CONFIRM_THRESHOLD needed to confirm feedback */
-  FAST_CONFIRM_FRAMES: 3,
-  /** Minimum energy (dB above noise floor) required to run MSD analysis
-   *  Prevents false positives on quiet noise floor fluctuations (DAFx-16 Section 3) */
-  MIN_ENERGY_ABOVE_NOISE_DB: 6,
+  /** Ring buffer size for MSD magnitude history per bin */
+  HISTORY_SIZE: 64,
 } as const
 
-// Peak Persistence Scoring - tracks consecutive frames where a peak
-// persists at the same frequency bin. Feedback produces "vertical streaks"
-// in the spectrogram; transients are short-lived.
+// Peak Persistence Scoring - Phase 2 Enhancement
+// Feedback is persistent over time, transients are short-lived
 export const PERSISTENCE_SCORING = {
-  /** Max amplitude change (dB) to still count as "persisting" */
-  AMPLITUDE_TOLERANCE_DB: 4,
-  /** Maximum frames to track in persistence buffer */
-  HISTORY_FRAMES: 200,
-  /** Minimum consecutive frames to be considered persistent */
-  MIN_PERSISTENCE_FRAMES: 10,
-  /** Confidence boost for minimum persistence */
-  MIN_PERSISTENCE_BOOST: 0.05,
+  /** Maximum frames to track persistence (ring buffer size) */
+  HISTORY_FRAMES: 32,
+  /** dB tolerance for counting a frame as "same peak still present" */
+  AMPLITUDE_TOLERANCE_DB: 6,
+  /** Minimum consecutive frames to consider a peak persistent */
+  MIN_PERSISTENCE_FRAMES: 5,
   /** Frames for high persistence classification */
-  HIGH_PERSISTENCE_FRAMES: 30,
-  /** Confidence boost for high persistence */
-  HIGH_PERSISTENCE_BOOST: 0.15,
+  HIGH_PERSISTENCE_FRAMES: 15,
   /** Frames for very high persistence classification */
-  VERY_HIGH_PERSISTENCE_FRAMES: 60,
-  /** Confidence boost for very high persistence */
-  VERY_HIGH_PERSISTENCE_BOOST: 0.25,
-  /** Below this frame count, apply penalty (likely transient) */
-  LOW_PERSISTENCE_FRAMES: 5,
-  /** Penalty for low persistence (transient) */
-  LOW_PERSISTENCE_PENALTY: 0.10,
+  VERY_HIGH_PERSISTENCE_FRAMES: 30,
+  /** Confidence boost for minimally persistent peaks */
+  MIN_PERSISTENCE_BOOST: 0.05,
+  /** Confidence boost for highly persistent peaks */
+  HIGH_PERSISTENCE_BOOST: 0.12,
+  /** Confidence boost for very highly persistent peaks */
+  VERY_HIGH_PERSISTENCE_BOOST: 0.20,
+  /** Frame count below which a penalty is applied (transient peak) */
+  LOW_PERSISTENCE_FRAMES: 3,
+  /** Confidence penalty for transient peaks */
+  LOW_PERSISTENCE_PENALTY: 0.05,
 } as const
 
 // Phase coherence from KU Leuven/Nyquist analysis
@@ -529,11 +517,10 @@ export const FUSION_WEIGHTS = {
 } as const
 
 // Algorithm mode options for UI
-// NOTE: Phase coherence is DISABLED - Web Audio API doesn't provide phase data
 export const ALGORITHM_MODES = {
   auto: { label: 'Auto', description: 'Automatic algorithm selection based on content' },
-  msd: { label: 'MSD Only', description: 'Magnitude Slope Deviation - 100% for speech (RECOMMENDED)' },
-  phase: { label: 'Phase Only', description: 'DISABLED - Web Audio API limitation' },
-  combined: { label: 'MSD + Phase', description: 'Phase disabled - same as MSD only' },
-  all: { label: 'All Algorithms', description: 'MSD + Spectral + Comb (phase disabled)' },
+  msd: { label: 'MSD Only', description: 'Magnitude Slope Deviation (best for speech)' },
+  phase: { label: 'Phase Only', description: 'Phase coherence analysis' },
+  combined: { label: 'MSD + Phase', description: 'Combined analysis (recommended)' },
+  all: { label: 'All Algorithms', description: 'Maximum accuracy, higher CPU usage' },
 } as const

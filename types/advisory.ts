@@ -7,6 +7,8 @@ export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
 export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
 
 export type ThresholdMode = 'absolute' | 'relative' | 'hybrid'
+export type AlgorithmMode = 'auto' | 'msd' | 'phase' | 'combined' | 'all'
+export type ContentType = 'speech' | 'music' | 'compressed' | 'unknown'
 // Unified operation mode type - use 'vocalRing' everywhere (not 'vocalRingAssist')
 export type OperationMode = 'feedbackHunt' | 'vocalRing' | 'musicAware' | 'aggressive' | 'calibration'
 export type Preset = 'surgical' | 'heavy'
@@ -220,12 +222,12 @@ export interface SpectrumData {
   fftSize: number
   timestamp: number
   peak: number // Peak level in dB for metering
-  // Advanced algorithm status (populated by dspWorker / createAudioAnalyzer)
-  algorithmMode?: AlgorithmMode
-  contentType?: ContentType
-  msdFrameCount?: number
-  isCompressed?: boolean
-  compressionRatio?: number
+  // Algorithm status fields (populated by DSP worker)
+  algorithmMode?: AlgorithmMode // Which detection algorithm is active
+  contentType?: ContentType // Detected content type (speech, music, compressed, unknown)
+  msdFrameCount?: number // Number of frames accumulated for MSD calculation
+  isCompressed?: boolean // Whether compressed/limited audio is detected
+  compressionRatio?: number // Estimated compression ratio (1.0 = no compression, higher = more compressed)
 }
 
 export interface AnalyzerState {
@@ -333,15 +335,9 @@ export interface DetectorSettings {
   roomWidthM: number // Room width in meters
   roomHeightM: number // Room height in meters
   roomDimensionsUnit: 'meters' | 'feet' // Unit for dimension input
-  // Advanced algorithm settings
-  algorithmMode?: AlgorithmMode // Which algorithms to use (default: 'msd')
-  msdMinFrames?: number // Minimum frames for MSD analysis
-  phaseCoherenceThreshold?: number // Phase coherence threshold (kept for future)
-  enableCompressionDetection?: boolean // Detect compressed content
-  enableCombPatternDetection?: boolean // Detect comb filter patterns
-  fusionFeedbackThreshold?: number // Fusion probability threshold for positive detection
-  showAlgorithmScores?: boolean // Show advanced algorithm scores in UI
-  showPhaseDisplay?: boolean // Show phase visualization (disabled - no data)
+  // Algorithm mode and scoring display
+  algorithmMode: AlgorithmMode // Which detection algorithm to use (auto, msd, phase, combined, all)
+  showAlgorithmScores: boolean // Show the algorithm status bar with live scoring metrics
 }
 
 // Default configuration - optimized for Corporate/Conference PA with Vocal Focus (200Hz-8kHz)

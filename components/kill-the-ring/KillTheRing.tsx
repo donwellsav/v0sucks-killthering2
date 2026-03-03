@@ -12,7 +12,6 @@ import { IssuesList } from './IssuesList'
 import { EQNotepad, advisoryToPin, type PinnedCut } from './EQNotepad'
 import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
-import { WaterfallCanvas } from './WaterfallCanvas'
 import { SettingsPanel } from './SettingsPanel'
 import { DetectionControls } from './DetectionControls'
 import { HelpMenu } from './HelpMenu'
@@ -28,12 +27,12 @@ import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { getEventLogger } from '@/lib/logging/eventLogger'
 
-type GraphView = 'rta' | 'geq' | 'waterfall'
+type GraphView = 'rta' | 'geq' | 'controls'
 
 const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'rta', label: 'RTA' },
   { value: 'geq', label: 'GEQ' },
-  { value: 'waterfall', label: 'WTF' },
+  { value: 'controls', label: 'Controls' },
 ]
 
 export const KillTheRing = memo(function KillTheRingComponent() {
@@ -46,6 +45,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     fftSize,
     spectrum,
     advisories,
+    earlyWarning,
     settings,
     start,
     stop,
@@ -55,7 +55,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
   const [bottomLeftGraph, setBottomLeftGraph] = useState<GraphView>('geq')
-  const [bottomRightGraph, setBottomRightGraph] = useState<GraphView>('waterfall')
+  const [bottomRightGraph, setBottomRightGraph] = useState<GraphView>('controls')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileShowGraph, setMobileShowGraph] = useState(false)
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad'>('issues')
@@ -216,7 +216,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       {/* ─── KILL THE RING v2.1 ─────────────────────────────────────────────────
           Buildtime: 2026-02-28 | Bundler cache: invalidated
           Layout: Header + Mobile/Desktop content + Reset confirmation
-          Graphs: GRAPH_CHIPS (RTA/GEQ/Waterfall) - NO window.innerWidth SSR access
+          Graphs: GRAPH_CHIPS (RTA/GEQ/Controls) - NO window.innerWidth SSR access
           ──────────────────────────────────────────────────────────────────────── */}
 
       {/* ── Header ─────────────────────────────────────────────── */}
@@ -247,17 +247,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 >
                   <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                 </svg>
-                {!isRunning && (
-                  <div 
-                    className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-                    style={{ transform: 'translateY(calc(100% + 12px))' }}
-                  >
-                    <span className="font-black whitespace-nowrap text-white leading-none" style={{ fontSize: '13px' }}>
-                      START
-                    </span>
-                  </div>
-                )}
               </button>
+
             </div>
 
             <div className="flex flex-col justify-center gap-[3px]">
@@ -420,10 +411,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </section>
             <div className="border-t border-border" />
             <section>
-              <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-            </section>
-            <div className="border-t border-border" />
-            <section>
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
                 <span className="text-primary font-mono">{advisories.length}</span>
@@ -464,21 +451,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
       )}
 
-      {/* ── Algorithm Status Bar (when enabled) ─────────────────── */}
-      {settings.showAlgorithmScores && (
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm">
-          <AlgorithmStatusBar
-            algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
-            contentType={spectrum?.contentType}
-            msdFrameCount={spectrum?.msdFrameCount}
-            isCompressed={spectrum?.isCompressed}
-            compressionRatio={spectrum?.compressionRatio}
-            isRunning={isRunning}
-            showDetailed
-          />
-        </div>
-      )}
-
       {/* ── Error banner ───────────────────────────────────────── */}
       {error && (
         <div className="px-4 py-1.5 bg-destructive/10 border-b border-destructive/20">
@@ -500,9 +472,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 compact
               />
             </div>
-            <div className="border-b border-border p-3 flex-shrink-0 bg-card/50 overflow-y-auto max-h-48">
-              <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-            </div>
             <div className="flex-1 overflow-y-auto p-3">
               <h2 className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
                 <span>Active Issues</span>
@@ -522,8 +491,17 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* Desktop: Always-visible left sidebar */}
         <aside className="hidden landscape:flex w-56 xl:w-64 2xl:w-72 flex-shrink-0 border-r border-border bg-card/50 flex-col overflow-hidden">
-          <div className="flex-shrink-0 border-b border-border p-3">
-            <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+          {/* Algorithm status — always visible in sidebar */}
+          <div className="flex-shrink-0 border-b border-border p-2">
+            <AlgorithmStatusBar
+              algorithmMode={spectrum?.algorithmMode ?? settings.algorithmMode}
+              contentType={spectrum?.contentType}
+              msdFrameCount={spectrum?.msdFrameCount}
+              isCompressed={spectrum?.isCompressed}
+              compressionRatio={spectrum?.compressionRatio}
+              isRunning={isRunning}
+              showDetailed={settings.showAlgorithmScores}
+            />
           </div>
           {/* Issues / Notepad tab bar */}
           <div className="flex-shrink-0 flex border-b border-border">
@@ -604,13 +582,15 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               </div>
               <div className="relative flex-1 min-h-0">
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
+                  <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} />
                 </div>
                 <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                   <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} />
                 </div>
-                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'waterfall' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                  <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={settings.graphFontSize} />
+                <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'controls' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
+                  <div className="h-full p-4 overflow-y-auto">
+                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -633,7 +613,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             ))}
           </div>
 
-          {/* Bottom row: GEQ + Waterfall always visible (~40% height), tablet and up */}
+          {/* Bottom row: Two configurable graphs (~40% height), tablet and up */}
           <div className="hidden landscape:flex flex-[2] min-h-0 gap-1.5 landscape:gap-2 p-1.5 landscape:p-3 pt-0.5 landscape:pt-1">
             {/* Bottom-Left Graph */}
             <div className="flex-1 bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
@@ -655,9 +635,13 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 </div>
               </div>
               <div className="flex-1 min-h-0 pointer-events-none">
-                {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} />}
                 {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomLeftGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomLeftGraph === 'controls' && (
+                  <div className="h-full p-3 overflow-y-auto pointer-events-auto">
+                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                  </div>
+                )}
               </div>
             </div>
             {/* Bottom-Right Graph */}
@@ -680,9 +664,13 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 </div>
               </div>
               <div className="flex-1 min-h-0 pointer-events-none">
-                {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomRightGraph === 'rta' && <SpectrumCanvas spectrum={spectrum} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} />}
                 {bottomRightGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
-                {bottomRightGraph === 'waterfall' && <WaterfallCanvas spectrum={spectrum} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} />}
+                {bottomRightGraph === 'controls' && (
+                  <div className="h-full p-3 overflow-y-auto pointer-events-auto">
+                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
