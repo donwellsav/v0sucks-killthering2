@@ -797,69 +797,6 @@ export class AmplitudeHistoryBuffer {
   }
 }
 
-  addSample(peakDb: number, rmsDb: number): void {
-    this.history.push(peakDb - rmsDb) // Store crest factor
-    if (this.history.length > this.maxSamples) {
-      this.history.shift()
-    }
-  }
-
-  /**
-   * Analyze amplitude history for compression artifacts
-   */
-  detectCompression(): CompressionResult {
-    if (this.history.length < 10) {
-      return {
-        isCompressed: false,
-        estimatedRatio: 1,
-        crestFactor: COMPRESSION_CONSTANTS.NORMAL_CREST_FACTOR,
-        dynamicRange: COMPRESSION_CONSTANTS.MIN_DYNAMIC_RANGE,
-        thresholdMultiplier: 1,
-      }
-    }
-
-    // Calculate average crest factor
-    const crestFactor = this.history.reduce((a, b) => a + b, 0) / this.history.length
-
-    // Calculate dynamic range
-    const max = Math.max(...this.history)
-    const min = Math.min(...this.history)
-    const dynamicRange = max - min
-
-    // Estimate compression ratio from crest factor reduction
-    // Uncompressed audio typically has crest factor ~12-14 dB
-    // Heavily compressed audio has crest factor ~4-6 dB
-    const normalCrest = COMPRESSION_CONSTANTS.NORMAL_CREST_FACTOR
-    const estimatedRatio = normalCrest / Math.max(crestFactor, 1)
-
-    // Determine if compressed
-    const isCompressed = crestFactor < COMPRESSION_CONSTANTS.COMPRESSED_CREST_FACTOR ||
-                         dynamicRange < COMPRESSION_CONSTANTS.COMPRESSED_DYNAMIC_RANGE
-
-    // Calculate threshold adjustment
-    // If compressed, we need to be more careful about sustained notes
-    // that look like feedback
-    let thresholdMultiplier = 1
-    if (isCompressed) {
-      // Increase thresholds by up to 50% for heavily compressed content
-      thresholdMultiplier = 1 + (estimatedRatio - 1) * 0.25
-      thresholdMultiplier = Math.min(thresholdMultiplier, 1.5)
-    }
-
-    return {
-      isCompressed,
-      estimatedRatio,
-      crestFactor,
-      dynamicRange,
-      thresholdMultiplier,
-    }
-  }
-
-  reset(): void {
-    this.history = []
-  }
-}
-
 // ============================================================================
 // ALGORITHM FUSION ENGINE
 // Combines all algorithms into a unified detection score
