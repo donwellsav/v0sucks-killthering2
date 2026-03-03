@@ -216,6 +216,11 @@ export interface SpectrumData {
   fftSize: number
   timestamp: number
   peak: number // Peak level in dB for metering
+  // Algorithm status fields (populated by DSP worker)
+  algorithmMode?: AlgorithmMode // Which detection algorithm is active
+  contentType?: ContentType // Detected content type (speech, music, compressed, unknown)
+  msdFrameCount?: number // Number of frames accumulated for MSD calculation
+  isCompressed?: boolean // Whether compressed/limited audio is detected
 }
 
 export interface AnalyzerState {
