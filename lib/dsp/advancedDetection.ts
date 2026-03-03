@@ -686,13 +686,116 @@ export function detectCombPattern(
 /**
  * Amplitude history buffer for compression detection
  */
+/**
+ * Circular buffer tracking peak and RMS dB per frame.
+ *
+ * FIXED: Previously stored only (peakDb - rmsDb) which gave crest-factor
+ * variance instead of true signal dynamic range.  We now store peak and RMS
+ * separately so detectCompression() can compute:
+ *
+ *   dynamicRange  = max(peakDb over window) − min(rmsDb over window)
+ *   crestFactor   = mean(peakDb − rmsDb)
+ *
+ * This matches the textbook definition: dynamic range is the ratio between
+ * the loudest peak and the quietest sustained passage, measured in dB.
+ */
 export class AmplitudeHistoryBuffer {
-  private history: number[] = []
-  private maxSamples: number
+  /** Per-frame peak dB */
+  private peakHistory: number[] = []
+  /** Per-frame RMS dB */
+  private rmsHistory: number[] = []
+  private maxSize: number
 
-  constructor(maxSamples: number = 100) {
-    this.maxSamples = maxSamples
+  constructor(maxSize: number = 100) {
+    this.maxSize = maxSize
   }
+
+  /**
+   * Add a new amplitude sample.
+   * @param peakDb  - Frame peak in dB (from power spectrum peak)
+   * @param rmsDb   - Frame RMS in dB  (from power spectrum RMS)
+   */
+  addSample(peakDb: number, rmsDb: number): void {
+    this.peakHistory.push(peakDb)
+    this.rmsHistory.push(rmsDb)
+    if (this.peakHistory.length > this.maxSize) {
+      this.peakHistory.shift()
+      this.rmsHistory.shift()
+    }
+  }
+
+  /**
+   * Analyse the stored history to detect heavy compression.
+   *
+   * True dynamic range = max(peak) − min(rms) over the analysis window.
+   * Crest factor       = mean(peak − rms) per frame.
+   *
+   * Compressed content has:
+   *   - low crest factor  (< ~6 dB after hard limiting)
+   *   - narrow dynamic range (< ~10 dB for brick-wall limited pop/rock)
+   *
+   * Uncompressed speech/acoustic content typically has:
+   *   - crest factor 12–18 dB
+   *   - dynamic range 20–40 dB
+   */
+  detectCompression(): CompressionResult {
+    const n = this.peakHistory.length
+    if (n < 10) {
+      return {
+        isCompressed: false,
+        estimatedRatio: 1,
+        crestFactor: COMPRESSION_CONSTANTS.NORMAL_CREST_FACTOR,
+        dynamicRange: COMPRESSION_CONSTANTS.MIN_DYNAMIC_RANGE,
+        thresholdMultiplier: 1,
+      }
+    }
+
+    // True dynamic range: span between highest peak and lowest RMS
+    let maxPeak = -Infinity
+    let minRms  =  Infinity
+    let crestSum = 0
+    for (let i = 0; i < n; i++) {
+      const p = this.peakHistory[i]
+      const r = this.rmsHistory[i]
+      if (p > maxPeak) maxPeak = p
+      if (r < minRms)  minRms  = r
+      crestSum += (p - r)
+    }
+    const dynamicRange = maxPeak - minRms          // true dynamic range (dB)
+    const crestFactor  = crestSum / n              // mean crest factor (dB)
+
+    // Estimate compression ratio from crest factor reduction.
+    // Uncompressed programme typically has crest factor ~12–14 dB.
+    const normalCrest   = COMPRESSION_CONSTANTS.NORMAL_CREST_FACTOR
+    const estimatedRatio = normalCrest / Math.max(crestFactor, 1)
+
+    // Content is "compressed" when either metric falls below threshold
+    const isCompressed =
+      crestFactor   < COMPRESSION_CONSTANTS.COMPRESSED_CREST_FACTOR  ||
+      dynamicRange  < COMPRESSION_CONSTANTS.COMPRESSED_DYNAMIC_RANGE
+
+    // Raise detection thresholds proportionally so sustained notes from
+    // compressed instruments don't flood us with false feedback positives.
+    let thresholdMultiplier = 1
+    if (isCompressed) {
+      // Scale up to 1.5× for heavily limited content
+      thresholdMultiplier = Math.min(1 + (estimatedRatio - 1) * 0.25, 1.5)
+    }
+
+    return {
+      isCompressed,
+      estimatedRatio,
+      crestFactor,
+      dynamicRange,
+      thresholdMultiplier,
+    }
+  }
+
+  reset(): void {
+    this.peakHistory = []
+    this.rmsHistory  = []
+  }
+}
 
   addSample(peakDb: number, rmsDb: number): void {
     this.history.push(peakDb - rmsDb) // Store crest factor

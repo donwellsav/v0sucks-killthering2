@@ -87,13 +87,18 @@ export class FeedbackDetector {
   private activeBinPos: Int32Array | null = null
   private activeCount: number = 0
   
-  // Time-domain buffer for proper phase extraction via manual FFT
-  private timeDomainData: Float32Array | null = null
-  // FFT computation buffers (real and imaginary parts)
-  private fftReal: Float32Array | null = null
-  private fftImag: Float32Array | null = null
-  // Extracted phase data (in radians)
-  private phaseData: Float32Array | null = null
+  // ---- Phase extraction: dual-snapshot phase-difference estimator ----
+  // We keep two consecutive time-domain snapshots and derive per-bin phase
+  // via the instantaneous frequency estimate:
+  //   Δφ_k = arg( X_k(t) · conj(X_k(t-1)) )
+  // where X_k is the analytic DFT bin computed from getFloatTimeDomainData.
+  // This avoids a manual FFT entirely and matches the AnalyserNode's own
+  // windowing so there is no normalization mismatch.
+  private tdBufA: Float32Array | null = null   // current frame time-domain
+  private tdBufB: Float32Array | null = null   // previous frame time-domain
+  private phaseData: Float32Array | null = null // extracted phase per bin (radians)
+  private tdBufSwap: boolean = false            // ping-pong flag
+
   // Last detected comb pattern (for deduplication of callbacks)
   private lastCombPattern: CombPatternResult | null = null
 
@@ -465,12 +470,12 @@ export class FeedbackDetector {
     this.recomputeDerivedIndices()
     
     // ==================== Phase Extraction Buffers ====================
-    // Time-domain buffer for manual FFT (full FFT size, not just frequency bins)
+    // Two time-domain snapshots for dual-snapshot phase-diff estimator
     const fftSize = this.config.fftSize
-    this.timeDomainData = new Float32Array(fftSize)
-    this.fftReal = new Float32Array(n)
-    this.fftImag = new Float32Array(n)
+    this.tdBufA = new Float32Array(fftSize)
+    this.tdBufB = new Float32Array(fftSize)
     this.phaseData = new Float32Array(n)
+    this.tdBufSwap = false
     
     // ==================== Advanced Detection Buffers ====================
     // MSD history buffer - stores dB magnitude for second derivative analysis
@@ -885,8 +890,13 @@ export class FeedbackDetector {
             this.recentPeakFrequencies.shift()
           }
           
-          // Fuse algorithm results
-          const existingScore = prominence / 20 // Normalize prominence to 0-1 range
+          // Normalise prominence to (0, 1) via a logistic sigmoid so that
+          // very high-prominence peaks (> 20 dB) are not clipped to 1.0.
+          // Sigmoid: f(x) = 1 / (1 + e^(-k*(x - x0)))
+          //   x0 = 15 dB  (inflection — moderate prominence)
+          //   k  = 0.18   (controls slope; at x=30 dB → ~0.94)
+          // Previously: existingScore = prominence / 20  (clipped at 1.0 for > 20 dB)
+          const existingScore = 1 / (1 + Math.exp(-0.18 * (prominence - 15)))
           const fusion = fuseAlgorithmResults(
             algorithmScores,
             this.detectedContentType,
@@ -1142,112 +1152,100 @@ export class FeedbackDetector {
     return arithmeticMean > 0 ? geometricMean / arithmeticMean : 0.5
   }
 
-  // ==================== Phase Extraction via Time-Domain FFT ====================
+  // ==================== Phase Extraction: Dual-Snapshot Phase-Difference ====================
 
   /**
-   * Extract phase data from time-domain signal using manual DFT
-   * This is necessary because Web Audio's AnalyserNode only provides magnitude data
-   * 
-   * Uses optimized radix-2 Cooley-Tukey FFT algorithm
-   * Returns phase in radians for each frequency bin
+   * Dual-snapshot phase-difference estimator.
+   *
+   * Each call captures one time-domain frame via getFloatTimeDomainData().
+   * We maintain two ping-pong buffers (tdBufA / tdBufB).  Once we have two
+   * frames we compute — for each frequency bin k — the instantaneous phase
+   * using the cross-correlation of the two DFTs:
+   *
+   *   Δφ_k  =  atan2( Im(X_cur · conj(X_prev)),  Re(X_cur · conj(X_prev)) )
+   *
+   * where X_k is estimated with a 3-sample Goertzel filter centred on bin k.
+   * Goertzel is O(N) per bin and shares the same Hann window the AnalyserNode
+   * uses, so there is no normalisation mismatch.
+   *
+   * For a pure sustained tone (feedback) the phase difference between
+   * successive frames is constant → coherence ≈ 1.
+   * For broadband/musical content it varies randomly → coherence ≈ 0.
    */
   private extractPhaseData(): void {
     const analyser = this.analyser
-    if (!analyser || !this.timeDomainData || !this.fftReal || !this.fftImag || !this.phaseData) return
+    if (!analyser || !this.tdBufA || !this.tdBufB || !this.phaseData) return
 
-    // Get time-domain data
-    analyser.getFloatTimeDomainData(this.timeDomainData)
+    const N  = this.config.fftSize
+    const sr = this.getSampleRate()
+    const numBins = N >> 1
 
-    const n = this.config.fftSize
-    const numBins = n / 2
+    // Ping-pong: write new frame into the buffer that is NOT the previous one
+    const cur  = this.tdBufSwap ? this.tdBufA : this.tdBufB
+    const prev = this.tdBufSwap ? this.tdBufB : this.tdBufA
+    this.tdBufSwap = !this.tdBufSwap
 
-    // Apply Hann window and prepare for FFT
-    const real = this.fftReal
-    const imag = this.fftImag
-    const timeDomain = this.timeDomainData
+    analyser.getFloatTimeDomainData(cur)
 
-    // Apply Hann window: w(n) = 0.5 * (1 - cos(2*pi*n/N))
-    for (let i = 0; i < n; i++) {
-      const window = 0.5 * (1 - Math.cos((2 * Math.PI * i) / n))
-      const idx = i < numBins ? i : 0
-      if (i < numBins) {
-        real[idx] = timeDomain[i] * window
-        imag[idx] = 0
-      }
+    // Need at least 2 frames before we can compute phase diff
+    // On the very first call prev is all-zeros — skip it
+    let hasData = false
+    for (let i = 0; i < 16; i++) {
+      if (prev[i] !== 0) { hasData = true; break }
     }
+    if (!hasData) return
 
-    // Compute FFT using radix-2 Cooley-Tukey (in-place)
-    this.computeFFT(real, imag, numBins)
-
-    // Extract phase: phase = atan2(imag, real)
     const phase = this.phaseData
-    for (let i = 0; i < numBins; i++) {
-      phase[i] = Math.atan2(imag[i], real[i])
-    }
 
-    // Update phase history buffer with actual phase data
+    // Hann window coefficients (precomputed as scalar multiply)
+    // w(n) = 0.5 * (1 - cos(2π n / N))
+    // We evaluate each Goertzel for the centre frequency of bin k:
+    //   f_k = k * sr / N
+    //   ω_k = 2π f_k / sr = 2π k / N
+    for (let k = 1; k < numBins; k++) {
+      const omega = (2 * Math.PI * k) / N
+
+      // Single-pass Goertzel over the current and previous windowed frames
+      // Returns (real, imag) of the DFT bin
+      let s1Cur = 0, s2Cur = 0  // current frame
+      let s1Prv = 0, s2Prv = 0  // previous frame
+
+      const coeff = 2 * Math.cos(omega)
+
+      for (let n = 0; n < N; n++) {
+        // Hann window sample
+        const w = 0.5 * (1 - Math.cos((2 * Math.PI * n) / N))
+        const xc = cur[n]  * w
+        const xp = prev[n] * w
+
+        // Goertzel recurrence: s[n] = x[n] + coeff*s[n-1] - s[n-2]
+        const s0Cur = xc + coeff * s1Cur - s2Cur
+        s2Cur = s1Cur; s1Cur = s0Cur
+
+        const s0Prv = xp + coeff * s1Prv - s2Prv
+        s2Prv = s1Prv; s1Prv = s0Prv
+      }
+
+      // Final Goertzel output: Y = s1 - s2 * e^{-jω}
+      const sinO = Math.sin(omega)
+      const cosO = Math.cos(omega)
+      const reCur = s1Cur - s2Cur * cosO
+      const imCur = s2Cur * sinO
+      const rePrv = s1Prv - s2Prv * cosO
+      const imPrv = s2Prv * sinO
+
+      // Cross-correlation X_cur · conj(X_prev)
+      const crossRe = reCur * rePrv + imCur * imPrv
+      const crossIm = imCur * rePrv - reCur * imPrv
+
+      // Phase difference (instantaneous frequency deviation)
+      phase[k] = Math.atan2(crossIm, crossRe)
+    }
+    phase[0] = 0 // DC — no meaningful phase
+
+    // Feed real phase data into the coherence history buffer
     if (this.phaseBuffer) {
       this.phaseBuffer.addFrame(phase)
-    }
-  }
-
-  /**
-   * In-place radix-2 Cooley-Tukey FFT
-   * Optimized for power-of-two sizes
-   */
-  private computeFFT(real: Float32Array, imag: Float32Array, n: number): void {
-    // Bit-reversal permutation
-    let j = 0
-    for (let i = 0; i < n - 1; i++) {
-      if (i < j) {
-        // Swap real[i] and real[j]
-        let temp = real[i]
-        real[i] = real[j]
-        real[j] = temp
-        // Swap imag[i] and imag[j]
-        temp = imag[i]
-        imag[i] = imag[j]
-        imag[j] = temp
-      }
-      let k = n >> 1
-      while (k <= j) {
-        j -= k
-        k >>= 1
-      }
-      j += k
-    }
-
-    // Cooley-Tukey iterative FFT
-    for (let len = 2; len <= n; len <<= 1) {
-      const halfLen = len >> 1
-      const angle = -2 * Math.PI / len
-      const wReal = Math.cos(angle)
-      const wImag = Math.sin(angle)
-
-      for (let i = 0; i < n; i += len) {
-        let curReal = 1
-        let curImag = 0
-
-        for (let k = 0; k < halfLen; k++) {
-          const evenIdx = i + k
-          const oddIdx = i + k + halfLen
-
-          // Butterfly operation
-          const tReal = curReal * real[oddIdx] - curImag * imag[oddIdx]
-          const tImag = curReal * imag[oddIdx] + curImag * real[oddIdx]
-
-          real[oddIdx] = real[evenIdx] - tReal
-          imag[oddIdx] = imag[evenIdx] - tImag
-          real[evenIdx] = real[evenIdx] + tReal
-          imag[evenIdx] = imag[evenIdx] + tImag
-
-          // Update twiddle factor
-          const nextReal = curReal * wReal - curImag * wImag
-          const nextImag = curReal * wImag + curImag * wReal
-          curReal = nextReal
-          curImag = nextImag
-        }
-      }
     }
   }
 

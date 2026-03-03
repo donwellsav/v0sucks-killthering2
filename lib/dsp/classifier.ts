@@ -193,12 +193,21 @@ export function classifyTrack(track: TrackInput, settings?: DetectorSettings): C
     }
   }
 
-  // 10. NEW: Frequency band context
-  if (freqBand.band === 'LOW' && features.frequencyHz < schroederFreq) {
-    // Below Schroeder frequency - more likely room mode than feedback
-    pFeedback -= 0.1
-    pInstrument += 0.05
-    reasons.push(`Below Schroeder freq (${schroederFreq.toFixed(0)}Hz) - possible room mode`)
+  // 10. Frequency band context — Schroeder room-mode penalty
+  // BUG FIX: Previously gated on `band === 'LOW' && freq < schroederHz`
+  // but getFrequencyBand() already sets band = 'LOW' for freq < max(schroederHz, 300 Hz).
+  // The redundant freq < schroederHz sub-condition caused the penalty to never
+  // fire in typical rooms where schroederHz ≤ 200 Hz.
+  //
+  // PHYSICS (Hopkins §1.2.6): Below the Schroeder frequency individual room
+  // modes dominate.  Modal density n(f) ≈ 4π f² V / c³ → very sparse below
+  // ~200 Hz.  A sharp peak in this range is far more likely to be a room mode
+  // than acoustic feedback.  Penalty increased to -0.25 (was -0.1).
+  if (freqBand.band === 'LOW') {
+    // Below Schroeder boundary: very likely a room mode, not feedback
+    pFeedback   -= 0.25
+    pInstrument += 0.10
+    reasons.push(`Below Schroeder boundary (${schroederFreq.toFixed(0)} Hz) — probable room mode`)
   }
 
   // ==================== Normalization ====================
