@@ -423,6 +423,8 @@ export const MSD_SETTINGS = {
   MAX_FRAMES: 50,
   /** Ring buffer size for MSD magnitude history per bin */
   HISTORY_SIZE: 64,
+  /** Minimum energy above noise floor (dB) required to run MSD analysis on a bin */
+  MIN_ENERGY_ABOVE_NOISE_DB: 6,
 } as const
 
 // Peak Persistence Scoring - Phase 2 Enhancement

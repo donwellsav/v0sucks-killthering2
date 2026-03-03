@@ -419,8 +419,9 @@ export function calculateSpectralFlatness(
   peakBin: number,
   bandwidth?: number
 ): SpectralFlatnessResult {
-  const startBin = Math.max(0, peakBin - bandwidth)
-  const endBin   = Math.min(spectrum.length - 1, peakBin + bandwidth)
+  const bw = bandwidth ?? 5
+  const startBin = Math.max(0, peakBin - bw)
+  const endBin   = Math.min(spectrum.length - 1, peakBin + bw)
   const region: number[] = []
 
   for (let i = startBin; i <= endBin; i++) {
@@ -1117,6 +1118,27 @@ export function detectContentType(
   // Mid flatness (0.05-0.2) with high crest factor → speech
   if (crestFactor > 8) {
     return 'speech'
+  }
+
+  // Compute spectral centroid and rolloff from the spectrum
+  let totalPower = 0
+  let weightedSum = 0
+  for (let i = 0; i < spectrum.length; i++) {
+    const power = spectrum[i] * spectrum[i]
+    totalPower += power
+    weightedSum += i * power
+  }
+  const centroidNormalized = totalPower > 0 ? weightedSum / totalPower / spectrum.length : 0
+
+  const rolloffThreshold = totalPower * 0.85
+  let cumulative = 0
+  let rolloffBin = spectrum.length - 1
+  for (let i = 0; i < spectrum.length; i++) {
+    cumulative += spectrum[i] * spectrum[i]
+    if (cumulative >= rolloffThreshold) {
+      rolloffBin = i
+      break
+    }
   }
   const rolloffNormalized = rolloffBin / spectrum.length
 
