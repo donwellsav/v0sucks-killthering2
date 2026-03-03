@@ -139,7 +139,16 @@ export const COMPRESSION_CONSTANTS = {
   ANALYSIS_WINDOW_MS: 500,
 } as const
 
-export const FUSION_WEIGHTS = {
+/** Shape of any algorithm weight set — all five keys, all numbers in (0,1]. */
+export interface FusionWeights {
+  msd: number
+  phase: number
+  spectral: number
+  comb: number
+  existing: number
+}
+
+export const FUSION_WEIGHTS: Record<string, FusionWeights> = {
   DEFAULT: {
     msd: 0.35,
     phase: 0.30,
@@ -168,7 +177,7 @@ export const FUSION_WEIGHTS = {
     comb: 0.10,
     existing: 0.10,
   },
-} as const
+}
 
 // ============================================================================
 // MAGNITUDE SLOPE DEVIATION (MSD) — DAFx-16
@@ -647,7 +656,7 @@ export type ContentType   = 'speech' | 'music' | 'compressed' | 'unknown'
 
 export interface FusionConfig {
   mode: AlgorithmMode
-  customWeights?: Partial<typeof FUSION_WEIGHTS.DEFAULT>
+  customWeights?: Partial<FusionWeights>
   msdMinFrames: number
   phaseThreshold: number
   enableCompressionDetection: boolean
@@ -681,7 +690,7 @@ export function fuseAlgorithmResults(
   const reasons: string[] = []
   const contributingAlgorithms: string[] = []
 
-  let weights: typeof FUSION_WEIGHTS.DEFAULT
+  let weights: FusionWeights
   if (scores.compression?.isCompressed) {
     weights = FUSION_WEIGHTS.COMPRESSED
     reasons.push(`Compression detected (ratio ~${scores.compression.estimatedRatio.toFixed(1)}:1)`)
