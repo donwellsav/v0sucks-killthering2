@@ -637,17 +637,17 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         fftSize
       )
 
-      // Dedup: frequency proximity (original) + GEQ band-level (new)
+      // Dedup: one advisory per 1/3 octave band (primary) + frequency proximity (secondary)
       const existingId = trackToAdvisoryId.get(track.id)
       let mergedClusterCount = 1
 
       if (!existingId) {
-        // Check 1: cents-based proximity dedup (original logic)
-        const freqDup = findDuplicateAdvisory(track.trueFrequencyHz, track.id)
-        // Check 2: GEQ band-level dedup — prevents two cards for the same fader
+        // Primary: GEQ band-level dedup — strictly one advisory per 1/3 octave fader
         const geqBandIndex = eqAdvisory.geq.bandIndex
-        const bandDup = !freqDup ? findAdvisoryForSameBand(geqBandIndex, track.id) : null
-        const dup = freqDup ?? bandDup
+        const bandDup = findAdvisoryForSameBand(geqBandIndex, track.id)
+        // Secondary: cents-based proximity dedup (catches cross-band near-duplicates)
+        const freqDup = !bandDup ? findDuplicateAdvisory(track.trueFrequencyHz, track.id) : null
+        const dup = bandDup ?? freqDup
 
         if (dup) {
           const existingUrgency = getSeverityUrgency(dup.severity)

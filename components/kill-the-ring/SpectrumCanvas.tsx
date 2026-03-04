@@ -236,7 +236,11 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
       ctx.globalAlpha = 1
     }
 
-    // Draw peak markers for advisories
+    // Draw peak markers for advisories (with label collision avoidance)
+    const labelFontSize = fontSize + 3
+    const labelHeight = labelFontSize + 4
+    const placedLabels: { x: number; y: number }[] = []
+
     for (const advisory of advisories) {
       const freq = advisory.trueFrequencyHz
       const db = advisory.trueAmplitudeDb
@@ -260,11 +264,21 @@ export function SpectrumCanvas({ spectrum, advisories, isRunning, graphFontSize 
       ctx.arc(x, y, peakMarkerRadius, 0, Math.PI * 2)
       ctx.fill()
 
-      // Label
+      // Label with collision avoidance — offset vertically if overlapping
+      let labelY = y - 10
+      for (const placed of placedLabels) {
+        if (Math.abs(x - placed.x) < 50 && Math.abs(labelY - placed.y) < labelHeight) {
+          labelY = placed.y - labelHeight
+        }
+      }
+      // Keep label within plot area
+      if (labelY < labelFontSize) labelY = labelFontSize
+
+      placedLabels.push({ x, y: labelY })
       ctx.fillStyle = color
-      ctx.font = `${fontSize + 3}px system-ui, sans-serif`
+      ctx.font = `${labelFontSize}px system-ui, sans-serif`
       ctx.textAlign = 'center'
-      ctx.fillText(formatFrequency(freq), x, y - 10)
+      ctx.fillText(formatFrequency(freq), x, labelY)
     }
 
     ctx.restore()

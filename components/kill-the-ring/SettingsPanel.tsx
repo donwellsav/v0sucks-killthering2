@@ -889,7 +889,7 @@ export function SettingsPanel({
                   <Slider
                     value={[settings.peakMergeCents]}
                     onValueChange={([v]) => onSettingsChange({ peakMergeCents: v })}
-                    min={10} max={150} step={5}
+                    min={10} max={400} step={10}
                   />
                   <div className="flex justify-between text-[0.5625rem] text-muted-foreground">
                     <span>Narrow (precise)</span><span>Wide (merged)</span>
