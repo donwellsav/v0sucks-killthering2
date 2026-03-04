@@ -28,7 +28,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Ruler, Cpu, Wrench } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, FileText, Sheet, Trash2, Ruler, Cpu, Wrench, Volume2 } from 'lucide-react'
 import { getEventLogger, type LogEntry } from '@/lib/logging/eventLogger'
 import { getRoomParametersFromDimensions, feetToMeters } from '@/lib/dsp/acousticUtils'
 import type { DetectorSettings, AlgorithmMode, OperationMode, ThresholdMode } from '@/types/advisory'
@@ -258,10 +258,14 @@ export function SettingsPanel({
         </DialogHeader>
 
         <Tabs defaultValue="detection" className="mt-4">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="detection" className="gap-1 text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
               Detection
+            </TabsTrigger>
+            <TabsTrigger value="input" className="gap-1 text-xs">
+              <Volume2 className="w-3.5 h-3.5" />
+              Input
             </TabsTrigger>
             <TabsTrigger value="algorithms" className="gap-1 text-xs">
               <Cpu className="w-3.5 h-3.5" />
@@ -510,6 +514,105 @@ export function SettingsPanel({
                 </div>
               </div>
             </Section>
+          </TabsContent>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              TAB: INPUT — Auto-gain tuning
+              ═══════════════════════════════════════════════════════════════════ */}
+          <TabsContent value="input" className="mt-4 space-y-4">
+
+            <Section
+              title="Current Status"
+              showTooltip={settings.showTooltips}
+              tooltip="Live auto-gain status. The system automatically adjusts gain to keep the signal at the target level for optimal detection."
+            >
+              <div className="text-[0.5625rem] text-muted-foreground bg-muted/50 rounded px-2 py-1 flex justify-between">
+                <span>Mode:</span>
+                <span className="font-mono">{settings.autoGainEnabled ? 'Auto' : 'Manual'}</span>
+              </div>
+              <div className="text-[0.5625rem] text-muted-foreground bg-muted/50 rounded px-2 py-1 flex justify-between mt-1">
+                <span>Current gain:</span>
+                <span className="font-mono">{settings.inputGainDb > 0 ? '+' : ''}{settings.inputGainDb}dB</span>
+              </div>
+            </Section>
+
+            <Section
+              title="Target Level"
+              showTooltip={settings.showTooltips}
+              tooltip="The post-gain peak level the auto-gain system aims for. Lower values give more headroom but may miss quiet feedback. Higher values increase sensitivity but risk noise."
+            >
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={-24} max={0} step={1}
+                  value={[settings.autoGainTargetDb]}
+                  onValueChange={([v]) => onSettingsChange({ autoGainTargetDb: v })}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono w-14 text-right">{settings.autoGainTargetDb} dBFS</span>
+              </div>
+            </Section>
+
+            <Section
+              title="Gain Range"
+              showTooltip={settings.showTooltips}
+              tooltip="Limits how much the auto-gain can boost or cut. Lower max gain reduces ambient noise pickup at startup. Min gain prevents excessive attenuation of loud signals."
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-8">Min</span>
+                  <Slider
+                    min={-20} max={0} step={1}
+                    value={[settings.autoGainMinDb]}
+                    onValueChange={([v]) => onSettingsChange({ autoGainMinDb: v })}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-mono w-12 text-right">{settings.autoGainMinDb}dB</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground w-8">Max</span>
+                  <Slider
+                    min={5} max={40} step={1}
+                    value={[settings.autoGainMaxDb]}
+                    onValueChange={([v]) => onSettingsChange({ autoGainMaxDb: v })}
+                    className="flex-1"
+                  />
+                  <span className="text-xs font-mono w-12 text-right">+{settings.autoGainMaxDb}dB</span>
+                </div>
+              </div>
+            </Section>
+
+            <Section
+              title="Attack Speed"
+              showTooltip={settings.showTooltips}
+              tooltip="How fast gain drops when the signal gets loud. Shorter = more responsive to sudden loud sounds. Protects against clipping."
+            >
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={50} max={1000} step={50}
+                  value={[settings.autoGainAttackMs]}
+                  onValueChange={([v]) => onSettingsChange({ autoGainAttackMs: v })}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono w-14 text-right">{settings.autoGainAttackMs}ms</span>
+              </div>
+            </Section>
+
+            <Section
+              title="Release Speed"
+              showTooltip={settings.showTooltips}
+              tooltip="How fast gain rises when the signal gets quiet. Longer = less noise pickup during silence and smoother startup. Shorter = faster recovery after loud transients."
+            >
+              <div className="flex items-center gap-3">
+                <Slider
+                  min={500} max={5000} step={100}
+                  value={[settings.autoGainReleaseMs]}
+                  onValueChange={([v]) => onSettingsChange({ autoGainReleaseMs: v })}
+                  className="flex-1"
+                />
+                <span className="text-xs font-mono w-14 text-right">{settings.autoGainReleaseMs}ms</span>
+              </div>
+            </Section>
+
           </TabsContent>
 
           {/* ═══════════════════════════════════════════════════════════════════

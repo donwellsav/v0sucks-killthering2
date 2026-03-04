@@ -542,6 +542,11 @@ export const DEFAULT_SETTINGS = {
   autoMusicAwareHysteresisDb: 15, // 15 dB above noise floor = band is playing
   inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
   autoGainEnabled: true, // Auto-gain on by default — finds optimal level for any venue
+  autoGainTargetDb: -12, // Target post-gain peak level (sweet spot for detection)
+  autoGainMinDb: -10, // Minimum auto gain (prevent excessive attenuation)
+  autoGainMaxDb: 20, // Maximum auto gain — lowered from 30 to reduce ambient noise pickup
+  autoGainAttackMs: 300, // Gain drops fast when signal gets loud (protect from clipping)
+  autoGainReleaseMs: 2000, // Gain rises slowly when signal quiet — doubled from 1000 for gentler startup
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
   harmonicToleranceCents: 50, // ±50 cents for harmonic matching
   showTooltips: true, // Show help tooltips (useful for AV techs)

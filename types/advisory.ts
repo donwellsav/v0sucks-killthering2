@@ -321,6 +321,11 @@ export interface DetectorSettings {
   autoMusicAwareHysteresisDb: number // dB above noise floor to trigger music-aware mode
   inputGainDb: number // Software gain applied to analysis (-40 to +40 dB)
   autoGainEnabled: boolean // Auto-adjust inputGainDb based on signal level
+  autoGainTargetDb: number // Target post-gain peak level (-24 to 0 dBFS, default -12)
+  autoGainMinDb: number // Minimum auto gain (-20 to 0 dB, default -10)
+  autoGainMaxDb: number // Maximum auto gain (5 to 40 dB, default 20)
+  autoGainAttackMs: number // Attack time — gain drops fast when signal loud (50 to 1000 ms, default 300)
+  autoGainReleaseMs: number // Release time — gain rises slow when signal quiet (500 to 5000 ms, default 2000)
   graphFontSize: number // Font size for canvas graph labels (8-26px, default 15px)
   harmonicToleranceCents: number // Cents window for harmonic/sub-harmonic matching (25–100, default 50)
   showTooltips: boolean // Show/hide all help tooltips throughout the UI

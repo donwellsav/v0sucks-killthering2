@@ -117,7 +117,9 @@ export class FeedbackDetector {
   private _rawPeakDb: number = -100 // Pre-gain peak level (updated each frame)
   private _autoGainTargetDb: number = -12 // Target post-gain peak level (sweet spot)
   private _autoGainMinDb: number = -10 // Min auto gain
-  private _autoGainMaxDb: number = 30 // Max auto gain
+  private _autoGainMaxDb: number = 20 // Max auto gain (lowered from 30)
+  private _autoGainAttackMs: number = 300 // Attack time in ms
+  private _autoGainReleaseMs: number = 2000 // Release time in ms (doubled from 1000)
   private _autoGainAttackCoeff: number = 0 // EMA attack (computed from sample rate)
   private _autoGainReleaseCoeff: number = 0 // EMA release (computed from sample rate)
 
@@ -178,10 +180,9 @@ export class FeedbackDetector {
     this.setFftSize(this.config.fftSize)
 
     // Initialize auto-gain EMA coefficients based on analysis rate (~50 fps)
-    // Attack 300ms (gain rises slowly), Release 1000ms (gain drops slowly)
     const fps = 1000 / this.config.analysisIntervalMs
-    this._autoGainAttackCoeff = 1 - Math.exp(-1 / (0.3 * fps))  // 300ms attack
-    this._autoGainReleaseCoeff = 1 - Math.exp(-1 / (1.0 * fps)) // 1000ms release
+    this._autoGainAttackCoeff = 1 - Math.exp(-1 / ((this._autoGainAttackMs / 1000) * fps))
+    this._autoGainReleaseCoeff = 1 - Math.exp(-1 / ((this._autoGainReleaseMs / 1000) * fps))
     this._autoGainEnabled = this.config.autoGainEnabled ?? true
     this._autoGainDb = this.config.inputGainDb ?? 15
 
@@ -317,6 +318,31 @@ export class FeedbackDetector {
       // When switching to auto, seed from current manual setting
       if (settings.autoGainEnabled) {
         this._autoGainDb = this.config.inputGainDb ?? 15
+      }
+    }
+    // Auto-gain tuning parameters
+    if (settings.autoGainTargetDb !== undefined) {
+      this._autoGainTargetDb = settings.autoGainTargetDb
+    }
+    if (settings.autoGainMinDb !== undefined) {
+      this._autoGainMinDb = settings.autoGainMinDb
+    }
+    if (settings.autoGainMaxDb !== undefined) {
+      this._autoGainMaxDb = settings.autoGainMaxDb
+    }
+    if (settings.autoGainAttackMs !== undefined) {
+      this._autoGainAttackMs = settings.autoGainAttackMs
+      // Recompute EMA coefficient if analysis is running
+      if (this.config.analysisIntervalMs > 0) {
+        const fps = 1000 / this.config.analysisIntervalMs
+        this._autoGainAttackCoeff = 1 - Math.exp(-1 / ((this._autoGainAttackMs / 1000) * fps))
+      }
+    }
+    if (settings.autoGainReleaseMs !== undefined) {
+      this._autoGainReleaseMs = settings.autoGainReleaseMs
+      if (this.config.analysisIntervalMs > 0) {
+        const fps = 1000 / this.config.analysisIntervalMs
+        this._autoGainReleaseCoeff = 1 - Math.exp(-1 / ((this._autoGainReleaseMs / 1000) * fps))
       }
     }
     if (settings.harmonicToleranceCents !== undefined) {

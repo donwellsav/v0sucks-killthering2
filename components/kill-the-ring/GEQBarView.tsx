@@ -92,8 +92,10 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
       bottom: Math.round(height * 0.11),
       left: Math.round(width * 0.045),
     }
-    const scaledFontSize = Math.max(8, Math.min(14, Math.round(width * 0.01)))
+    const scaledFontSize = Math.max(10, Math.min(14, Math.round(width * 0.012)))
     const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)
+    // Larger font for active detection labels (frequency + cut values on bars)
+    const activeFontSize = Math.max(13, Math.min(18, Math.round(width * 0.04)))
     const plotWidth = width - padding.left - padding.right
     const plotHeight = height - padding.top - padding.bottom
 
@@ -154,13 +156,13 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
 
         // Cut value label
         ctx.fillStyle = recommendation.color
-        ctx.font = `bold ${fontSize}px system-ui, sans-serif`
+        ctx.font = `bold ${activeFontSize}px system-ui, sans-serif`
         ctx.textAlign = 'center'
-        ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + fontSize + 1)
+        ctx.fillText(`${cutDb}`, x + barWidth / 2, y + barHeight + activeFontSize + 1)
 
         // Frequency label for active issue
         ctx.fillStyle = recommendation.color
-        ctx.font = `${fontSize - 1}px system-ui, sans-serif`
+        ctx.font = `bold ${activeFontSize}px system-ui, sans-serif`
         ctx.textAlign = 'center'
         const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
         ctx.fillText(freqLabel, x + barWidth / 2, y - 5)
@@ -168,7 +170,7 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
         // Cluster count badge (if > 1 peak merged)
         if (recommendation.clusterCount > 1) {
           const badgeText = `+${recommendation.clusterCount - 1}`
-          ctx.font = `bold ${fontSize - 3}px system-ui, sans-serif`
+          ctx.font = `bold ${activeFontSize - 3}px system-ui, sans-serif`
           ctx.fillStyle = '#38bdf8' // sky-400
           ctx.textAlign = 'left'
           ctx.fillText(badgeText, x + barWidth + 2, y + 10)
@@ -185,7 +187,7 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
 
     // Draw all 31 ISO band labels (rotated vertical to fit)
     // Cap label font so labels don't overlap — each band gets barSpacing px of horizontal room
-    const labelFontSize = Math.min(Math.max(Math.floor(barSpacing * 0.85), 8), 13)
+    const labelFontSize = Math.min(Math.max(Math.floor(barSpacing * 0.85), 10), 14)
     ctx.fillStyle = '#888'
     ctx.font = `${labelFontSize}px system-ui, sans-serif`
     ctx.textAlign = 'right'
