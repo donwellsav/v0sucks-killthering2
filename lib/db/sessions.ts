@@ -1,6 +1,23 @@
 import { neon } from '@neondatabase/serverless'
 
-const sql = neon(process.env.DATABASE_URL!)
+// Lazy init: defers neon() until first query so module loads without DATABASE_URL at build time
+let _sql: ReturnType<typeof neon> | null = null
+function getSql(): ReturnType<typeof neon> {
+  if (!_sql) {
+    if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set')
+    _sql = neon(process.env.DATABASE_URL)
+  }
+  return _sql
+}
+const sql = new Proxy(neon as unknown as ReturnType<typeof neon>, {
+  apply(_target, _thisArg, args: [TemplateStringsArray, ...unknown[]]) {
+    return getSql()(...args)
+  },
+  get(_target, prop, receiver) {
+    if (prop === 'query') return getSql().query
+    return Reflect.get(getSql(), prop, receiver)
+  },
+})
 
 // ─── Session ─────────────────────────────────────────────────────────────────
 
