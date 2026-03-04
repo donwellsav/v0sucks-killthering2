@@ -1,4 +1,4 @@
-# Kill The Ring 2
+# Kill The Ring
 
 **Professional real-time acoustic feedback detection and analysis for live sound engineers.**
 
