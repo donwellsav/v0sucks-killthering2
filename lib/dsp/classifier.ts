@@ -381,9 +381,9 @@ export function shouldReportIssue(
     return false
   }
 
-  // Prominence floor — noise bursts rarely sustain 8 dB above neighbors
-  // This eliminates broadband noise spikes that pass threshold checks
-  if (classification.prominenceDb !== undefined && classification.prominenceDb < 8) {
+  // Prominence floor — noise bursts rarely sustain 10 dB above neighbors
+  // Raised from 8 dB to further eliminate noise spikes during active audio
+  if (classification.prominenceDb !== undefined && classification.prominenceDb < 10) {
     return false
   }
 
