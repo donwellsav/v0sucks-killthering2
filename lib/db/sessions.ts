@@ -40,8 +40,8 @@ export async function createSession(params: {
     INSERT INTO sessions (id, mode, fft_size)
     VALUES (${params.id}, ${params.mode}, ${params.fftSize})
     RETURNING *
-  `
-  return rows[0] as Session
+  ` as Record<string, unknown>[]
+  return rows[0] as unknown as Session
 }
 
 export async function endSession(id: string): Promise<Session | null> {
@@ -50,8 +50,8 @@ export async function endSession(id: string): Promise<Session | null> {
     SET ended_at = NOW()
     WHERE id = ${id}
     RETURNING *
-  `
-  return (rows[0] as Session) ?? null
+  ` as Record<string, unknown>[]
+  return (rows[0] as unknown as Session) ?? null
 }
 
 export async function listSessions(limit = 50): Promise<Session[]> {
@@ -69,7 +69,7 @@ export async function listSessions(limit = 50): Promise<Session[]> {
 }
 
 export async function deleteSession(id: string): Promise<number> {
-  const rows = await sql`DELETE FROM sessions WHERE id = ${id} RETURNING id`
+  const rows = await sql`DELETE FROM sessions WHERE id = ${id} RETURNING id` as Record<string, unknown>[]
   return rows.length
 }
 
@@ -82,8 +82,8 @@ export async function getSession(id: string): Promise<Session | null> {
     LEFT JOIN session_events e ON e.session_id = s.id AND e.event_type = 'issue_detected'
     WHERE s.id = ${id}
     GROUP BY s.id
-  `
-  return (rows[0] as Session) ?? null
+  ` as Record<string, unknown>[]
+  return (rows[0] as unknown as Session) ?? null
 }
 
 // ─── Events ───────────────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ export async function getSessionFrequencyStats(sessionId: string): Promise<Frequ
       AND event_type = 'issue_detected'
       AND frequency IS NOT NULL
     ORDER BY frequency ASC
-  `
+  ` as Record<string, unknown>[]
 
   const bins = new Map<number, FrequencyBin>()
 
