@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useEffect, useCallback, useMemo, memo } from 'react'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
 import { ISO_31_BANDS } from '@/lib/dsp/constants'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
@@ -18,7 +18,7 @@ interface GEQBarViewProps {
   graphFontSize?: number
 }
 
-export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) {
+export const GEQBarView = memo(function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -211,11 +211,11 @@ export function GEQBarView({ advisories, graphFontSize = 11 }: GEQBarViewProps) 
 
   }, [bandRecommendations, graphFontSize])
 
-  useAnimationFrame(render, advisories.length > 0)
+  useAnimationFrame(render, bandRecommendations.size > 0)
 
   return (
     <div ref={containerRef} className="w-full h-full">
       <canvas ref={canvasRef} className="w-full h-full" role="img" aria-label="Graphic equalizer band view with recommended cuts" />
     </div>
   )
-}
+})
