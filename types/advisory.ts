@@ -224,6 +224,7 @@ export interface SpectrumData {
   // Auto-gain control status
   autoGainEnabled?: boolean // Whether auto-gain is active
   autoGainDb?: number // Current auto-computed gain in dB
+  autoGainLocked?: boolean // True when auto-gain has finished calibration and is frozen
   rawPeakDb?: number // Pre-gain peak level in dBFS
   // Algorithm status fields (populated by DSP worker)
   algorithmMode?: AlgorithmMode // Which detection algorithm is active

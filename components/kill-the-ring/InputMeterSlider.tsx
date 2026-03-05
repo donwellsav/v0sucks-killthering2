@@ -12,6 +12,7 @@ interface InputMeterSliderProps {
   compact?: boolean
   autoGainEnabled?: boolean
   autoGainDb?: number
+  autoGainLocked?: boolean
   onAutoGainToggle?: (enabled: boolean) => void
 }
 
@@ -25,6 +26,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
   compact = false,
   autoGainEnabled = false,
   autoGainDb,
+  autoGainLocked = false,
   onAutoGainToggle,
 }: InputMeterSliderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -171,19 +173,33 @@ export const InputMeterSlider = memo(function InputMeterSlider({
   return (
     <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
 
-      {/* Auto/Manual toggle */}
+      {/* Auto/Manual toggle — shows calibration state */}
       {onAutoGainToggle && (
         <button
           onClick={() => onAutoGainToggle(!autoGainEnabled)}
           className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[0.5625rem] font-bold uppercase tracking-wider transition-colors ${
             autoGainEnabled
-              ? 'bg-primary/20 text-primary border border-primary/40'
+              ? autoGainLocked
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                : 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
               : 'bg-muted/40 text-muted-foreground border border-border hover:text-foreground'
           }`}
-          title={autoGainEnabled ? 'Auto gain active — click for manual' : 'Manual gain — click for auto'}
-          aria-label={autoGainEnabled ? 'Switch to manual gain' : 'Switch to auto gain'}
+          title={
+            autoGainEnabled
+              ? autoGainLocked
+                ? `Gain locked at ${autoGainDb ?? 0}dB — click for manual`
+                : 'Calibrating auto-gain… click for manual'
+              : 'Manual gain — click for auto'
+          }
+          aria-label={
+            autoGainEnabled
+              ? autoGainLocked
+                ? 'Auto gain locked, switch to manual gain'
+                : 'Auto gain calibrating, switch to manual gain'
+              : 'Switch to auto gain'
+          }
         >
-          {autoGainEnabled ? 'Auto' : 'Man'}
+          {autoGainEnabled ? (autoGainLocked ? 'Lock' : 'Cal') : 'Man'}
         </button>
       )}
 
@@ -259,8 +275,8 @@ export const InputMeterSlider = memo(function InputMeterSlider({
             if (autoGainEnabled && onAutoGainToggle) onAutoGainToggle(false)
             onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
           }}
-          title={autoGainEnabled ? 'Auto gain — click to edit (switches to manual)' : 'Click to type, scroll to step ±1dB'}
-          aria-label={`Input gain ${valueLabel}${autoGainEnabled ? ' (auto)' : ''}, click to edit`}
+          title={autoGainEnabled ? (autoGainLocked ? 'Gain locked — click to edit (switches to manual)' : 'Calibrating — click to edit (switches to manual)') : 'Click to type, scroll to step ±1dB'}
+          aria-label={`Input gain ${valueLabel}${autoGainEnabled ? (autoGainLocked ? ' (locked)' : ' (calibrating)') : ''}, click to edit`}
         >
           {valueLabel}
         </button>

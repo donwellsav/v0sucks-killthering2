@@ -209,6 +209,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const inputLevel = spectrum?.peak ?? -60
   const autoGainDb = spectrum?.autoGainDb
   const isAutoGain = spectrum?.autoGainEnabled ?? settings.autoGainEnabled
+  const isAutoGainLocked = spectrum?.autoGainLocked ?? false
 
 
 
@@ -287,6 +288,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
               fullWidth
               autoGainEnabled={isAutoGain}
               autoGainDb={autoGainDb}
+              autoGainLocked={isAutoGainLocked}
               onAutoGainToggle={(enabled) => handleSettingsChange({ autoGainEnabled: enabled })}
             />
           </div>
@@ -385,6 +387,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                   compact
                   autoGainEnabled={isAutoGain}
                   autoGainDb={autoGainDb}
+                  autoGainLocked={isAutoGainLocked}
                   onAutoGainToggle={(enabled) => handleSettingsChange({ autoGainEnabled: enabled })}
                 />
               </div>
@@ -456,6 +459,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                   fullWidth
                   autoGainEnabled={isAutoGain}
                   autoGainDb={autoGainDb}
+                  autoGainLocked={isAutoGainLocked}
                   onAutoGainToggle={(enabled) => handleSettingsChange({ autoGainEnabled: enabled })}
                 />
               </section>

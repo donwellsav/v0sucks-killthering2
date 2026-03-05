@@ -29,6 +29,7 @@ export interface FeedbackDetectorState {
   // Auto-gain control
   autoGainEnabled: boolean
   autoGainDb: number // Current auto-computed gain in dB
+  autoGainLocked: boolean // True when calibration is done and gain is frozen
   rawPeakDb: number // Pre-gain peak level in dBFS
   isSignalPresent: boolean // True when pre-gain signal is above silence threshold
   // Advanced algorithm state (populated by DSP pipeline)
@@ -122,6 +123,12 @@ export class FeedbackDetector {
   private _autoGainAttackCoeff: number = 0 // EMA attack (computed from sample rate)
   private _autoGainReleaseCoeff: number = 0 // EMA release (computed from sample rate)
 
+  // Measure-then-lock: auto-gain calibrates for a short window, then freezes
+  private _autoGainLocked: boolean = false // True once calibration is done and gain is frozen
+  private _autoGainCalibrationStartMs: number = 0 // Timestamp when calibration began
+  private _autoGainCalibrationMs: number = 3000 // Calibration window duration (3 seconds)
+  private _autoGainSignalFrames: number = 0 // Frames with signal present during calibration
+
   // Signal presence gate — prevents auto-gain from amplifying silence into phantom peaks
   private _isSignalPresent: boolean = false
   private _silenceThresholdDb: number = SIGNAL_GATE.DEFAULT_SILENCE_THRESHOLD_DB
@@ -192,6 +199,10 @@ export class FeedbackDetector {
     this._autoGainReleaseCoeff = 1 - Math.exp(-1 / (1.0 * fps)) // 1000ms release
     this._autoGainEnabled = this.config.autoGainEnabled ?? true
     this._autoGainDb = this.config.inputGainDb ?? 15
+    // Reset calibration state so measure-then-lock starts fresh
+    this._autoGainLocked = false
+    this._autoGainCalibrationStartMs = 0
+    this._autoGainSignalFrames = 0
 
     // Connect source (PASSIVE - no output routing)
     if (this.source) {
@@ -325,9 +336,12 @@ export class FeedbackDetector {
     if (settings.autoGainEnabled !== undefined) {
       this._autoGainEnabled = settings.autoGainEnabled
       mappedConfig.autoGainEnabled = settings.autoGainEnabled
-      // When switching to auto, seed from current manual setting
+      // When switching to auto, seed from current manual setting and restart calibration
       if (settings.autoGainEnabled) {
         this._autoGainDb = this.config.inputGainDb ?? 15
+        this._autoGainLocked = false
+        this._autoGainCalibrationStartMs = 0
+        this._autoGainSignalFrames = 0
       }
     }
     if (settings.harmonicToleranceCents !== undefined) {
@@ -416,6 +430,7 @@ export class FeedbackDetector {
       fftSize: this.config.fftSize,
       autoGainEnabled: this._autoGainEnabled,
       autoGainDb: Math.round(this._autoGainDb),
+      autoGainLocked: this._autoGainLocked,
       rawPeakDb: this._rawPeakDb,
       isSignalPresent: this._isSignalPresent,
       algorithmMode: this._algorithmMode,
@@ -700,24 +715,46 @@ export class FeedbackDetector {
       // from amplifying noise floor artifacts into phantom feedback peaks.
       this._isSignalPresent = rawPeak >= this._silenceThresholdDb
 
-      // Desired gain: shift rawPeak to target (-12 dBFS)
-      // e.g. raw peak at -40 → desired gain = -12 - (-40) = +28 dB
-      // e.g. raw peak at -5  → desired gain = -12 - (-5) = -7 dB
-      const desiredGain = clamp(
-        this._autoGainTargetDb - rawPeak,
-        this._autoGainMinDb,
-        this._autoGainMaxDb
-      )
+      // ── Measure-then-lock calibration ─────────────────────────────────
+      // Once locked, skip all EMA updates — gain stays frozen at calibrated value
+      if (!this._autoGainLocked) {
+        // Start calibration timer on first frame with signal
+        if (this._autoGainCalibrationStartMs === 0 && this._isSignalPresent) {
+          this._autoGainCalibrationStartMs = now
+        }
 
-      // EMA smoothing: attack (gain increasing = signal getting quieter) is slower,
-      // release (gain decreasing = signal getting louder) is faster to avoid clipping
-      const coeff = desiredGain > this._autoGainDb
-        ? this._autoGainReleaseCoeff  // gain needs to go up (quiet signal) — slow
-        : this._autoGainAttackCoeff   // gain needs to go down (loud signal) — fast
-      this._autoGainDb += coeff * (desiredGain - this._autoGainDb)
+        // Only update EMA when signal is present (don't calibrate on silence)
+        if (this._isSignalPresent) {
+          this._autoGainSignalFrames++
 
-      // When no signal present, auto-gain EMA still updates (recovers when signal
-      // returns) but skip all peak detection below. Noise floor continues tracking.
+          // Desired gain: shift rawPeak to target (-12 dBFS)
+          const desiredGain = clamp(
+            this._autoGainTargetDb - rawPeak,
+            this._autoGainMinDb,
+            this._autoGainMaxDb
+          )
+
+          // EMA smoothing: attack (gain decreasing = signal loud) is fast,
+          // release (gain increasing = signal quiet) is slower
+          const coeff = desiredGain > this._autoGainDb
+            ? this._autoGainReleaseCoeff
+            : this._autoGainAttackCoeff
+          this._autoGainDb += coeff * (desiredGain - this._autoGainDb)
+        }
+
+        // Lock gain after calibration window if we got enough signal frames
+        // Minimum 30 frames (~0.6s of actual signal) prevents locking on a blip
+        if (this._autoGainCalibrationStartMs > 0) {
+          const elapsed = now - this._autoGainCalibrationStartMs
+          if (elapsed >= this._autoGainCalibrationMs && this._autoGainSignalFrames >= 30) {
+            this._autoGainLocked = true
+            // Round to integer dB for stable operation
+            this._autoGainDb = Math.round(this._autoGainDb)
+          }
+        }
+      }
+
+      // When no signal present, skip peak detection. Noise floor continues tracking.
       if (!this._isSignalPresent) return
     } else {
       // Manual gain mode — still check signal presence via raw peak scan

@@ -171,6 +171,7 @@ export class AudioAnalyzer {
           // Auto-gain state from FeedbackDetector
           autoGainEnabled: state.autoGainEnabled,
           autoGainDb: state.autoGainDb,
+          autoGainLocked: state.autoGainLocked,
           rawPeakDb: state.rawPeakDb,
           // Advanced algorithm state - populated at the worker/hook level, not by FeedbackDetector
           // Safe to default to undefined; higher-level code fills these in
