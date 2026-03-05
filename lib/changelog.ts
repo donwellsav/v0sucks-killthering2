@@ -14,6 +14,23 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.65',
+    date: '2026-03-05',
+    changes: [
+      { type: 'feat', description: 'Auto-gain now calibrates for 3 seconds on start, then **freezes** at the computed gain value' },
+      { type: 'feat', description: 'Eliminates gain pumping that caused noise floor tracking instability and false positive detections' },
+      { type: 'feat', description: 'Calibration requires minimum 30 signal frames (~0.6s of actual audio) to prevent locking on transient blips' },
+      { type: 'feat', description: 'UI toggle shows **Cal** (pulsing amber) during calibration and **Lock** (green) when frozen' },
+      { type: 'feat', description: 'Re-enabling auto-gain or restarting the analyzer resets calibration fresh' },
+      { type: 'feat', description: '[ ] Start analysis with auto-gain enabled — verify button shows "Cal" with amber pulse' },
+      { type: 'feat', description: '[ ] Wait 3+ seconds with signal present — verify button changes to "Lock" (green)' },
+      { type: 'feat', description: '[ ] Confirm gain value stays fixed after lock (no more EMA updates)' },
+      { type: 'feat', description: '[ ] Toggle auto-gain off then on — verify calibration restarts (amber pulse again)' },
+      { type: 'feat', description: '[ ] Stop and restart analysis — verify calibration restarts' },
+      { type: 'feat', description: '[ ] Test with no signal (silence) — verify calibration timer doesn\'t start until signal arrives' },
+    ],
+  },
+  {
     version: '1.0.7',
     date: '2026-03-04',
     highlights: 'UI overhaul & auto-versioning',
