@@ -22,6 +22,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { type: 'feat', description: 'Added ERB-scaled cut depth — shallower cuts below 500 Hz to protect warmth, deeper above 2 kHz' },
       { type: 'feat', description: 'Added PHPR (Peak-to-Harmonic Power Ratio) detection for feedback vs. music discrimination' },
       { type: 'fix', description: 'Added bandwidth data to PEQ recommendations for future detail views' },
+      { type: 'fix', description: 'Improved early/quiet feedback detection with MSD-lowered threshold gate' },
+      { type: 'fix', description: 'Dialed back overly-conservative speech preset values (prominenceDb, confidenceThreshold, growthRateThreshold)' },
     ],
   },
   {
