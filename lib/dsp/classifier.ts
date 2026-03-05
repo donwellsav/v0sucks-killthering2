@@ -48,7 +48,7 @@ function normalizeTrackInput(input: TrackInput) {
       minQ: input.features.minQ,
       persistenceMs: input.features.persistenceMs,
       prominenceDb: input.prominenceDb,
-      phpr: 'phpr' in input ? (input as Record<string, unknown>).phpr as number | undefined : undefined,
+      phpr: input.phpr,
     }
   }
   // TrackedPeak
@@ -66,7 +66,7 @@ function normalizeTrackInput(input: TrackInput) {
     minQ: input.qEstimate,
     persistenceMs: input.lastUpdateTime - input.onsetTime,
     prominenceDb: input.prominenceDb,
-    phpr: 'phpr' in input ? (input as Record<string, unknown>).phpr as number | undefined : undefined,
+    phpr: undefined, // TrackedPeak doesn't carry PHPR
   }
 }
 

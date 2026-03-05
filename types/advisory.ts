@@ -111,6 +111,8 @@ export interface Track {
   features: TrackFeatures
   qEstimate: number
   bandwidthHz: number
+  /** PHPR (Peak-to-Harmonic Power Ratio) in dB */
+  phpr?: number
   velocityDbPerSec: number
   harmonicOfHz: number | null
   isSubHarmonicRoot: boolean // True when this track is the fundamental of a partial series
@@ -199,6 +201,8 @@ export interface Advisory {
   prominenceDb: number
   qEstimate: number
   bandwidthHz: number
+  /** PHPR (Peak-to-Harmonic Power Ratio) in dB */
+  phpr?: number
   velocityDbPerSec: number
   stabilityCentsStd: number
   harmonicityScore: number
