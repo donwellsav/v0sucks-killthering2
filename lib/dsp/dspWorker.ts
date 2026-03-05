@@ -89,6 +89,7 @@ let fftSize = 8192
 
 const trackManager = new TrackManager()
 const advisories = new Map<string, Advisory>()
+const advisoriesByBand = new Map<number, string>() // GEQ band index → advisory ID
 const trackToAdvisoryId = new Map<string, string>()
 
 // Band cooldown: maps GEQ band index → timestamp when the band was last explicitly cleared.
@@ -177,11 +178,12 @@ function findDuplicateAdvisory(freqHz: number, excludeTrackId?: string): Advisor
  * at the same fader. This dedup ensures one advisory per GEQ band.
  */
 function findAdvisoryForSameBand(bandIndex: number, excludeTrackId?: string): Advisory | null {
-  for (const advisory of advisories.values()) {
-    if (excludeTrackId && advisory.trackId === excludeTrackId) continue
-    if (advisory.advisory?.geq?.bandIndex === bandIndex) return advisory
-  }
-  return null
+  const advisoryId = advisoriesByBand.get(bandIndex)
+  if (!advisoryId) return null
+  const advisory = advisories.get(advisoryId)
+  if (!advisory) return null
+  if (excludeTrackId && advisory.trackId === excludeTrackId) return null
+  return advisory
 }
 
 /**
@@ -473,6 +475,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
 
       trackManager.clear()
       advisories.clear()
+      advisoriesByBand.clear()
       trackToAdvisoryId.clear()
       bandClearedAt.clear()
       lastAdvisoryCreatedAt = 0
@@ -496,6 +499,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
     case 'reset': {
       trackManager.clear()
       advisories.clear()
+      advisoriesByBand.clear()
       trackToAdvisoryId.clear()
       bandClearedAt.clear()
       lastAdvisoryCreatedAt = 0
@@ -656,8 +660,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       )
 
       // Enhanced classification with algorithm scores + active frequencies for mode clustering
-      const activeFrequencies = trackManager.getRawTracks().map(t => t.trueFrequencyHz)
-      const classification = classifyTrackWithAlgorithms(track, algorithmScores, fusionResult, settings, activeFrequencies)
+      const classification = classifyTrackWithAlgorithms(track, algorithmScores, fusionResult, settings, peakFrequencies)
 
       // Apply classification temporal smoothing (prevents advisory flickering)
       // Safety-critical RUNAWAY/GROWING bypass smoothing automatically
@@ -679,6 +682,10 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         if (existingId) {
           // No band cooldown here — classification gate drops are transient.
           // Only explicit clearPeak events (hold-time expiry) trigger cooldown.
+          const deletedAdvisory = advisories.get(existingId)
+          if (deletedAdvisory?.advisory?.geq?.bandIndex !== undefined) {
+            advisoriesByBand.delete(deletedAdvisory.advisory.geq.bandIndex)
+          }
           advisories.delete(existingId)
           trackToAdvisoryId.delete(track.id)
           self.postMessage({ type: 'advisoryCleared', advisoryId: existingId } satisfies WorkerOutboundMessage)
@@ -736,6 +743,9 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
           }
           // New peak supersedes — carry over cluster count from the one we're replacing
           mergedClusterCount = (dup.clusterCount ?? 1) + 1
+          if (dup.advisory?.geq?.bandIndex !== undefined) {
+            advisoriesByBand.delete(dup.advisory.geq.bandIndex)
+          }
           advisories.delete(dup.id)
           trackToAdvisoryId.delete(dup.trackId)
           self.postMessage({ type: 'advisoryCleared', advisoryId: dup.id } satisfies WorkerOutboundMessage)
@@ -771,6 +781,9 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       }
 
       advisories.set(advisoryId, advisory)
+      if (eqAdvisory?.geq?.bandIndex !== undefined) {
+        advisoriesByBand.set(eqAdvisory.geq.bandIndex, advisoryId)
+      }
       if (!existingId) {
         trackToAdvisoryId.set(track.id, advisoryId)
         lastAdvisoryCreatedAt = peak.timestamp
@@ -795,6 +808,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         if (advisory && Math.abs(advisory.trueFrequencyHz - frequencyHz) < 10) {
           if (advisory.advisory?.geq?.bandIndex != null) {
             bandClearedAt.set(advisory.advisory.geq.bandIndex, timestamp)
+            advisoriesByBand.delete(advisory.advisory.geq.bandIndex)
           }
           advisories.delete(advisoryId)
           trackToAdvisoryId.delete(trackId)
