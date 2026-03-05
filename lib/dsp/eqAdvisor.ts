@@ -136,10 +136,10 @@ export function calculateQ(severity: SeverityLevel, preset: Preset, trackQ: numb
   let baseQ: number
   switch (severity) {
     case 'RUNAWAY':
-      baseQ = presetConfig.runawayQ // 16 or 8
+      baseQ = presetConfig.runawayQ // 60 or 30
       break
     case 'GROWING':
-      baseQ = presetConfig.defaultQ // 8 or 4
+      baseQ = presetConfig.defaultQ // 30 or 16
       break
     default:
       baseQ = presetConfig.defaultQ * 0.75
@@ -147,10 +147,10 @@ export function calculateQ(severity: SeverityLevel, preset: Preset, trackQ: numb
 
   // Consider the actual measured Q of the feedback
   // Use a blend of preset Q and measured Q
-  const measuredQ = clamp(trackQ, 2, 32)
+  const measuredQ = clamp(trackQ, 2, 120)
   const blendedQ = (baseQ + measuredQ) / 2
 
-  return clamp(blendedQ, 2, 32)
+  return clamp(blendedQ, 2, 120)
 }
 
 /**
