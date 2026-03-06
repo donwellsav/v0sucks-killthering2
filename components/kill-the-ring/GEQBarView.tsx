@@ -165,7 +165,7 @@ export const GEQBarView = memo(function GEQBarView({ advisories, graphFontSize =
         ctx.fillStyle = recommendation.color
         ctx.font = `bold ${issueFontSize}px system-ui, sans-serif`
         ctx.textAlign = 'center'
-        const freqLabel = recommendation.freq >= 1000 ? `${(recommendation.freq / 1000).toFixed(1)}k` : `${Math.round(recommendation.freq)}`
+        const freqLabel = GEQ_BAND_LABELS[i]
         ctx.fillText(freqLabel, x + barWidth / 2, y - 8)
 
         // Cluster count badge (if > 1 peak merged)
