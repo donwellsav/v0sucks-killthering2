@@ -85,7 +85,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [bottomLeftGraph, setBottomLeftGraph] = useState<GraphView>('geq')
   const [bottomRightGraph, setBottomRightGraph] = useState<GraphView>('controls')
   const [mobileTab, setMobileTab] = useState<'issues' | 'graph' | 'settings' | 'notepad'>('issues')
-  const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad'>('issues')
+  const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad' | 'controls'>('issues')
   const [layoutKey, setLayoutKey] = useState(0)
 
   // Fullscreen
@@ -645,9 +645,19 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                       <span className="ml-1 font-mono text-primary">{pinnedCuts.length}</span>
                     )}
                   </button>
+                  <button
+                    onClick={() => setActiveSidebarTab('controls')}
+                    className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
+                      activeSidebarTab === 'controls'
+                        ? 'text-foreground border-b-2 border-primary'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Controls
+                  </button>
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto p-3">
-                  {activeSidebarTab === 'issues' ? (
+                  {activeSidebarTab === 'issues' && (
                     <IssuesList
                       advisories={advisories}
                       maxIssues={settings.maxDisplayedIssues}
@@ -657,12 +667,16 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                       onDismiss={handleDismiss}
                       onClearAll={handleClearAllIssues}
                     />
-                  ) : (
+                  )}
+                  {activeSidebarTab === 'notepad' && (
                     <EQNotepad
                       pins={pinnedCuts}
                       onRemove={handleRemovePin}
                       onClear={handleClearPins}
                     />
+                  )}
+                  {activeSidebarTab === 'controls' && (
+                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
                   )}
                 </div>
               </div>
@@ -713,49 +727,29 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
                 {/* Bottom row */}
                 <ResizablePanel defaultSize={40} minSize={15} collapsible>
-                  <ResizablePanelGroup direction="horizontal" autoSaveId="ktr-layout-bottom">
-                    {/* Bottom-Left */}
-                    <ResizablePanel defaultSize={50} minSize={20} collapsible>
-                      <div className="h-full p-1.5 pt-0.5">
-                        <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-                          <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-muted/20">
-                            <div className="flex items-center gap-1">
-                              <GraphChipRow value={bottomLeftGraph} onChange={setBottomLeftGraph} />
-                              {bottomLeftGraph === 'rta' && hasActiveRTAMarkers && (
-                                <button onClick={handleClearRTA} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                  Clear
-                                </button>
-                              )}
-                              {bottomLeftGraph === 'geq' && hasActiveGEQBars && (
-                                <button onClick={handleClearGEQ} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                                  Clear
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex-1 min-h-0 pointer-events-none">
-                            {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={handleFreqRangeChange} />}
-                            {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} clearedIds={geqClearedIds} />}
-                          </div>
+                  <div className="h-full p-1.5 pt-0.5">
+                    <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
+                      <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-muted/20">
+                        <div className="flex items-center gap-1">
+                          <GraphChipRow value={bottomLeftGraph} onChange={setBottomLeftGraph} />
+                          {bottomLeftGraph === 'rta' && hasActiveRTAMarkers && (
+                            <button onClick={handleClearRTA} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
+                              Clear
+                            </button>
+                          )}
+                          {bottomLeftGraph === 'geq' && hasActiveGEQBars && (
+                            <button onClick={handleClearGEQ} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
+                              Clear
+                            </button>
+                          )}
                         </div>
                       </div>
-                    </ResizablePanel>
-
-                    <ResizableHandle withHandle />
-
-                    {/* Bottom-Right */}
-                    <ResizablePanel defaultSize={50} minSize={20} collapsible>
-                      <div className="h-full p-1.5 pt-0.5">
-                        <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
-                          <div className="flex-1 min-h-0">
-                            <div className="h-full p-3 overflow-y-auto pointer-events-auto">
-                              <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                            </div>
-                          </div>
-                        </div>
+                      <div className="flex-1 min-h-0 pointer-events-none">
+                        {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={handleFreqRangeChange} />}
+                        {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} clearedIds={geqClearedIds} />}
                       </div>
-                    </ResizablePanel>
-                  </ResizablePanelGroup>
+                    </div>
+                  </div>
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
