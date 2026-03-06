@@ -32,7 +32,6 @@ type GraphView = 'rta' | 'geq' | 'controls'
 const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
   { value: 'rta', label: 'RTA' },
   { value: 'geq', label: 'GEQ' },
-  { value: 'controls', label: 'Controls' },
 ]
 
 const LAYOUT_PREFS_KEY = 'ktr-layout-prefs'
@@ -201,13 +200,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       if (autoMusicDebounceRef.current) clearTimeout(autoMusicDebounceRef.current)
     }
   }, [spectrumStatus?.peak, noiseFloorDb, settings.autoMusicAware, settings.musicAware, settings.autoMusicAwareHysteresisDb, isRunning, updateSettings])
-
-  // Mobile: if graph tab is showing but activeGraph is 'controls' (removed on mobile), fall back to RTA
-  useEffect(() => {
-    if (mobileTab === 'graph' && activeGraph === 'controls') {
-      setActiveGraph('rta')
-    }
-  }, [mobileTab, activeGraph])
 
   useAdvisoryLogging(advisories)
 
@@ -712,11 +704,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                         <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
                           <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} clearedIds={geqClearedIds} />
                         </div>
-                        <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'controls' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                          <div className="h-full p-4 overflow-y-auto">
-                            <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -749,11 +736,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                           <div className="flex-1 min-h-0 pointer-events-none">
                             {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={handleFreqRangeChange} />}
                             {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} clearedIds={geqClearedIds} />}
-                            {bottomLeftGraph === 'controls' && (
-                              <div className="h-full p-3 overflow-y-auto pointer-events-auto">
-                                <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                              </div>
-                            )}
                           </div>
                         </div>
                       </div>
