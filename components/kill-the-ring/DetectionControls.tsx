@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useRef, memo } from 'react'
-import { HelpCircle, ChevronDown } from 'lucide-react'
+import React, { memo, useCallback } from 'react'
+import { HelpCircle } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode } from '@/types/advisory'
 import { FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
+import { roundFreqToNice } from '@/lib/utils/mathHelpers'
 
 interface DetectionControlsProps {
   settings: DetectorSettings
@@ -13,94 +14,70 @@ interface DetectionControlsProps {
   onSettingsChange: (settings: Partial<DetectorSettings>) => void
 }
 
+const LOG_MIN = Math.log10(20)
+const LOG_MAX = Math.log10(20000)
+
+function formatFreqLabel(hz: number): string {
+  if (hz >= 10000) return `${(hz / 1000).toFixed(0)}k`
+  if (hz >= 1000) return `${(hz / 1000).toFixed(1)}k`
+  return `${hz}`
+}
+
 export const DetectionControls = memo(function DetectionControls({ settings, onModeChange, onSettingsChange }: DetectionControlsProps) {
-  const [freqOpen, setFreqOpen] = useState(false)
-  const [focusedFreqIndex, setFocusedFreqIndex] = useState(-1)
-  const freqRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      if (freqRef.current && !freqRef.current.contains(e.target as Node)) { setFreqOpen(false); setFocusedFreqIndex(-1) }
-    }
-    document.addEventListener('mousedown', handleMouseDown)
-    return () => document.removeEventListener('mousedown', handleMouseDown)
-  }, [])
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setFreqOpen(false)
-        setFocusedFreqIndex(-1)
-        return
-      }
-
-      if (freqOpen) {
-        const count = FREQ_RANGE_PRESETS.length
-        if (e.key === 'ArrowDown') {
-          e.preventDefault()
-          setFocusedFreqIndex((prev) => (prev + 1) % count)
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault()
-          setFocusedFreqIndex((prev) => (prev - 1 + count) % count)
-        } else if (e.key === 'Enter' && focusedFreqIndex >= 0) {
-          e.preventDefault()
-          const preset = FREQ_RANGE_PRESETS[focusedFreqIndex]
-          onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency })
-          setFreqOpen(false)
-          setFocusedFreqIndex(-1)
-        }
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [freqOpen, focusedFreqIndex, onSettingsChange])
-
-  const currentFreqPreset = FREQ_RANGE_PRESETS.find(
-    p => p.minFrequency === settings.minFrequency && p.maxFrequency === settings.maxFrequency
-  ) || { label: 'Custom', minFrequency: settings.minFrequency, maxFrequency: settings.maxFrequency }
+  const handleFreqSliderChange = useCallback(([logMin, logMax]: number[]) => {
+    const newMin = roundFreqToNice(Math.pow(10, logMin))
+    const newMax = roundFreqToNice(Math.pow(10, logMax))
+    onSettingsChange({ minFrequency: newMin, maxFrequency: newMax })
+  }, [onSettingsChange])
 
   return (
     <TooltipProvider delayDuration={400}>
       <div className="space-y-1.5">
 
-        {/* Freq range */}
-        <div className="relative" ref={freqRef}>
-          <div className="flex items-center gap-1 px-2 py-1 rounded border border-border hover:border-primary/40 transition-colors">
-            <button
-              onClick={() => { setFreqOpen(!freqOpen); setFocusedFreqIndex(-1) }}
-              className="flex-1 flex items-center justify-between min-w-0"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs font-medium text-foreground">{currentFreqPreset.label}</span>
-                <span className="text-[0.625rem] text-muted-foreground font-mono">
-                  {currentFreqPreset.minFrequency}-{currentFreqPreset.maxFrequency}Hz
-                </span>
-              </div>
-              <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${freqOpen ? 'rotate-180' : ''}`} />
-            </button>
+        {/* Freq range — dual slider + preset chips */}
+        <div className="space-y-1">
+          {/* Preset chips */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {FREQ_RANGE_PRESETS.map((preset) => {
+              const isActive = settings.minFrequency === preset.minFrequency
+                && settings.maxFrequency === preset.maxFrequency
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => onSettingsChange({
+                    minFrequency: preset.minFrequency,
+                    maxFrequency: preset.maxFrequency,
+                  })}
+                  className={`px-1.5 py-0.5 rounded text-[0.625rem] font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/20 text-primary border border-primary/40'
+                      : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
           </div>
-          {freqOpen && (
-            <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-background border border-border rounded shadow-lg overflow-hidden">
-              {FREQ_RANGE_PRESETS.map((preset, idx) => {
-                const isActive = settings.minFrequency === preset.minFrequency && settings.maxFrequency === preset.maxFrequency
-                const isFocused = focusedFreqIndex === idx
-                return (
-                  <button
-                    key={preset.label}
-                    onClick={() => { onSettingsChange({ minFrequency: preset.minFrequency, maxFrequency: preset.maxFrequency }); setFreqOpen(false); setFocusedFreqIndex(-1) }}
-                    className={`w-full flex items-center justify-between px-2 py-1.5 text-left transition-colors ${
-                      isActive ? 'bg-primary/10 text-primary' : isFocused ? 'bg-muted text-foreground' : 'hover:bg-muted text-foreground'
-                    }`}
-                  >
-                    <span className="text-xs font-medium">{preset.label}</span>
-                    <span className="text-[0.625rem] font-mono text-muted-foreground">
-                      {preset.minFrequency}-{preset.maxFrequency}Hz
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+
+          {/* Hz range label */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Freq Range</span>
+            <span className="text-xs font-mono text-foreground tabular-nums">
+              {formatFreqLabel(settings.minFrequency)}-{formatFreqLabel(settings.maxFrequency)}
+            </span>
+          </div>
+
+          {/* Dual-thumb logarithmic slider */}
+          <Slider
+            value={[Math.log10(Math.max(20, settings.minFrequency)), Math.log10(Math.min(20000, settings.maxFrequency))]}
+            onValueChange={handleFreqSliderChange}
+            min={LOG_MIN}
+            max={LOG_MAX}
+            step={0.005}
+            minStepsBetweenThumbs={0.1}
+          />
         </div>
 
         {/* Auto Music-Aware toggle */}

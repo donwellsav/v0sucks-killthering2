@@ -222,6 +222,17 @@ export function logPositionToFreq(position: number, freqMin: number, freqMax: nu
 }
 
 /**
+ * Round frequency to nearest "nice" value for slider/drag interaction.
+ * Steps increase with frequency to match human perception.
+ */
+export function roundFreqToNice(hz: number): number {
+  if (hz < 100) return Math.round(hz / 5) * 5
+  if (hz < 1000) return Math.round(hz / 10) * 10
+  if (hz < 10000) return Math.round(hz / 100) * 100
+  return Math.round(hz / 500) * 500
+}
+
+/**
  * Quadratic (parabolic) interpolation for true peak finding
  * Given three samples at indices (i-1, i, i+1) with values (a, b, c)
  * where b is the peak, returns the fractional offset (-0.5 to 0.5)

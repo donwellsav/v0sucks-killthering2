@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useCallback, useState, memo } from 'react'
 import Image from 'next/image'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
-import { freqToLogPosition, clamp } from '@/lib/utils/mathHelpers'
+import { freqToLogPosition, logPositionToFreq, roundFreqToNice, clamp } from '@/lib/utils/mathHelpers'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import { formatFrequency } from '@/lib/utils/pitchUtils'
 import { CANVAS_SETTINGS, VIZ_COLORS } from '@/lib/dsp/constants'
@@ -21,11 +21,16 @@ interface SpectrumCanvasProps {
   rtaDbMax?: number
   spectrumLineWidth?: number
   clearedIds?: Set<string>
+  minFrequency?: number
+  maxFrequency?: number
+  onFreqRangeChange?: (min: number, max: number) => void
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
-export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds }: SpectrumCanvasProps) {
+const GRAB_THRESHOLD_PX = 22 // 44px total touch target per line
+
+export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds, minFrequency = 20, maxFrequency = 20000, onFreqRangeChange }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -33,6 +38,18 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   advisoriesRef.current = advisories
   const clearedIdsRef = useRef(clearedIds)
   clearedIdsRef.current = clearedIds
+
+  // Freq range ref for 60fps reads during drag (avoids React re-renders)
+  const freqRangeRef = useRef({ min: minFrequency, max: maxFrequency })
+  useEffect(() => {
+    freqRangeRef.current = { min: minFrequency, max: maxFrequency }
+  }, [minFrequency, maxFrequency])
+
+  // Drag state
+  const dragRef = useRef<'min' | 'max' | null>(null)
+  const paddingRef = useRef({ left: 0, top: 0, plotWidth: 0, plotHeight: 0 })
+  const onFreqRangeChangeRef = useRef(onFreqRangeChange)
+  onFreqRangeChangeRef.current = onFreqRangeChange
 
   // Cached per-frame objects — avoid recreating every frame
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
@@ -218,6 +235,57 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
       ctx.stroke(strokePath)
     }
 
+    // Store padding for pointer event calculations
+    paddingRef.current = { left: padding.left, top: padding.top, plotWidth, plotHeight }
+
+    // Draw frequency range overlay + draggable lines
+    const rangeMinHz = freqRangeRef.current.min
+    const rangeMaxHz = freqRangeRef.current.max
+    const rangeMinX = freqToLogPosition(Math.max(rangeMinHz, RTA_FREQ_MIN), RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+    const rangeMaxX = freqToLogPosition(Math.min(rangeMaxHz, RTA_FREQ_MAX), RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+
+    // Dim overlay outside detection range
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+    if (rangeMinX > 0) ctx.fillRect(0, 0, rangeMinX, plotHeight)
+    if (rangeMaxX < plotWidth) ctx.fillRect(rangeMaxX, 0, plotWidth - rangeMaxX, plotHeight)
+
+    // Vertical boundary lines
+    const lineColor = '#3b82f6' // blue-500
+    ctx.strokeStyle = lineColor
+    ctx.lineWidth = 2
+    ctx.globalAlpha = 0.85
+
+    // Min line
+    ctx.beginPath()
+    ctx.moveTo(rangeMinX, 0)
+    ctx.lineTo(rangeMinX, plotHeight)
+    ctx.stroke()
+
+    // Max line
+    ctx.beginPath()
+    ctx.moveTo(rangeMaxX, 0)
+    ctx.lineTo(rangeMaxX, plotHeight)
+    ctx.stroke()
+
+    // Grab handles (small rounded rects at vertical center)
+    const handleW = 6
+    const handleH = 24
+    const handleY = (plotHeight - handleH) / 2
+    ctx.fillStyle = lineColor
+    ctx.globalAlpha = 0.7
+
+    // Min handle
+    const minHandleRect = new Path2D()
+    minHandleRect.roundRect(rangeMinX - handleW / 2, handleY, handleW, handleH, 3)
+    ctx.fill(minHandleRect)
+
+    // Max handle
+    const maxHandleRect = new Path2D()
+    maxHandleRect.roundRect(rangeMaxX - handleW / 2, handleY, handleW, handleH, 3)
+    ctx.fill(maxHandleRect)
+
+    ctx.globalAlpha = 1
+
     // Draw early warning predictions (predicted feedback frequencies)
     if (earlyWarning && earlyWarning.predictedFrequencies.length > 0) {
       const warningColor = '#f59e0b' // amber-500 for early warnings
@@ -321,6 +389,94 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   }, [graphFontSize, earlyWarning, rtaDbMinProp, rtaDbMaxProp, spectrumLineWidthProp])
 
   useAnimationFrame(render, isRunning || hasEverStarted)
+
+  // Pointer event handlers for dragging frequency range lines
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !onFreqRangeChange) return
+
+    const { RTA_FREQ_MIN, RTA_FREQ_MAX } = CANVAS_SETTINGS
+
+    function clientXToFreq(clientX: number): number {
+      const rect = canvas!.getBoundingClientRect()
+      const { left: padLeft, plotWidth } = paddingRef.current
+      const canvasX = clientX - rect.left - padLeft
+      const pos = clamp(canvasX / plotWidth, 0, 1)
+      return roundFreqToNice(logPositionToFreq(pos, RTA_FREQ_MIN, RTA_FREQ_MAX))
+    }
+
+    function getLineDistances(clientX: number): { minDist: number; maxDist: number } {
+      const rect = canvas!.getBoundingClientRect()
+      const { left: padLeft, plotWidth } = paddingRef.current
+      const canvasX = clientX - rect.left - padLeft
+      const minX = freqToLogPosition(freqRangeRef.current.min, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+      const maxX = freqToLogPosition(freqRangeRef.current.max, RTA_FREQ_MIN, RTA_FREQ_MAX) * plotWidth
+      return { minDist: Math.abs(canvasX - minX), maxDist: Math.abs(canvasX - maxX) }
+    }
+
+    function onPointerDown(e: PointerEvent) {
+      const { minDist, maxDist } = getLineDistances(e.clientX)
+      const closest = minDist <= maxDist ? 'min' : 'max'
+      const dist = Math.min(minDist, maxDist)
+
+      if (dist > GRAB_THRESHOLD_PX) return
+
+      e.preventDefault()
+      dragRef.current = closest
+      canvas!.setPointerCapture(e.pointerId)
+      canvas!.style.cursor = 'ew-resize'
+    }
+
+    function onPointerMove(e: PointerEvent) {
+      if (dragRef.current) {
+        const hz = clientXToFreq(e.clientX)
+        const range = freqRangeRef.current
+
+        if (dragRef.current === 'min') {
+          const newMin = Math.min(hz, range.max - 50)
+          freqRangeRef.current = { min: newMin, max: range.max }
+          onFreqRangeChangeRef.current?.(newMin, range.max)
+        } else {
+          const newMax = Math.max(hz, range.min + 50)
+          freqRangeRef.current = { min: range.min, max: newMax }
+          onFreqRangeChangeRef.current?.(range.min, newMax)
+        }
+      } else {
+        // Hover cursor change
+        const { minDist, maxDist } = getLineDistances(e.clientX)
+        const nearLine = Math.min(minDist, maxDist) <= GRAB_THRESHOLD_PX
+        canvas!.style.cursor = nearLine ? 'ew-resize' : 'default'
+      }
+    }
+
+    function onPointerUp(e: PointerEvent) {
+      if (dragRef.current) {
+        dragRef.current = null
+        canvas!.releasePointerCapture(e.pointerId)
+        canvas!.style.cursor = 'default'
+      }
+    }
+
+    function onPointerCancel(e: PointerEvent) {
+      if (dragRef.current) {
+        dragRef.current = null
+        canvas!.releasePointerCapture(e.pointerId)
+        canvas!.style.cursor = 'default'
+      }
+    }
+
+    canvas.addEventListener('pointerdown', onPointerDown)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerUp)
+    canvas.addEventListener('pointercancel', onPointerCancel)
+
+    return () => {
+      canvas.removeEventListener('pointerdown', onPointerDown)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('pointercancel', onPointerCancel)
+    }
+  }, [onFreqRangeChange])
 
   return (
     <div ref={containerRef} className="relative w-full h-full">
