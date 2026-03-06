@@ -151,6 +151,80 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
             />
           </div>
+          <div className="pt-1.5">
+            <SliderRow
+              label="Confidence"
+              value={`${Math.round((settings.confidenceThreshold ?? 0.35) * 100)}%`}
+              tooltip={settings.showTooltips ? 'Minimum confidence to flag an issue. 25-35% aggressive (ring out), 45-55% balanced, 60%+ conservative (live music).' : undefined}
+              min={0.2} max={0.8} step={0.05}
+              sliderValue={settings.confidenceThreshold ?? 0.35}
+              onChange={(v) => onSettingsChange({ confidenceThreshold: v })}
+            />
+          </div>
+          <div className="pt-1.5">
+            <SliderRow
+              label="Sustain"
+              value={`${settings.sustainMs}ms`}
+              tooltip={settings.showTooltips ? 'How long a peak must persist before flagging. 100-200ms aggressive, 300-500ms balanced, 600ms+ filters transients.' : undefined}
+              min={100} max={1000} step={50}
+              sliderValue={settings.sustainMs}
+              onChange={(v) => onSettingsChange({ sustainMs: v })}
+            />
+          </div>
+        </div>
+
+        {/* Algorithm mode chips */}
+        <div className="space-y-1">
+          <span className="text-xs text-muted-foreground">Algorithm</span>
+          <div className="flex items-center gap-1 flex-wrap">
+            {(['auto', 'combined', 'all'] as const).map((mode) => {
+              const isActive = (settings.algorithmMode ?? 'combined') === mode
+              const labels: Record<string, string> = { auto: 'Auto', combined: 'Combined', all: 'All' }
+              return (
+                <button
+                  key={mode}
+                  onClick={() => onSettingsChange({ algorithmMode: mode })}
+                  className={`px-1.5 py-0.5 rounded text-[0.625rem] font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary/20 text-primary border border-primary/40'
+                      : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
+                  }`}
+                >
+                  {labels[mode]}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* A-Weighting toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">A-Weight</span>
+            {settings.showTooltips && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="w-3 h-3 text-muted-foreground/40 hover:text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                  Apply IEC 61672-1 A-weighting. Emphasizes frequencies humans hear most (1-5kHz). Disable for flat response.
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <button
+            role="switch"
+            aria-checked={settings.aWeightingEnabled}
+            aria-label="Toggle A-weighting"
+            onClick={() => onSettingsChange({ aWeightingEnabled: !settings.aWeightingEnabled })}
+            className={`relative inline-flex h-4 w-7 flex-shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+              settings.aWeightingEnabled ? 'bg-primary' : 'bg-muted'
+            }`}
+          >
+            <span className={`inline-block h-3 w-3 transform rounded-full bg-background shadow transition-transform ${
+              settings.aWeightingEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+            }`} />
+          </button>
         </div>
 
       </div>
