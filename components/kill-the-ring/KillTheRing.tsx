@@ -22,10 +22,11 @@ import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useFullscreen } from '@/hooks/useFullscreen'
-import { RotateCcw, LayoutGrid, AlertTriangle, BarChart3, Settings2, ClipboardList, Maximize2, Minimize2 } from 'lucide-react'
+import { RotateCcw, LayoutGrid, AlertTriangle, BarChart3, Settings2, ClipboardList, Maximize2, Minimize2, PanelRightOpen, PanelLeftClose } from 'lucide-react'
 import type { Advisory, OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
+import type { ImperativePanelHandle } from 'react-resizable-panels'
 
 type GraphView = 'rta' | 'geq' | 'controls'
 
@@ -87,6 +88,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [mobileTab, setMobileTab] = useState<'issues' | 'graph' | 'settings' | 'notepad'>('issues')
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad' | 'controls'>('issues')
   const [layoutKey, setLayoutKey] = useState(0)
+  const [issuesPanelOpen, setIssuesPanelOpen] = useState(false)
+  const issuesPanelRef = useRef<ImperativePanelHandle>(null)
 
   // Fullscreen
   const rootRef = useRef<HTMLDivElement>(null)
@@ -225,6 +228,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const resetLayout = useCallback(() => {
     try {
       localStorage.removeItem('react-resizable-panels:ktr-layout-main')
+      localStorage.removeItem('react-resizable-panels:ktr-layout-main-v2')
       localStorage.removeItem('react-resizable-panels:ktr-layout-vertical')
       localStorage.removeItem('react-resizable-panels:ktr-layout-bottom')
       localStorage.removeItem(LAYOUT_PREFS_KEY)
@@ -232,7 +236,18 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     setActiveGraph('rta')
     setBottomLeftGraph('geq')
     setBottomRightGraph('controls')
+    setIssuesPanelOpen(false)
     setLayoutKey(k => k + 1)
+  }, [])
+
+  const openIssuesPanel = useCallback(() => {
+    setIssuesPanelOpen(true)
+    if (activeSidebarTab === 'issues') setActiveSidebarTab('controls')
+    requestAnimationFrame(() => issuesPanelRef.current?.expand())
+  }, [activeSidebarTab])
+
+  const closeIssuesPanel = useCallback(() => {
+    issuesPanelRef.current?.collapse()
   }, [])
 
   const handleModeChange = useCallback((mode: OperationMode) => {
@@ -601,7 +616,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* ── Desktop: Resizable panel layout (landscape only) ─── */}
         <div className="hidden landscape:flex flex-1 overflow-hidden">
-          <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main">
+          <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v2">
             {/* Sidebar panel */}
             <ResizablePanel defaultSize={15} minSize={8} maxSize={30} collapsible>
               <div className="flex flex-col h-full bg-card/50 overflow-hidden">
@@ -617,21 +632,23 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                     showDetailed={settings.showAlgorithmScores}
                   />
                 </div>
-                {/* Issues / Notepad tab bar */}
+                {/* Sidebar tab bar */}
                 <div className="flex-shrink-0 flex border-b border-border">
-                  <button
-                    onClick={() => setActiveSidebarTab('issues')}
-                    className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
-                      activeSidebarTab === 'issues'
-                        ? 'text-foreground border-b-2 border-primary'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Issues
-                    {activeAdvisoryCount > 0 && (
-                      <span className="ml-1 font-mono text-primary">{activeAdvisoryCount}</span>
-                    )}
-                  </button>
+                  {!issuesPanelOpen && (
+                    <button
+                      onClick={() => setActiveSidebarTab('issues')}
+                      className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
+                        activeSidebarTab === 'issues'
+                          ? 'text-foreground border-b-2 border-primary'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Issues
+                      {activeAdvisoryCount > 0 && (
+                        <span className="ml-1 font-mono text-primary">{activeAdvisoryCount}</span>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => setActiveSidebarTab('notepad')}
                     className={`flex-1 py-1.5 text-[0.625rem] font-medium uppercase tracking-wide transition-colors ${
@@ -656,28 +673,92 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                     Controls
                   </button>
                 </div>
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-y-auto p-3">
+                    {activeSidebarTab === 'issues' && !issuesPanelOpen && (
+                      <IssuesList
+                        advisories={advisories}
+                        maxIssues={settings.maxDisplayedIssues}
+                        appliedIds={appliedIdsRef.current}
+                        dismissedIds={dismissedIds}
+                        onApply={handleApply}
+                        onDismiss={handleDismiss}
+                        onClearAll={handleClearAllIssues}
+                      />
+                    )}
+                    {activeSidebarTab === 'notepad' && (
+                      <EQNotepad
+                        pins={pinnedCuts}
+                        onRemove={handleRemovePin}
+                        onClear={handleClearPins}
+                      />
+                    )}
+                    {activeSidebarTab === 'controls' && (
+                      <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
+                    )}
+                  </div>
+                  {/* Sticky trigger button at bottom of Controls tab */}
+                  {activeSidebarTab === 'controls' && !issuesPanelOpen && (
+                    <div className="flex-shrink-0 border-t border-border p-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openIssuesPanel}
+                        className="w-full h-8 text-[0.625rem] font-medium gap-1.5"
+                      >
+                        <PanelRightOpen className="w-3.5 h-3.5" />
+                        Controls &amp; Issues
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle withHandle />
+
+            {/* Issues side-panel (collapsible, between sidebar and graphs) */}
+            <ResizablePanel
+              ref={issuesPanelRef}
+              defaultSize={0}
+              collapsedSize={0}
+              minSize={10}
+              maxSize={35}
+              collapsible
+              onCollapse={() => setIssuesPanelOpen(false)}
+              onExpand={() => setIssuesPanelOpen(true)}
+            >
+              <div className="flex flex-col h-full bg-card/50 overflow-hidden">
+                {/* Header with close button */}
+                <div className="flex-shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-border bg-muted/20">
+                  <h2 className="text-[0.625rem] text-muted-foreground uppercase tracking-wide font-medium flex items-center gap-1.5">
+                    <AlertTriangle className="w-3 h-3" />
+                    Issues
+                    {activeAdvisoryCount > 0 && (
+                      <span className="font-mono text-primary">{activeAdvisoryCount}</span>
+                    )}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeIssuesPanel}
+                    className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+                    aria-label="Close issues panel"
+                  >
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                {/* Issues list content */}
                 <div className="flex-1 min-h-0 overflow-y-auto p-3">
-                  {activeSidebarTab === 'issues' && (
-                    <IssuesList
-                      advisories={advisories}
-                      maxIssues={settings.maxDisplayedIssues}
-                      appliedIds={appliedIdsRef.current}
-                      dismissedIds={dismissedIds}
-                      onApply={handleApply}
-                      onDismiss={handleDismiss}
-                      onClearAll={handleClearAllIssues}
-                    />
-                  )}
-                  {activeSidebarTab === 'notepad' && (
-                    <EQNotepad
-                      pins={pinnedCuts}
-                      onRemove={handleRemovePin}
-                      onClear={handleClearPins}
-                    />
-                  )}
-                  {activeSidebarTab === 'controls' && (
-                    <DetectionControls settings={settings} onModeChange={handleModeChange} onSettingsChange={handleSettingsChange} />
-                  )}
+                  <IssuesList
+                    advisories={advisories}
+                    maxIssues={settings.maxDisplayedIssues}
+                    appliedIds={appliedIdsRef.current}
+                    dismissedIds={dismissedIds}
+                    onApply={handleApply}
+                    onDismiss={handleDismiss}
+                    onClearAll={handleClearAllIssues}
+                  />
                 </div>
               </div>
             </ResizablePanel>
