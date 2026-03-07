@@ -88,7 +88,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [mobileTab, setMobileTab] = useState<'issues' | 'graph' | 'settings' | 'notepad'>('issues')
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'notepad' | 'controls'>('controls')
   const [layoutKey, setLayoutKey] = useState(0)
-  const [issuesPanelOpen, setIssuesPanelOpen] = useState(true)
+  const [issuesPanelOpen, setIssuesPanelOpen] = useState(false)
   const issuesPanelRef = useRef<ImperativePanelHandle>(null)
 
   // Fullscreen
@@ -229,6 +229,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     try {
       localStorage.removeItem('react-resizable-panels:ktr-layout-main')
       localStorage.removeItem('react-resizable-panels:ktr-layout-main-v2')
+      localStorage.removeItem('react-resizable-panels:ktr-layout-main-v3')
       localStorage.removeItem('react-resizable-panels:ktr-layout-vertical')
       localStorage.removeItem('react-resizable-panels:ktr-layout-bottom')
       localStorage.removeItem(LAYOUT_PREFS_KEY)
@@ -606,7 +607,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
         {/* ── Desktop: Resizable panel layout (landscape only) ─── */}
         <div className="hidden landscape:flex flex-1 overflow-hidden">
-          <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v2">
+          <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v3">
             {/* Sidebar panel */}
             <ResizablePanel defaultSize={15} minSize={8} maxSize={30} collapsible>
               <div className="flex flex-col h-full bg-card/50 overflow-hidden">
@@ -710,7 +711,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             {/* Issues side-panel (collapsible, between sidebar and graphs) */}
             <ResizablePanel
               ref={issuesPanelRef}
-              defaultSize={18}
+              defaultSize={0}
               collapsedSize={0}
               minSize={10}
               maxSize={35}
@@ -756,7 +757,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             <ResizableHandle withHandle />
 
             {/* Graph area panel */}
-            <ResizablePanel defaultSize={67}>
+            <ResizablePanel defaultSize={85}>
               <ResizablePanelGroup direction="vertical" autoSaveId="ktr-layout-vertical">
                 {/* Top graph */}
                 <ResizablePanel defaultSize={60} minSize={20} collapsible>
