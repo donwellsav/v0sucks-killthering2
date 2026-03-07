@@ -506,52 +506,34 @@ export const KillTheRing = memo(function KillTheRingComponent() {
             </div>
           )}
 
-          {/* Graph tab */}
+          {/* Graph tab — RTA on top, GEQ on bottom (50/50 split) */}
           {mobileTab === 'graph' && (
-            <div className="flex-1 flex flex-col overflow-hidden">
-              <div className="flex-1 min-h-0 p-0.5 pb-0">
-                <div className="h-full bg-card/60 rounded-md border border-border overflow-hidden flex flex-col">
-                  <div className="relative flex-1 min-h-0">
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={handleFreqRangeChange} />
-                    </div>
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} clearedIds={geqClearedIds} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Graph type pills (RTA/GEQ only — controls live in Settings tab on mobile) */}
-              <div className="flex items-center gap-1.5 px-1.5 pb-1 pt-0.5 flex-shrink-0">
-                {GRAPH_CHIPS.filter(chip => chip.value !== 'controls').map((chip) => (
-                  <button
-                    key={chip.value}
-                    onClick={() => setActiveGraph(chip.value)}
-                    className={`flex-1 py-2.5 min-h-[44px] rounded-full text-[0.625rem] font-medium border transition-colors ${
-                      activeGraph === chip.value
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
-                    }`}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-                {activeGraph === 'rta' && hasActiveRTAMarkers && (
+            <div className="flex-1 flex flex-col gap-0.5 overflow-hidden p-0.5">
+              {/* RTA — top half */}
+              <div className="flex-1 min-h-0 bg-card/60 rounded-md border border-border overflow-hidden relative">
+                <span className="absolute top-1 left-1.5 z-20 text-[0.5rem] text-muted-foreground/60 font-medium uppercase tracking-wide pointer-events-none">RTA</span>
+                {hasActiveRTAMarkers && (
                   <button
                     onClick={handleClearRTA}
-                    className="py-2.5 min-h-[44px] px-3 rounded-full text-[0.625rem] font-medium border transition-colors bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                    className="absolute top-1 right-1 z-20 px-2 py-0.5 rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors"
                   >
                     Clear
                   </button>
                 )}
-                {activeGraph === 'geq' && hasActiveGEQBars && (
+                <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={handleFreqRangeChange} />
+              </div>
+              {/* GEQ — bottom half */}
+              <div className="flex-1 min-h-0 bg-card/60 rounded-md border border-border overflow-hidden relative">
+                <span className="absolute top-1 left-1.5 z-20 text-[0.5rem] text-muted-foreground/60 font-medium uppercase tracking-wide pointer-events-none">GEQ</span>
+                {hasActiveGEQBars && (
                   <button
                     onClick={handleClearGEQ}
-                    className="py-2.5 min-h-[44px] px-3 rounded-full text-[0.625rem] font-medium border transition-colors bg-card/60 text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+                    className="absolute top-1 right-1 z-20 px-2 py-0.5 rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors"
                   >
                     Clear
                   </button>
                 )}
+                <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} clearedIds={geqClearedIds} />
               </div>
             </div>
           )}
