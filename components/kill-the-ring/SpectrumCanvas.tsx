@@ -24,13 +24,15 @@ interface SpectrumCanvasProps {
   minFrequency?: number
   maxFrequency?: number
   onFreqRangeChange?: (min: number, max: number) => void
+  showThresholdLine?: boolean
+  feedbackThresholdDb?: number
 }
 
 const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
 
 const GRAB_THRESHOLD_PX = 22 // 44px total touch target per line
 
-export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds, minFrequency = 20, maxFrequency = 20000, onFreqRangeChange }: SpectrumCanvasProps) {
+export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, advisories, isRunning, graphFontSize = 11, onStart, earlyWarning, rtaDbMin: rtaDbMinProp, rtaDbMax: rtaDbMaxProp, spectrumLineWidth: spectrumLineWidthProp, clearedIds, minFrequency = 20, maxFrequency = 20000, onFreqRangeChange, showThresholdLine = false, feedbackThresholdDb }: SpectrumCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
@@ -175,6 +177,28 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
       ctx.lineTo(plotWidth, floorY)
       ctx.stroke()
       ctx.setLineDash([])
+    }
+
+    // Draw effective threshold line
+    if (showThresholdLine && spectrum?.effectiveThresholdDb != null) {
+      const threshY = ((RTA_DB_MAX - spectrum.effectiveThresholdDb) / (RTA_DB_MAX - RTA_DB_MIN)) * plotHeight
+      ctx.strokeStyle = VIZ_COLORS.THRESHOLD
+      ctx.globalAlpha = 0.5
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([6, 6])
+      ctx.beginPath()
+      ctx.moveTo(0, threshY)
+      ctx.lineTo(plotWidth, threshY)
+      ctx.stroke()
+      ctx.setLineDash([])
+      // Right-aligned label
+      const threshLabel = `Thresh +${feedbackThresholdDb ?? 0}dB`
+      ctx.font = `${Math.max(8, fontSize - 2)}px monospace`
+      ctx.fillStyle = VIZ_COLORS.THRESHOLD
+      ctx.textAlign = 'right'
+      ctx.fillText(threshLabel, plotWidth - 4, threshY - 4)
+      ctx.globalAlpha = 1
+      ctx.textAlign = 'left'
     }
 
     // Draw spectrum

@@ -14,6 +14,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.104',
+    date: '2026-03-06',
+    changes: [
+      { type: 'feat', description: '**RTA threshold line overlay**: Display effective detection threshold as dashed blue line on RTA graph with right-aligned label' },
+      { type: 'ui', description: '**Show on RTA toggle**: New switch under Threshold slider to show/hide threshold line' },
+    ],
+  },
+  {
     version: '1.0.70',
     date: '2026-03-05',
     changes: [

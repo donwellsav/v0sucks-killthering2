@@ -3,6 +3,7 @@
 import React, { memo, useCallback } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
+import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import type { DetectorSettings, OperationMode, AlgorithmMode, Algorithm } from '@/types/advisory'
 import { FREQ_RANGE_PRESETS } from '@/lib/dsp/constants'
@@ -130,6 +131,15 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               sliderValue={settings.feedbackThresholdDb}
               onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
             />
+            <div className="flex items-center justify-end gap-1.5 mt-0.5">
+              <label htmlFor="show-threshold-line" className="text-[0.5625rem] text-muted-foreground cursor-pointer">Show on RTA</label>
+              <Switch
+                id="show-threshold-line"
+                checked={settings.showThresholdLine}
+                onCheckedChange={(checked) => onSettingsChange({ showThresholdLine: checked })}
+                className="h-3.5 w-7 [&>span]:size-2.5"
+              />
+            </div>
           </div>
           <div className="py-1.5">
             <SliderRow

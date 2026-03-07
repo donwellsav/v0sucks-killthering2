@@ -617,6 +617,7 @@ export const DEFAULT_SETTINGS = {
   rtaDbMin: -100,
   rtaDbMax: 0,
   spectrumLineWidth: 1.5,
+  showThresholdLine: true,
 }
 
 // Room size presets — covers common professional venue types

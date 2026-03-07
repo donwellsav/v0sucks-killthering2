@@ -347,6 +347,7 @@ export interface DetectorSettings {
   rtaDbMin: number // RTA display range minimum (-120 to -60, default -100)
   rtaDbMax: number // RTA display range maximum (-20 to 0, default 0)
   spectrumLineWidth: number // RTA line width in pixels (0.5-4, default 1.5)
+  showThresholdLine: boolean // Show effective threshold line on RTA graph
 }
 
 // Default configuration - optimized for Corporate/Conference PA (Speech mode)
