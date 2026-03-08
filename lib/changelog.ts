@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.87',
+    date: '2026-03-08',
+    changes: [
+      { type: 'ui', description: 'Replay Onboarding button added to Settings → Display tab' },
+    ],
+  },
+  {
     version: '1.0.86',
     date: '2026-03-08',
     changes: [

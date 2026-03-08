@@ -29,7 +29,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
-import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, Ruler, Cpu, Wrench, ChevronDown } from 'lucide-react'
+import { Settings, RotateCcw, HelpCircle, BarChart3, Monitor, Download, FileJson, Ruler, Cpu, Wrench, ChevronDown, GraduationCap } from 'lucide-react'
 import { getRoomParametersFromDimensions, feetToMeters, calculateSchroederFrequency } from '@/lib/dsp/acousticUtils'
 import { ROOM_PRESETS } from '@/lib/dsp/constants'
 import type { RoomPresetKey } from '@/lib/dsp/constants'
@@ -847,6 +847,25 @@ export const SettingsPanel = memo(function SettingsPanel({
                   onCheckedChange={(checked) => onSettingsChange({ showTooltips: checked })}
                 />
               </div>
+            </Section>
+
+            <Section
+              title="Onboarding"
+              showTooltip={settings.showTooltips}
+              tooltip="Replay the first-run walkthrough that explains the core workflow."
+            >
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  try { localStorage.removeItem('ktr-onboarding-seen') } catch {}
+                  window.location.reload()
+                }}
+              >
+                <GraduationCap className="h-3.5 w-3.5 mr-2" />
+                Replay Onboarding
+              </Button>
             </Section>
 
           </TabsContent>
