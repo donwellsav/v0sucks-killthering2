@@ -12,10 +12,6 @@ import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
 
-type GraphView = 'rta' | 'geq' | 'controls'
-
-const LAYOUT_PREFS_KEY = 'ktr-layout-prefs'
-
 export const KillTheRing = memo(function KillTheRingComponent() {
   const {
     isRunning,
@@ -40,9 +36,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     [advisories]
   )
 
-  const [activeGraph, setActiveGraph] = useState<GraphView>('rta')
-  const [bottomLeftGraph, setBottomLeftGraph] = useState<GraphView>('geq')
-  const [bottomRightGraph, setBottomRightGraph] = useState<GraphView>('controls')
   const [mobileTab, setMobileTab] = useState<'issues' | 'graph' | 'settings'>('issues')
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'controls'>('controls')
   const [layoutKey, setLayoutKey] = useState(0)
@@ -50,11 +43,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [isFrozen, setIsFrozen] = useState(false)
   const toggleFreeze = useCallback(() => setIsFrozen(prev => !prev), [])
   const issuesPanelRef = useRef<ImperativePanelHandle>(null)
-
-  // Force-collapse issues panel on mount to override localStorage-restored size
-  useEffect(() => {
-    requestAnimationFrame(() => issuesPanelRef.current?.collapse())
-  }, [])
 
   // Fullscreen
   const rootRef = useRef<HTMLDivElement>(null)
@@ -88,18 +76,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         case 'f': case 'F':
           e.preventDefault()
           toggleFullscreen()
-          break
-        case '1':
-          e.preventDefault()
-          setActiveGraph('rta')
-          break
-        case '2':
-          e.preventDefault()
-          setActiveGraph('geq')
-          break
-        case '3':
-          e.preventDefault()
-          setActiveGraph('controls')
           break
       }
     }
@@ -198,39 +174,16 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   useAdvisoryLogging(advisories)
 
-  // Load saved graph assignments from localStorage
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LAYOUT_PREFS_KEY) ?? '{}')
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: restore saved layout on mount
-      if (saved.activeGraph) setActiveGraph(saved.activeGraph)
-      if (saved.bottomLeftGraph) setBottomLeftGraph(saved.bottomLeftGraph)
-      if (saved.bottomRightGraph) setBottomRightGraph(saved.bottomRightGraph)
-    } catch {}
-  }, [])
-
-  // Persist graph assignments on change
-  useEffect(() => {
-    try {
-      localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify({
-        activeGraph, bottomLeftGraph, bottomRightGraph,
-      }))
-    } catch {}
-  }, [activeGraph, bottomLeftGraph, bottomRightGraph])
-
   const resetLayout = useCallback(() => {
     try {
       localStorage.removeItem('react-resizable-panels:ktr-layout-main')
       localStorage.removeItem('react-resizable-panels:ktr-layout-main-v2')
       localStorage.removeItem('react-resizable-panels:ktr-layout-main-v3')
+      localStorage.removeItem('react-resizable-panels:ktr-layout-main-v4')
       localStorage.removeItem('react-resizable-panels:ktr-layout-vertical')
       localStorage.removeItem('react-resizable-panels:ktr-layout-bottom')
-      localStorage.removeItem(LAYOUT_PREFS_KEY)
     } catch {}
-    setActiveGraph('rta')
-    setBottomLeftGraph('geq')
-    setBottomRightGraph('controls')
-    setIssuesPanelOpen(false)
+    setIssuesPanelOpen(true)
     setLayoutKey(k => k + 1)
   }, [])
 
@@ -299,10 +252,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         onModeChange={handleModeChange}
         onReset={resetSettings}
         noiseFloorDb={noiseFloorDb}
-        inputLevel={inputLevel}
-        isAutoGain={isAutoGain}
-        autoGainDb={autoGainDb}
-        autoGainLocked={isAutoGainLocked}
         resetLayout={resetLayout}
         isFullscreen={isFullscreen}
         toggleFullscreen={toggleFullscreen}
@@ -355,6 +304,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         layoutKey={layoutKey}
         isRunning={isRunning}
         start={startWithDevice}
+        stop={stop}
         isFrozen={isFrozen}
         toggleFreeze={toggleFreeze}
         advisories={advisories}
@@ -369,10 +319,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         dismissedIds={dismissedIds}
         onDismiss={handleDismiss}
         onClearAll={handleClearAllIssues}
-        activeGraph={activeGraph}
-        setActiveGraph={setActiveGraph}
-        bottomLeftGraph={bottomLeftGraph}
-        setBottomLeftGraph={setBottomLeftGraph}
         issuesPanelOpen={issuesPanelOpen}
         issuesPanelRef={issuesPanelRef}
         activeSidebarTab={activeSidebarTab}
@@ -387,6 +333,10 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         onClearRTA={handleClearRTA}
         onClearGEQ={handleClearGEQ}
         onFreqRangeChange={handleFreqRangeChange}
+        inputLevel={inputLevel}
+        isAutoGain={isAutoGain}
+        autoGainDb={autoGainDb}
+        autoGainLocked={isAutoGainLocked}
       />
     </div>
   )

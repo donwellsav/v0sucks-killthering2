@@ -2,52 +2,54 @@
 
 import { useRef, useEffect, useCallback, useState, memo } from 'react'
 
-interface InputMeterSliderProps {
+interface VerticalGainFaderProps {
   value: number
   onChange: (value: number) => void
   level: number
   min?: number
   max?: number
-  fullWidth?: boolean
-  compact?: boolean
   autoGainEnabled?: boolean
   autoGainDb?: number
   autoGainLocked?: boolean
   onAutoGainToggle?: (enabled: boolean) => void
+  autoGainTargetDb: number
+  onAutoGainTargetChange: (db: number) => void
+  isRunning: boolean
+  onToggle: () => void
 }
 
-export const InputMeterSlider = memo(function InputMeterSlider({
+export const VerticalGainFader = memo(function VerticalGainFader({
   value,
   onChange,
   level,
   min = -40,
   max = 40,
-  fullWidth = false,
-  compact = false,
   autoGainEnabled = false,
   autoGainDb,
   autoGainLocked = false,
   onAutoGainToggle,
-}: InputMeterSliderProps) {
+  autoGainTargetDb,
+  onAutoGainTargetChange,
+  isRunning,
+  onToggle,
+}: VerticalGainFaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const sliderRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const [editing, setEditing] = useState(false)
   const dimensionsRef = useRef({ width: 0, height: 0 })
   const gradientRef = useRef<CanvasGradient | null>(null)
-  const gradientWidthRef = useRef(0)
+  const gradientHeightRef = useRef(0)
   const pendingValueRef = useRef<number | null>(null)
   const rafCoalesceRef = useRef(0)
 
-  // Smoothing state for ballistic meter animation
+  // Ballistic meter animation state
   const targetLevelRef = useRef(0)
   const smoothedLevelRef = useRef(0)
   const prevDrawnRef = useRef(-1)
   const rafIdRef = useRef(0)
 
   const normalizedLevel = Math.max(0, Math.min(1, (level + 60) / 60))
-
-  // Display value: when auto-gain is active, show the auto-computed gain
   const displayValue = autoGainEnabled && autoGainDb != null ? autoGainDb : value
 
   // Sync incoming prop to target ref
@@ -55,10 +57,10 @@ export const InputMeterSlider = memo(function InputMeterSlider({
     targetLevelRef.current = normalizedLevel
   }, [normalizedLevel])
 
-  // ResizeObserver to track container size + DPR scaling
+  // ResizeObserver for DPR-aware canvas sizing
   useEffect(() => {
-    const slider = sliderRef.current
-    if (!slider) return
+    const track = trackRef.current
+    if (!track) return
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -70,16 +72,15 @@ export const InputMeterSlider = memo(function InputMeterSlider({
           canvas.width = Math.floor(width * dpr)
           canvas.height = Math.floor(height * dpr)
         }
-        // Force redraw on resize
         prevDrawnRef.current = -1
       }
     })
 
-    observer.observe(slider)
+    observer.observe(track)
     return () => observer.disconnect()
   }, [])
 
-  // Canvas draw function — called from rAF loop
+  // Canvas draw — vertical orientation
   const drawMeter = useCallback((smoothed: number) => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -98,66 +99,66 @@ export const InputMeterSlider = memo(function InputMeterSlider({
     ctx.fillStyle = '#161616'
     ctx.fillRect(0, 0, w, h)
 
-    // Cached meter gradient — only recreated when width changes
+    // Cached vertical gradient — bottom-to-top
     let gradient = gradientRef.current
-    if (!gradient || gradientWidthRef.current !== w) {
-      gradient = ctx.createLinearGradient(0, 0, w, 0)
+    if (!gradient || gradientHeightRef.current !== h) {
+      gradient = ctx.createLinearGradient(0, h, 0, 0)
       gradient.addColorStop(0, '#3b82f6')
       gradient.addColorStop(0.6, '#3b82f6')
       gradient.addColorStop(0.8, '#eab308')
       gradient.addColorStop(0.95, '#ef4444')
       gradient.addColorStop(1, '#ef4444')
       gradientRef.current = gradient
-      gradientWidthRef.current = w
+      gradientHeightRef.current = h
     }
 
-    const meterWidth = w * smoothed
+    // Meter fill from bottom
+    const meterHeight = h * smoothed
     ctx.fillStyle = gradient
-    ctx.fillRect(0, 0, meterWidth, h)
+    ctx.fillRect(0, h - meterHeight, w, meterHeight)
 
-    // Top highlight
-    if (meterWidth > 2) {
-      ctx.fillStyle = 'rgba(255,255,255,0.12)'
-      ctx.fillRect(0, 0, meterWidth, Math.max(1, h * 0.2))
+    // Side highlight on meter
+    if (meterHeight > 2) {
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'
+      ctx.fillRect(0, h - meterHeight, Math.max(1, w * 0.2), meterHeight)
     }
 
-    // Scale ticks (minor dB marks)
+    // Scale ticks (horizontal lines at dB marks)
     ctx.strokeStyle = 'rgba(255,255,255,0.15)'
     ctx.lineWidth = 0.5
     for (const db of [-30, -20, -10, 10, 20, 30]) {
-      const x = ((db - min) / (max - min)) * w
+      const ratio = (db - min) / (max - min)
+      const y = h * (1 - ratio)
       ctx.beginPath()
-      ctx.moveTo(x, h * 0.65)
-      ctx.lineTo(x, h)
+      ctx.moveTo(w * 0.65, y)
+      ctx.lineTo(w, y)
       ctx.stroke()
     }
 
-    // Zero-dB tick mark
-    const zeroPos = ((0 - min) / (max - min)) * w
+    // Zero-dB reference line — prominent
+    const zeroRatio = (0 - min) / (max - min)
+    const zeroY = h * (1 - zeroRatio)
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(zeroPos, 0)
-    ctx.lineTo(zeroPos, h)
+    ctx.moveTo(0, zeroY)
+    ctx.lineTo(w, zeroY)
     ctx.stroke()
   }, [min, max])
 
-  // Ballistic meter animation loop — fast attack, slow decay
+  // Ballistic animation loop
   useEffect(() => {
-    const ATTACK = 0.3   // rise to ~95% in ~50ms
-    const DECAY = 0.05   // fall to ~5% in ~1s
+    const ATTACK = 0.3
+    const DECAY = 0.05
 
     const tick = () => {
       const target = targetLevelRef.current
       const current = smoothedLevelRef.current
       const coeff = target > current ? ATTACK : DECAY
       const next = current + (target - current) * coeff
-
-      // Snap to target when close enough
       const smoothed = Math.abs(next - target) < 0.001 ? target : next
       smoothedLevelRef.current = smoothed
 
-      // Only redraw when the value visually changes
       if (Math.abs(smoothed - prevDrawnRef.current) > 0.0005) {
         prevDrawnRef.current = smoothed
         drawMeter(smoothed)
@@ -170,17 +171,16 @@ export const InputMeterSlider = memo(function InputMeterSlider({
     return () => cancelAnimationFrame(rafIdRef.current)
   }, [drawMeter])
 
-  const updateValueFromX = (clientX: number) => {
-    const slider = sliderRef.current
-    if (!slider) return
-    const rect = slider.getBoundingClientRect()
-    const x = Math.max(0, Math.min(rect.width, clientX - rect.left))
-    const ratio = x / rect.width
-    // When user drags in auto mode, switch to manual
+  // Vertical drag: top = max, bottom = min
+  const updateValueFromY = (clientY: number) => {
+    const track = trackRef.current
+    if (!track) return
+    const rect = track.getBoundingClientRect()
+    const y = Math.max(0, Math.min(rect.height, clientY - rect.top))
+    const ratio = 1 - y / rect.height
     if (autoGainEnabled && onAutoGainToggle) {
       onAutoGainToggle(false)
     }
-    // Coalesce rapid pointer events into one onChange per animation frame
     pendingValueRef.current = Math.round(min + ratio * (max - min))
     if (!rafCoalesceRef.current) {
       rafCoalesceRef.current = requestAnimationFrame(() => {
@@ -193,34 +193,31 @@ export const InputMeterSlider = memo(function InputMeterSlider({
     }
   }
 
-  // Keep a ref to the latest updateValueFromX so window listeners
-  // always call through the current closure without re-registering.
-  const updateValueFromXRef = useRef(updateValueFromX)
-  // eslint-disable-next-line react-hooks/refs -- synced to avoid re-registering listeners
-  updateValueFromXRef.current = updateValueFromX
+  const updateValueFromYRef = useRef(updateValueFromY)
+  updateValueFromYRef.current = updateValueFromY
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (editing) return
     isDragging.current = true
-    updateValueFromXRef.current(e.clientX)
+    updateValueFromYRef.current(e.clientY)
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (editing) return
     isDragging.current = true
-    updateValueFromXRef.current(e.touches[0].clientX)
+    updateValueFromYRef.current(e.touches[0].clientY)
   }
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging.current) return
-      updateValueFromXRef.current(e.clientX)
+      updateValueFromYRef.current(e.clientY)
     }
     const handleMouseUp = () => { isDragging.current = false }
     const handleTouchMove = (e: TouchEvent) => {
       if (!isDragging.current) return
       e.preventDefault()
-      updateValueFromXRef.current(e.touches[0].clientX)
+      updateValueFromYRef.current(e.touches[0].clientY)
     }
     const handleTouchEnd = () => { isDragging.current = false }
 
@@ -240,7 +237,6 @@ export const InputMeterSlider = memo(function InputMeterSlider({
   const commitEdit = (raw: string) => {
     const parsed = parseInt(raw, 10)
     if (!isNaN(parsed)) {
-      // Switch to manual if editing in auto mode
       if (autoGainEnabled && onAutoGainToggle) {
         onAutoGainToggle(false)
       }
@@ -249,16 +245,53 @@ export const InputMeterSlider = memo(function InputMeterSlider({
     setEditing(false)
   }
 
-  const valueLabel = `${displayValue > 0 ? '+' : ''}${displayValue}dB`
+  const valueLabel = `${displayValue > 0 ? '+' : ''}${displayValue}`
+
+  // Thumb position: percentage from bottom
+  const thumbBottom = ((displayValue - min) / (max - min)) * 100
 
   return (
-    <div className={`flex items-center gap-2 ${fullWidth ? 'w-full' : ''}`}>
+    <div className="flex flex-col h-full items-center py-2 gap-1.5 select-none">
 
-      {/* Auto/Manual toggle — shows calibration state */}
+      {/* dB readout — click to edit */}
+      {editing ? (
+        <input
+          autoFocus
+          type="text"
+          defaultValue={String(displayValue)}
+          className="font-mono bg-input border border-primary rounded px-0.5 text-center text-foreground focus-visible:outline-none text-sm w-10 h-6 flex-shrink-0"
+          onBlur={(e) => commitEdit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
+            if (e.key === 'Escape') setEditing(false)
+            if (e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(max, value + 1)) }
+            if (e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(min, value - 1)) }
+          }}
+        />
+      ) : (
+        <button
+          className={`font-mono text-center transition-colors cursor-text flex-shrink-0 tabular-nums text-sm leading-tight ${
+            autoGainEnabled ? 'text-primary hover:text-primary/80' : 'text-foreground hover:text-primary'
+          }`}
+          onClick={() => setEditing(true)}
+          onWheel={(e) => {
+            e.preventDefault()
+            if (autoGainEnabled && onAutoGainToggle) onAutoGainToggle(false)
+            onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
+          }}
+          title={autoGainEnabled ? (autoGainLocked ? 'Gain locked — click to edit' : 'Calibrating — click to edit') : 'Click to type, scroll ±1dB'}
+          aria-label={`Input gain ${valueLabel}dB, click to edit`}
+        >
+          {valueLabel}
+          <span className="block text-[0.5625rem] text-muted-foreground/60">dB</span>
+        </button>
+      )}
+
+      {/* Auto/Manual toggle */}
       {onAutoGainToggle && (
         <button
           onClick={() => onAutoGainToggle(!autoGainEnabled)}
-          className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[0.5625rem] font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-shrink-0 px-1 py-0.5 rounded text-[0.5rem] font-bold uppercase tracking-wider transition-colors ${
             autoGainEnabled
               ? autoGainLocked
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -284,26 +317,27 @@ export const InputMeterSlider = memo(function InputMeterSlider({
         </button>
       )}
 
-      {/* Slider track + 0dB label */}
-      <div className="relative flex-1 flex flex-col">
+      {/* Vertical fader track + canvas */}
+      <div className="relative flex-1 min-h-0 w-full flex flex-col">
         <div
-          ref={sliderRef}
-          className={`relative rounded cursor-ew-resize overflow-hidden w-full ${compact ? 'h-4' : 'h-5'}`}
+          ref={trackRef}
+          className="relative flex-1 rounded cursor-ns-resize overflow-hidden"
           style={{ touchAction: 'none' }}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           role="slider"
+          aria-orientation="vertical"
           aria-valuemin={min}
           aria-valuemax={max}
           aria-valuenow={displayValue}
           aria-label="Input gain"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowRight') {
               if (autoGainEnabled && onAutoGainToggle) onAutoGainToggle(false)
               onChange(Math.min(max, value + 1))
             }
-            if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') {
               if (autoGainEnabled && onAutoGainToggle) onAutoGainToggle(false)
               onChange(Math.max(min, value - 1))
             }
@@ -313,55 +347,53 @@ export const InputMeterSlider = memo(function InputMeterSlider({
             ref={canvasRef}
             className="w-full h-full"
           />
-          {/* Gain thumb — white circle matching shadcn Slider thumb */}
+          {/* Gain thumb — horizontal bar */}
           <div
-            className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-7 rounded-full border-2 shadow-md ring-offset-background transition-[box-shadow] hover:ring-4 hover:ring-ring/50 focus-visible:ring-4 focus-visible:ring-ring/50 pointer-events-none ${
+            className={`absolute left-1/2 -translate-x-1/2 translate-y-1/2 w-10 h-3 rounded-sm border-2 shadow-md pointer-events-none transition-[box-shadow] ${
               autoGainEnabled ? 'border-primary bg-primary/90' : 'border-background bg-white'
             }`}
-            style={{ left: `${((displayValue - min) / (max - min)) * 100}%` }}
+            style={{ bottom: `${thumbBottom}%` }}
             aria-hidden="true"
           />
         </div>
-        {/* 0dB unity label — positioned at the center (50%) of the range */}
-        {!compact && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-none">
-            <span className="text-[0.5rem] text-muted-foreground/60 font-mono leading-none">0</span>
-          </div>
-        )}
       </div>
 
-      {/* Value display — click to edit */}
-      {editing ? (
-        <input
-          autoFocus
-          type="text"
-          defaultValue={String(displayValue)}
-          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[0.5rem] w-9 h-4' : 'text-xs w-12 h-5'}`}
-          onBlur={(e) => commitEdit(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
-            if (e.key === 'Escape') setEditing(false)
-            if (e.key === 'ArrowUp') { e.preventDefault(); onChange(Math.min(max, value + 1)) }
-            if (e.key === 'ArrowDown') { e.preventDefault(); onChange(Math.max(min, value - 1)) }
-          }}
-        />
-      ) : (
-        <button
-          className={`font-mono text-right transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[0.5rem] w-9' : 'text-xs w-12'} ${
-            autoGainEnabled ? 'text-primary hover:text-primary/80' : 'text-foreground hover:text-primary'
-          }`}
-          onClick={() => setEditing(true)}
-          onWheel={(e) => {
-            e.preventDefault()
-            if (autoGainEnabled && onAutoGainToggle) onAutoGainToggle(false)
-            onChange(e.deltaY < 0 ? Math.min(max, value + 1) : Math.max(min, value - 1))
-          }}
-          title={autoGainEnabled ? (autoGainLocked ? 'Gain locked — click to edit (switches to manual)' : 'Calibrating — click to edit (switches to manual)') : 'Click to type, scroll to step ±1dB'}
-          aria-label={`Input gain ${valueLabel}${autoGainEnabled ? (autoGainLocked ? ' (locked)' : ' (calibrating)') : ''}, click to edit`}
+      {/* Venue quick-cal pills */}
+      <div className="flex-shrink-0 flex flex-col items-center gap-1 w-full">
+        {([[-12, 'Loud'], [-18, 'Med'], [-24, 'Quiet']] as const).map(([db, label]) => (
+          <button
+            key={db}
+            onClick={() => onAutoGainTargetChange(db)}
+            className={`w-full px-1 py-1.5 rounded-md text-[0.6rem] font-bold uppercase tracking-wider transition-colors ${
+              autoGainEnabled && autoGainTargetDb === db
+                ? 'bg-primary/20 border border-primary/50 text-primary'
+                : 'bg-muted/50 border border-transparent text-muted-foreground hover:bg-muted'
+            }`}
+            title={`${label}: auto-gain target ${db} dBFS`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Start/stop toggle */}
+      <button
+        onClick={onToggle}
+        aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
+        className="relative flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        <div className={`absolute inset-0.5 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
+        {isRunning && (
+          <div className="absolute inset-0.5 rounded-full border-2 border-primary animate-ping opacity-30" />
+        )}
+        <svg
+          className={`w-4 h-4 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary' : 'text-primary/60 hover:text-primary'}`}
+          viewBox="0 0 24 24"
+          fill="currentColor"
         >
-          {valueLabel}
-        </button>
-      )}
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+        </svg>
+      </button>
     </div>
   )
 })

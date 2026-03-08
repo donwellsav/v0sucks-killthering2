@@ -6,6 +6,7 @@ import { SpectrumCanvas } from './SpectrumCanvas'
 import { GEQBarView } from './GEQBarView'
 import { DetectionControls } from './DetectionControls'
 import { AlgorithmStatusBar } from './AlgorithmStatusBar'
+import { VerticalGainFader } from './VerticalGainFader'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AlertTriangle, PanelLeftClose, Columns2 } from 'lucide-react'
@@ -14,37 +15,11 @@ import type { ImperativePanelHandle } from 'react-resizable-panels'
 import type { Advisory, DetectorSettings, OperationMode, SpectrumData } from '@/types/advisory'
 import type { SpectrumStatus, EarlyWarning } from '@/hooks/useAudioAnalyzer'
 
-type GraphView = 'rta' | 'geq' | 'controls'
-
-const GRAPH_CHIPS: { value: GraphView; label: string }[] = [
-  { value: 'rta', label: 'RTA' },
-  { value: 'geq', label: 'GEQ' },
-]
-
-const GraphChipRow = memo(function GraphChipRow({ value, onChange }: { value: GraphView; onChange: (v: GraphView) => void }) {
-  return (
-    <div className="flex items-center gap-1">
-      {GRAPH_CHIPS.map((chip) => (
-        <button
-          key={chip.value}
-          onClick={() => onChange(chip.value)}
-          className={`px-1.5 py-0.5 rounded text-[0.5rem] font-medium transition-colors ${
-            value === chip.value
-              ? 'bg-primary/20 text-primary'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          {chip.label}
-        </button>
-      ))}
-    </div>
-  )
-})
-
 interface DesktopLayoutProps {
   layoutKey: number
   isRunning: boolean
   start: () => void
+  stop: () => void
   isFrozen: boolean
   toggleFreeze: () => void
   advisories: Advisory[]
@@ -59,10 +34,6 @@ interface DesktopLayoutProps {
   dismissedIds: Set<string>
   onDismiss: (id: string) => void
   onClearAll: () => void
-  activeGraph: GraphView
-  setActiveGraph: (v: GraphView) => void
-  bottomLeftGraph: GraphView
-  setBottomLeftGraph: (v: GraphView) => void
   issuesPanelOpen: boolean
   issuesPanelRef: React.RefObject<ImperativePanelHandle | null>
   activeSidebarTab: 'issues' | 'controls'
@@ -77,26 +48,29 @@ interface DesktopLayoutProps {
   onClearRTA: () => void
   onClearGEQ: () => void
   onFreqRangeChange: (min: number, max: number) => void
+  inputLevel: number
+  isAutoGain: boolean
+  autoGainDb: number | undefined
+  autoGainLocked: boolean
 }
 
 export const DesktopLayout = memo(function DesktopLayout({
-  layoutKey, isRunning, start, isFrozen, toggleFreeze,
+  layoutKey, isRunning, start, stop, isFrozen, toggleFreeze,
   advisories, activeAdvisoryCount,
   settings, onSettingsChange, onModeChange,
   spectrumRef, spectrumStatus, earlyWarning, noiseFloorDb,
   dismissedIds, onDismiss, onClearAll,
-  activeGraph, setActiveGraph,
-  bottomLeftGraph, setBottomLeftGraph,
   issuesPanelOpen, issuesPanelRef,
   activeSidebarTab, setActiveSidebarTab,
   openIssuesPanel, closeIssuesPanel, setIssuesPanelOpen,
   rtaClearedIds, geqClearedIds,
   hasActiveRTAMarkers, hasActiveGEQBars,
   onClearRTA, onClearGEQ, onFreqRangeChange,
+  inputLevel, isAutoGain, autoGainDb, autoGainLocked,
 }: DesktopLayoutProps) {
   return (
     <div className="hidden landscape:flex flex-1 overflow-hidden">
-      <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v3">
+      <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v4">
         {/* Sidebar panel */}
         <ResizablePanel defaultSize={20} minSize={8} maxSize={30} collapsible>
           <div className="flex flex-col h-full bg-card/50 overflow-hidden">
@@ -226,7 +200,7 @@ export const DesktopLayout = memo(function DesktopLayout({
         <ResizableHandle withHandle />
 
         {/* Graph area panel */}
-        <ResizablePanel defaultSize={55}>
+        <ResizablePanel defaultSize={50}>
           <ResizablePanelGroup direction="vertical" autoSaveId="ktr-layout-vertical">
             {/* Top graph */}
             <ResizablePanel defaultSize={60} minSize={20} collapsible>
@@ -234,19 +208,14 @@ export const DesktopLayout = memo(function DesktopLayout({
                 <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col">
                   <div className="flex-shrink-0 flex items-center justify-between px-2 py-1 border-b border-border bg-muted/20">
                     <div className="flex items-center gap-1">
-                      <GraphChipRow value={activeGraph} onChange={setActiveGraph} />
-                      {activeGraph === 'rta' && isRunning && (
+                      <span className="text-[0.5rem] font-medium text-primary">RTA</span>
+                      {isRunning && (
                         <button onClick={toggleFreeze} className={`px-1.5 py-0.5 rounded text-[0.5rem] font-medium transition-colors ${isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}>
                           {isFrozen ? 'Live' : 'Freeze'}
                         </button>
                       )}
-                      {activeGraph === 'rta' && hasActiveRTAMarkers && (
+                      {hasActiveRTAMarkers && (
                         <button onClick={onClearRTA} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                          Clear
-                        </button>
-                      )}
-                      {activeGraph === 'geq' && hasActiveGEQBars && (
-                        <button onClick={onClearGEQ} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
                           Clear
                         </button>
                       )}
@@ -257,13 +226,8 @@ export const DesktopLayout = memo(function DesktopLayout({
                         : 'Ready'}
                     </span>
                   </div>
-                  <div className="relative flex-1 min-h-0">
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'rta' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={onFreqRangeChange} showThresholdLine={settings.showThresholdLine} feedbackThresholdDb={settings.feedbackThresholdDb} isFrozen={isFrozen} canvasTargetFps={settings.canvasTargetFps} />
-                    </div>
-                    <div className={`absolute inset-0 transition-opacity duration-200 ${activeGraph === 'geq' ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-                      <GEQBarView advisories={advisories} graphFontSize={settings.graphFontSize} clearedIds={geqClearedIds} />
-                    </div>
+                  <div className="flex-1 min-h-0">
+                    <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={settings.graphFontSize} onStart={!isRunning ? start : undefined} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={onFreqRangeChange} showThresholdLine={settings.showThresholdLine} feedbackThresholdDb={settings.feedbackThresholdDb} isFrozen={isFrozen} canvasTargetFps={settings.canvasTargetFps} />
                   </div>
                 </div>
               </div>
@@ -277,18 +241,8 @@ export const DesktopLayout = memo(function DesktopLayout({
                 <div className="h-full bg-card/60 rounded-lg border border-border overflow-hidden flex flex-col min-w-0">
                   <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-muted/20">
                     <div className="flex items-center gap-1">
-                      <GraphChipRow value={bottomLeftGraph} onChange={setBottomLeftGraph} />
-                      {bottomLeftGraph === 'rta' && isRunning && (
-                        <button onClick={toggleFreeze} className={`px-1.5 py-0.5 rounded text-[0.5rem] font-medium transition-colors ${isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}>
-                          {isFrozen ? 'Live' : 'Freeze'}
-                        </button>
-                      )}
-                      {bottomLeftGraph === 'rta' && hasActiveRTAMarkers && (
-                        <button onClick={onClearRTA} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
-                          Clear
-                        </button>
-                      )}
-                      {bottomLeftGraph === 'geq' && hasActiveGEQBars && (
+                      <span className="text-[0.5rem] font-medium text-primary">GEQ</span>
+                      {hasActiveGEQBars && (
                         <button onClick={onClearGEQ} className="px-1.5 py-0.5 rounded text-[0.5rem] font-medium text-muted-foreground hover:text-foreground transition-colors">
                           Clear
                         </button>
@@ -296,8 +250,7 @@ export const DesktopLayout = memo(function DesktopLayout({
                     </div>
                   </div>
                   <div className="flex-1 min-h-0">
-                    {bottomLeftGraph === 'rta' && <SpectrumCanvas spectrumRef={spectrumRef} advisories={advisories} isRunning={isRunning} graphFontSize={Math.max(10, settings.graphFontSize - 4)} earlyWarning={earlyWarning} rtaDbMin={settings.rtaDbMin} rtaDbMax={settings.rtaDbMax} spectrumLineWidth={settings.spectrumLineWidth} clearedIds={rtaClearedIds} minFrequency={settings.minFrequency} maxFrequency={settings.maxFrequency} onFreqRangeChange={onFreqRangeChange} showThresholdLine={settings.showThresholdLine} feedbackThresholdDb={settings.feedbackThresholdDb} isFrozen={isFrozen} canvasTargetFps={settings.canvasTargetFps} />}
-                    {bottomLeftGraph === 'geq' && <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} clearedIds={geqClearedIds} />}
+                    <GEQBarView advisories={advisories} graphFontSize={Math.max(10, settings.graphFontSize - 4)} clearedIds={geqClearedIds} />
                   </div>
                 </div>
               </div>
@@ -305,6 +258,23 @@ export const DesktopLayout = memo(function DesktopLayout({
           </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {/* Gain fader strip */}
+      <div className="flex-shrink-0 w-12 border-l border-border bg-card/50">
+        <VerticalGainFader
+          value={settings.inputGainDb}
+          onChange={(v) => onSettingsChange({ inputGainDb: v })}
+          level={inputLevel}
+          autoGainEnabled={isAutoGain}
+          autoGainDb={autoGainDb}
+          autoGainLocked={autoGainLocked}
+          onAutoGainToggle={(enabled) => onSettingsChange({ autoGainEnabled: enabled })}
+          autoGainTargetDb={settings.autoGainTargetDb}
+          onAutoGainTargetChange={(db) => onSettingsChange({ autoGainTargetDb: db, autoGainEnabled: true })}
+          isRunning={isRunning}
+          onToggle={isRunning ? stop : start}
+        />
+      </div>
     </div>
   )
 })

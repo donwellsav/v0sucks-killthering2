@@ -118,10 +118,10 @@ export class FeedbackDetector {
   private growthRateThreshold: number = 1.5
 
   // Auto-gain control — adjusts inputGainDb to keep signal in optimal detection range
-  private _autoGainEnabled: boolean = true
+  private _autoGainEnabled: boolean = false
   private _autoGainDb: number = 15 // Current auto-computed gain (starts at default)
   private _rawPeakDb: number = -100 // Pre-gain peak level (updated each frame)
-  private _autoGainTargetDb: number = -12 // Target post-gain peak level (sweet spot)
+  private _autoGainTargetDb: number = -18 // Target post-gain peak level (configurable, -18 = balanced headroom)
   private _autoGainMinDb: number = -10 // Min auto gain
   private _autoGainMaxDb: number = 30 // Max auto gain
   private _autoGainAttackCoeff: number = 0 // EMA attack (computed from sample rate)
@@ -230,8 +230,8 @@ export class FeedbackDetector {
     const fps = 1000 / this.config.analysisIntervalMs
     this._autoGainAttackCoeff = 1 - Math.exp(-1 / (0.3 * fps))  // 300ms attack
     this._autoGainReleaseCoeff = 1 - Math.exp(-1 / (1.0 * fps)) // 1000ms release
-    this._autoGainEnabled = this.config.autoGainEnabled ?? true
-    this._autoGainDb = this.config.inputGainDb ?? 15
+    this._autoGainEnabled = this.config.autoGainEnabled ?? false
+    this._autoGainDb = this.config.inputGainDb ?? 6
     // Reset calibration state so measure-then-lock starts fresh
     this._autoGainLocked = false
     this._autoGainCalibrationStartMs = 0
@@ -390,11 +390,14 @@ export class FeedbackDetector {
       mappedConfig.autoGainEnabled = settings.autoGainEnabled
       // When switching to auto, seed from current manual setting and restart calibration
       if (settings.autoGainEnabled) {
-        this._autoGainDb = this.config.inputGainDb ?? 15
+        this._autoGainDb = this.config.inputGainDb ?? 6
         this._autoGainLocked = false
         this._autoGainCalibrationStartMs = 0
         this._autoGainSignalFrames = 0
       }
+    }
+    if (settings.autoGainTargetDb !== undefined) {
+      this._autoGainTargetDb = settings.autoGainTargetDb
     }
     if (settings.harmonicToleranceCents !== undefined) {
       this.harmonicToleranceCents = settings.harmonicToleranceCents

@@ -79,6 +79,7 @@ export type WorkerOutboundMessage =
   | { type: 'advisoryReplaced'; replacedId: string; advisory: Advisory }
   | { type: 'advisoryCleared'; advisoryId: string }
   | { type: 'tracksUpdate'; tracks: TrackedPeak[] }
+  | { type: 'returnBuffers'; spectrum: Float32Array; timeDomain?: Float32Array }
   | { type: 'ready' }
   | { type: 'error'; message: string }
 
@@ -535,9 +536,12 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
     }
 
     case 'processPeak': {
+      const spectrum = msg.spectrum
+      const timeDomain = msg.timeDomain
+      try {
       if (!msdBuffer || !phaseBuffer || !trackManager) break
 
-      const { peak, spectrum, sampleRate: sr, fftSize: fft } = msg
+      const { peak, sampleRate: sr, fftSize: fft } = msg
       sampleRate = sr
       fftSize = fft
 
@@ -582,8 +586,8 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         // Phase coherence: extract phase angles on EVERY frame unconditionally.
         // Gaps in phase history corrupt frame-to-frame delta-phase calculations,
         // so we collect even when no tracks exist to maintain continuous history.
-        if (msg.timeDomain && phaseBuffer) {
-          const phases = computePhaseAngles(msg.timeDomain)
+        if (timeDomain && phaseBuffer) {
+          const phases = computePhaseAngles(timeDomain)
           if (phases) {
             phaseBuffer.addFrame(phases)
           }
@@ -851,6 +855,18 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       self.postMessage({ type: 'advisory', advisory } satisfies WorkerOutboundMessage)
       self.postMessage({ type: 'tracksUpdate', tracks: trackManager.getActiveTracks() } satisfies WorkerOutboundMessage)
       break
+      } finally {
+        // Return pooled buffers to main thread via zero-copy transfer
+        const returnList: ArrayBuffer[] = []
+        if (spectrum.buffer.byteLength > 0) returnList.push(spectrum.buffer as ArrayBuffer)
+        if (timeDomain && timeDomain.buffer.byteLength > 0) returnList.push(timeDomain.buffer as ArrayBuffer)
+        if (returnList.length > 0) {
+          self.postMessage(
+            { type: 'returnBuffers', spectrum, timeDomain } satisfies WorkerOutboundMessage,
+            returnList
+          )
+        }
+      }
     }
 
     case 'clearPeak': {

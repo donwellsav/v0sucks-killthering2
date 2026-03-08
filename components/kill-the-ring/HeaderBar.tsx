@@ -1,7 +1,6 @@
 'use client'
 
 import { memo } from 'react'
-import { InputMeterSlider } from './InputMeterSlider'
 import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
 import { HelpMenu } from './HelpMenu'
 import { SettingsPanel } from './SettingsPanel'
@@ -27,10 +26,6 @@ interface HeaderBarProps {
   onModeChange: (mode: OperationMode) => void
   onReset: () => void
   noiseFloorDb: number | null
-  inputLevel: number
-  isAutoGain: boolean
-  autoGainDb: number | undefined
-  autoGainLocked: boolean
   resetLayout: () => void
   isFullscreen: boolean
   toggleFullscreen: () => void
@@ -44,8 +39,7 @@ interface HeaderBarProps {
 export const HeaderBar = memo(function HeaderBar({
   isRunning, start, stop,
   settings, onSettingsChange, onModeChange, onReset,
-  noiseFloorDb, inputLevel,
-  isAutoGain, autoGainDb, autoGainLocked,
+  noiseFloorDb,
   resetLayout, isFullscreen, toggleFullscreen,
   isFrozen, toggleFreeze,
   devices, selectedDeviceId, onDeviceChange,
@@ -119,22 +113,6 @@ export const HeaderBar = memo(function HeaderBar({
               <span className="font-mono">v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}</span>
             </span>
           </div>
-        </div>
-      </div>
-
-      {/* Desktop center: Gain slider */}
-      <div className="hidden landscape:sm:flex items-center flex-1 min-w-0">
-        <div className="flex-1 flex flex-col gap-2 min-w-0">
-          <InputMeterSlider
-            value={settings.inputGainDb}
-            onChange={(v) => onSettingsChange({ inputGainDb: v })}
-            level={inputLevel}
-            fullWidth
-            autoGainEnabled={isAutoGain}
-            autoGainDb={autoGainDb}
-            autoGainLocked={autoGainLocked}
-            onAutoGainToggle={(enabled) => onSettingsChange({ autoGainEnabled: enabled })}
-          />
         </div>
       </div>
 

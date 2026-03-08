@@ -71,6 +71,11 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
   const crashedRef = useRef(false)  // Set on unrecoverable worker error
   const callbacksRef = useRef(callbacks)
 
+  // Buffer pool: reusable Float32Arrays for zero-allocation worker transfer
+  const specPoolRef = useRef<Float32Array[]>([])
+  const tdPoolRef = useRef<Float32Array[]>([])
+  const poolFftSizeRef = useRef(0)
+
   // Keep callbacks up to date without re-creating worker
   useEffect(() => {
     callbacksRef.current = callbacks
@@ -97,6 +102,11 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
         case 'tracksUpdate':
           busyRef.current = false  // Clear backpressure — worker finished processing
           callbacksRef.current.onTracksUpdate?.(msg.tracks)
+          break
+        case 'returnBuffers':
+          busyRef.current = false  // Also clears backpressure (fixes stall on early-break paths)
+          if (msg.spectrum.buffer.byteLength > 0) specPoolRef.current.push(msg.spectrum)
+          if (msg.timeDomain && msg.timeDomain.buffer.byteLength > 0) tdPoolRef.current.push(msg.timeDomain)
           break
         case 'error':
           busyRef.current = false  // Unblock pipeline so analysis continues after soft error
@@ -170,19 +180,34 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
       // Backpressure: skip if worker hasn't finished the previous batch
       if (busyRef.current || crashedRef.current || !isReadyRef.current) return
 
-      // Transfer zero-copy clones to the worker — avoids heap allocations per peak
-      const specClone = spectrum.slice(0)
-      const transferList: ArrayBuffer[] = [specClone.buffer as ArrayBuffer]
+      // Flush pool when FFT size changes (buffers are wrong length)
+      if (poolFftSizeRef.current !== fftSize) {
+        specPoolRef.current = []
+        tdPoolRef.current = []
+        poolFftSizeRef.current = fftSize
+      }
 
-      let tdClone: Float32Array | undefined
+      // Reuse pooled buffer or allocate (only on first call / pool miss)
+      let specBuf = specPoolRef.current.pop()
+      if (!specBuf || specBuf.length !== spectrum.length) {
+        specBuf = new Float32Array(spectrum.length)
+      }
+      specBuf.set(spectrum)
+      const transferList: ArrayBuffer[] = [specBuf.buffer as ArrayBuffer]
+
+      let tdBuf: Float32Array | undefined
       if (timeDomain) {
-        tdClone = timeDomain.slice(0)
-        transferList.push(tdClone.buffer as ArrayBuffer)
+        tdBuf = tdPoolRef.current.pop()
+        if (!tdBuf || tdBuf.length !== timeDomain.length) {
+          tdBuf = new Float32Array(timeDomain.length)
+        }
+        tdBuf.set(timeDomain)
+        transferList.push(tdBuf.buffer as ArrayBuffer)
       }
 
       busyRef.current = true
       workerRef.current?.postMessage(
-        { type: 'processPeak', peak, spectrum: specClone, sampleRate, fftSize, timeDomain: tdClone } as WorkerInboundMessage,
+        { type: 'processPeak', peak, spectrum: specBuf, sampleRate, fftSize, timeDomain: tdBuf } as WorkerInboundMessage,
         transferList
       )
     },

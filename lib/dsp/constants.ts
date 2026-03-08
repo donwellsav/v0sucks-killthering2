@@ -286,6 +286,7 @@ export interface ModePreset {
   eqPreset: 'surgical' | 'heavy'
   aWeightingEnabled: boolean
   inputGainDb: number
+  autoGainTargetDb?: number // Optional — inherits from DEFAULT_SETTINGS when absent
   ignoreWhistle: boolean
 }
 
@@ -317,7 +318,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     relativeThresholdDb: 16, // Headroom above noise floor in quiet conference rooms
     eqPreset: 'surgical',   // Narrow cuts preserve speech clarity
     aWeightingEnabled: true, // Prioritizes 2–5 kHz speech intelligibility band
-    inputGainDb: 15,
+    inputGainDb: 6,
     ignoreWhistle: true,
   },
 
@@ -470,7 +471,8 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     relativeThresholdDb: 12, // Very sensitive
     eqPreset: 'surgical',   // Precise notch placement
     aWeightingEnabled: false, // Full spectrum during calibration
-    inputGainDb: 15,
+    inputGainDb: 6,
+    autoGainTargetDb: -12, // Hot target — ring-out needs maximum sensitivity to catch every resonance
     ignoreWhistle: true,
   },
 
@@ -500,7 +502,8 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     relativeThresholdDb: 14, // Sensitive — low noise floor makes relative work well
     eqPreset: 'surgical',   // Precise cuts for broadcast quality
     aWeightingEnabled: true, // A-weighting for speech focus
-    inputGainDb: 15,
+    inputGainDb: 6,
+    autoGainTargetDb: -24, // Conservative — studio/streaming, minimal false positives
     ignoreWhistle: true,
   },
 
@@ -559,8 +562,9 @@ export const DEFAULT_SETTINGS = {
   musicAware: false, // Disabled — no music in corporate/conference
   autoMusicAware: false, // Auto music-aware off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15 dB above noise floor = band is playing
-  inputGainDb: 15, // Default input gain (adjustable -40 to +40 dB)
-  autoGainEnabled: true, // Auto-gain on by default — finds optimal level for any venue
+  inputGainDb: 6, // Default input gain (adjustable -40 to +40 dB)
+  autoGainEnabled: false, // Auto-gain off by default — user clicks venue pill to start calibration
+  autoGainTargetDb: -18, // Target post-gain peak level (-18 dBFS = 18 dB headroom, balanced for detection)
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
   harmonicToleranceCents: 200, // ±200 cents for harmonic matching; synced with ASSOCIATION_TOLERANCE_CENTS
   showTooltips: true, // Show help tooltips (useful for AV techs)
@@ -689,7 +693,7 @@ export const VIZ_COLORS = {
   INSTRUMENT: '#22c55e', // green-500
   NOISE_FLOOR: '#6b7280', // gray-500
   THRESHOLD: '#3b82f6', // blue-500
-  SPECTRUM: '#10b981', // emerald-500
+  SPECTRUM: '#3b82f6', // blue-500
   PEAK_MARKER: '#f59e0b', // amber-500
   // Advanced algorithm colors
   MSD_HIGH: '#22c55e', // green-500 (likely feedback)
@@ -698,6 +702,7 @@ export const VIZ_COLORS = {
   PHASE_RANDOM: '#9ca3af', // gray-400 (low coherence)
   COMPRESSION: '#f59e0b', // amber-500 (compression detected)
   COMB_PATTERN: '#8b5cf6', // violet-500 (comb pattern)
+  AXIS_LABEL: '#a1a1aa', // zinc-400 — readable on dark backgrounds
 } as const
 
 // ============================================================================

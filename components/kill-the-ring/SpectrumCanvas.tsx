@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useRef, useEffect, useCallback, useState, memo } from 'react'
-import Image from 'next/image'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
 import { freqToLogPosition, logPositionToFreq, roundFreqToNice, clamp } from '@/lib/utils/mathHelpers'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
@@ -24,6 +23,15 @@ interface DbRange {
 const DB_MAJOR = [-90, -60, -30, 0]
 const DB_MINOR = [-80, -70, -50, -40, -20, -10]
 const DB_ALL = [...DB_MAJOR, ...DB_MINOR].sort((a, b) => a - b)
+
+function calcPadding(width: number, height: number) {
+  return {
+    top: Math.round(height * 0.05),
+    right: Math.round(width * 0.02),
+    bottom: Math.round(height * 0.09),
+    left: Math.round(width * 0.065),
+  }
+}
 
 function drawGrid(
   ctx: CanvasRenderingContext2D,
@@ -143,9 +151,9 @@ function drawSpectrum(
   let gradient = gradientRef.current
   if (!gradient || gradientHeightRef.current !== plotHeight) {
     gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
-    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.85)')
-    gradient.addColorStop(0.5, 'rgba(16, 185, 129, 0.35)')
-    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.05)')
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)')
+    gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.35)')
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)')
     ;(gradientRef as React.MutableRefObject<CanvasGradient | null>).current = gradient
     ;(gradientHeightRef as React.MutableRefObject<number>).current = plotHeight
   }
@@ -337,23 +345,119 @@ function drawAxisLabels(
   width: number,
   height: number,
 ) {
-  ctx.fillStyle = '#888'
+  ctx.fillStyle = VIZ_COLORS.AXIS_LABEL
   ctx.font = `${fontSize}px monospace`
+  ctx.textBaseline = 'middle'
 
   // Y-axis (dB)
   ctx.textAlign = 'right'
   for (const db of DB_ALL) {
     const y = padding.top + ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
-    ctx.fillText(`${db}`, padding.left - 5, y + 3)
+    ctx.fillText(`${db}`, padding.left - 5, y)
   }
 
   // X-axis (Hz)
   ctx.textAlign = 'center'
+  const xLabelY = padding.top + plotHeight + padding.bottom * 0.55
   for (const freq of FREQ_LABELS) {
     const x = padding.left + freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
     const label = freq >= 1000 ? `${freq / 1000}k` : `${freq}`
-    ctx.fillText(label, x, height - 8)
+    ctx.fillText(label, x, xLabelY)
   }
+}
+
+// ─── Placeholder spectrum (static ambient noise curve) ─────────────────────────
+
+// Frequency→dB points describing a realistic idle room noise shape
+const PLACEHOLDER_CURVE: [number, number][] = [
+  [20, -92], [30, -88], [50, -78], [80, -70], [120, -64],
+  [200, -58], [350, -55], [500, -54], [800, -56], [1200, -60],
+  [2000, -64], [3500, -69], [5000, -74], [8000, -80], [12000, -86],
+  [16000, -91], [20000, -95],
+]
+
+function drawPlaceholder(
+  canvas: HTMLCanvasElement,
+  graphFontSize: number,
+  rtaDbMin: number | undefined,
+  rtaDbMax: number | undefined,
+) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const dpr = window.devicePixelRatio || 1
+  const width = canvas.width / dpr
+  const height = canvas.height / dpr
+  if (width === 0 || height === 0) return
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, width, height)
+
+  const padding = calcPadding(width, height)
+  const plotWidth = width - padding.left - padding.right
+  const plotHeight = height - padding.top - padding.bottom
+
+  const scaledFontSize = Math.max(9, Math.min(16, Math.round(width * 0.01)))
+  const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)
+
+  const range: DbRange = {
+    dbMin: rtaDbMin ?? CANVAS_SETTINGS.RTA_DB_MIN,
+    dbMax: rtaDbMax ?? CANVAS_SETTINGS.RTA_DB_MAX,
+    freqMin: CANVAS_SETTINGS.RTA_FREQ_MIN,
+    freqMax: CANVAS_SETTINGS.RTA_FREQ_MAX,
+  }
+
+  ctx.save()
+  ctx.translate(padding.left, padding.top)
+
+  drawGrid(ctx, plotWidth, plotHeight, range)
+
+  // Draw fake spectrum fill + stroke using PLACEHOLDER_CURVE
+  const gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)')
+  gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.35)')
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)')
+
+  const strokePath = new Path2D()
+  const fillPath = new Path2D()
+  let started = false
+  let lastX = 0
+
+  for (const [freq, db] of PLACEHOLDER_CURVE) {
+    if (freq < range.freqMin || freq > range.freqMax) continue
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    const y = ((range.dbMax - clamp(db, range.dbMin, range.dbMax)) / (range.dbMax - range.dbMin)) * plotHeight
+
+    if (!started) {
+      strokePath.moveTo(x, y)
+      fillPath.moveTo(x, plotHeight)
+      fillPath.lineTo(x, y)
+      started = true
+    } else {
+      strokePath.lineTo(x, y)
+      fillPath.lineTo(x, y)
+    }
+    lastX = x
+  }
+
+  fillPath.lineTo(lastX, plotHeight)
+  fillPath.closePath()
+
+  ctx.fillStyle = gradient
+  ctx.fill(fillPath)
+
+  ctx.strokeStyle = VIZ_COLORS.SPECTRUM
+  ctx.globalAlpha = 0.15
+  ctx.lineWidth = 3.5
+  ctx.stroke(strokePath)
+  ctx.globalAlpha = 1
+  ctx.lineWidth = 1.5
+  ctx.stroke(strokePath)
+
+  ctx.restore()
+
+  drawAxisLabels(ctx, padding, plotWidth, plotHeight, range, fontSize, width, height)
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -464,13 +568,19 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
+
+          // Redraw placeholder on resize (before analysis starts)
+          if (!hasEverStarted) {
+            drawPlaceholder(canvas, graphFontSize, rtaDbMinProp, rtaDbMaxProp)
+          }
         }
       }
     })
 
     observer.observe(container)
     return () => observer.disconnect()
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasEverStarted])
 
   const render = useCallback(() => {
     const spectrum = isFrozenRef.current ? frozenSpectrumRef.current : spectrumRef.current
@@ -497,12 +607,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
     ctx.scale(dpr, dpr)
     ctx.clearRect(0, 0, width, height)
 
-    const padding = {
-      top: Math.round(height * 0.05),
-      right: Math.round(width * 0.035),
-      bottom: Math.round(height * 0.075),
-      left: Math.round(width * 0.044),
-    }
+    const padding = calcPadding(width, height)
     const plotWidth = width - padding.left - padding.right
     const plotHeight = height - padding.top - padding.bottom
 
@@ -663,14 +768,6 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
       <canvas ref={canvasRef} className="w-full h-full" role="img" aria-label="Real-time audio frequency spectrum display" />
       {showPlaceholder && (
         <div className="absolute inset-0">
-          <Image
-            src="/rta-placeholder.jpg"
-            alt="RTA spectrum placeholder"
-            fill
-            className="object-fill"
-            priority
-            sizes="100vw"
-          />
           <div
             className={`absolute inset-0 flex items-center justify-center ${onStart ? 'cursor-pointer' : 'pointer-events-none'}`}
             onClick={onStart}

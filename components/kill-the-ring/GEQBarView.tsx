@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useCallback, useMemo, memo } from 'react'
 import { useAnimationFrame } from '@/hooks/useAnimationFrame'
-import { ISO_31_BANDS } from '@/lib/dsp/constants'
+import { ISO_31_BANDS, VIZ_COLORS } from '@/lib/dsp/constants'
 import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
 import type { Advisory } from '@/types/advisory'
 
@@ -107,7 +107,7 @@ function drawBars(
       if (recommendation.clusterCount > 1) {
         const badgeText = `+${recommendation.clusterCount - 1}`
         ctx.font = `bold ${issueFontSize - 2}px monospace`
-        ctx.fillStyle = '#38bdf8' // sky-400
+        ctx.fillStyle = VIZ_COLORS.SPECTRUM
         ctx.textAlign = 'left'
         ctx.fillText(badgeText, x + barWidth + 4, y + 10)
       }
@@ -134,7 +134,7 @@ function drawGEQAxisLabels(
 ) {
   // Band labels (rotated vertical to fit)
   const labelFontSize = Math.min(Math.max(Math.floor(barSpacing * 0.85), 8), 13)
-  ctx.fillStyle = '#888'
+  ctx.fillStyle = VIZ_COLORS.AXIS_LABEL
   ctx.font = `${labelFontSize}px monospace`
   ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
@@ -143,7 +143,7 @@ function drawGEQAxisLabels(
     const x = padding.left + i * barSpacing + barSpacing / 2
     const label = GEQ_BAND_LABELS[i]
     ctx.save()
-    ctx.translate(x, height - padding.bottom + 6)
+    ctx.translate(x, height - padding.bottom + 4)
     ctx.rotate(-Math.PI / 2)
     ctx.fillText(label, 0, 0)
     ctx.restore()
@@ -151,11 +151,12 @@ function drawGEQAxisLabels(
 
   // Y-axis labels
   ctx.textAlign = 'right'
-  ctx.fillStyle = '#888'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = VIZ_COLORS.AXIS_LABEL
   ctx.font = `${fontSize}px monospace`
-  ctx.fillText('0', padding.left - 5, padding.top + centerY + 3)
-  ctx.fillText('-12', padding.left - 5, padding.top + centerY + (12 / 18) * (plotHeight / 2) + 3)
-  ctx.fillText('+12', padding.left - 5, padding.top + centerY - (12 / 18) * (plotHeight / 2) + 3)
+  ctx.fillText('0', padding.left - 5, padding.top + centerY)
+  ctx.fillText('-12', padding.left - 5, padding.top + centerY + (12 / 18) * (plotHeight / 2))
+  ctx.fillText('+12', padding.left - 5, padding.top + centerY - (12 / 18) * (plotHeight / 2))
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────────
@@ -257,8 +258,8 @@ export const GEQBarView = memo(function GEQBarView({ advisories, graphFontSize =
     const padding = {
       top: Math.round(height * 0.04),
       right: Math.round(width * 0.015),
-      bottom: Math.round(height * 0.11),
-      left: Math.round(width * 0.045),
+      bottom: Math.round(height * 0.18),
+      left: Math.round(width * 0.065),
     }
     const scaledFontSize = Math.max(8, Math.min(14, Math.round(width * 0.01)))
     const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)

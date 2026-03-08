@@ -161,6 +161,18 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               onChange={(v) => onSettingsChange({ growthRateThreshold: v })}
             />
           </div>
+          {settings.autoGainEnabled && (
+            <div className="pt-1.5">
+              <SliderRow
+                label="AG Target"
+                value={`${settings.autoGainTargetDb} dBFS`}
+                tooltip={settings.showTooltips ? 'Post-gain peak target. Lower = fewer false positives, less sensitivity. -12 hot (ring out), -18 balanced, -24 conservative (broadcast).' : undefined}
+                min={-30} max={-6} step={1}
+                sliderValue={settings.autoGainTargetDb}
+                onChange={(v) => onSettingsChange({ autoGainTargetDb: v })}
+              />
+            </div>
+          )}
           <div className="pt-1.5">
             <SliderRow
               label="Confidence"

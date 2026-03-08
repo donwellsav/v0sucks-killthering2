@@ -51,7 +51,7 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
     <div className="flex flex-col gap-2">
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 min-h-[120px] text-muted-foreground py-8">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500/40 mb-2" />
+          <CheckCircle2 className="w-5 h-5 text-blue-500/40 mb-2" />
           <div className="text-sm font-medium">No issues detected</div>
           <div className="text-xs mt-1 text-muted-foreground/60">Monitoring for feedback...</div>
         </div>
