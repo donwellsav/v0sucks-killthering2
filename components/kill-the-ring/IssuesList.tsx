@@ -77,11 +77,10 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
               )}
             </div>
           )}
-          {sorted.map((advisory, index) => (
+          {sorted.map((advisory) => (
             <IssueCard
               key={advisory.id}
               advisory={advisory}
-              rank={index + 1}
               onDismiss={onDismiss}
               touchFriendly={touchFriendly}
             />
@@ -94,12 +93,11 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
 
 interface IssueCardProps {
   advisory: Advisory
-  rank: number
   onDismiss?: (id: string) => void
   touchFriendly?: boolean
 }
 
-const IssueCard = memo(function IssueCard({ advisory, rank, onDismiss, touchFriendly }: IssueCardProps) {
+const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }: IssueCardProps) {
   // Precompute occurrence count once per render instead of calling in JSX render path
   const occurrenceCount = useMemo(
     () => getFeedbackHistory().getOccurrenceCount(advisory.trueFrequencyHz),

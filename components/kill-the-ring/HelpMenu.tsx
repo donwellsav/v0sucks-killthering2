@@ -881,11 +881,3 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function FormulaBlock({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`bg-muted p-3 rounded font-mono text-xs ${className ?? 'space-y-1'}`}>
-      <p className="text-foreground font-semibold">{title}</p>
-      {children}
-    </div>
-  )
-}

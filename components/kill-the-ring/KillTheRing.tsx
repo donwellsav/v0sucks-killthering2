@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useFullscreen } from '@/hooks/useFullscreen'
 import { RotateCcw, LayoutGrid, AlertTriangle, BarChart3, Settings2, Maximize2, Minimize2, PanelLeftClose, Columns2 } from 'lucide-react'
-import type { Advisory, OperationMode } from '@/types/advisory'
+import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
@@ -62,11 +62,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     isRunning,
     error,
     noiseFloorDb,
-    sampleRate,
-    fftSize,
     spectrumStatus,
     spectrumRef,
-    tracksRef,
     advisories,
     earlyWarning,
     settings,
@@ -149,6 +146,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   useEffect(() => {
     if (dismissedIds.size === 0 && geqClearedIds.size === 0 && rtaClearedIds.size === 0) return
     const liveIds = new Set(advisories.map((a) => a.id))
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prune stale IDs when advisories change
     setDismissedIds((prev) => {
       const next = new Set<string>()
       prev.forEach((id) => { if (liveIds.has(id)) next.add(id) })
@@ -194,6 +192,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LAYOUT_PREFS_KEY) ?? '{}')
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: restore saved layout on mount
       if (saved.activeGraph) setActiveGraph(saved.activeGraph)
       if (saved.bottomLeftGraph) setBottomLeftGraph(saved.bottomLeftGraph)
       if (saved.bottomRightGraph) setBottomRightGraph(saved.bottomRightGraph)

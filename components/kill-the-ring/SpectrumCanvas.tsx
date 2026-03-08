@@ -153,7 +153,6 @@ function drawSpectrum(
   // Single pass: build stroke path, then derive fill from it
   const strokePath = new Path2D()
   const fillPath = new Path2D()
-  let firstX = 0
   let lastX = 0
   let started = false
 
@@ -166,7 +165,6 @@ function drawSpectrum(
     const y = ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
 
     if (!started) {
-      firstX = x
       strokePath.moveTo(x, y)
       fillPath.moveTo(x, plotHeight)
       fillPath.lineTo(x, y)
@@ -387,8 +385,10 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   const containerRef = useRef<HTMLDivElement>(null)
   const dimensionsRef = useRef({ width: 0, height: 0 })
   const advisoriesRef = useRef(advisories)
+  // eslint-disable-next-line react-hooks/refs -- synced for 60fps rAF reads
   advisoriesRef.current = advisories
   const clearedIdsRef = useRef(clearedIds)
+  // eslint-disable-next-line react-hooks/refs -- synced for 60fps rAF reads
   clearedIdsRef.current = clearedIds
 
   // Freq range ref for 60fps reads during drag (avoids React re-renders)
@@ -401,6 +401,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   const dragRef = useRef<'min' | 'max' | null>(null)
   const paddingRef = useRef({ left: 0, top: 0, plotWidth: 0, plotHeight: 0 })
   const onFreqRangeChangeRef = useRef(onFreqRangeChange)
+  // eslint-disable-next-line react-hooks/refs -- synced to avoid re-registering listeners
   onFreqRangeChangeRef.current = onFreqRangeChange
 
   // Cached per-frame objects — avoid recreating every frame
@@ -517,7 +518,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
 
     drawAxisLabels(ctx, padding, plotWidth, plotHeight, range, fontSize, width, height)
 
-  }, [graphFontSize, earlyWarning, rtaDbMinProp, rtaDbMaxProp, spectrumLineWidthProp, showThresholdLine, feedbackThresholdDb])
+  }, [spectrumRef, graphFontSize, earlyWarning, rtaDbMinProp, rtaDbMaxProp, spectrumLineWidthProp, showThresholdLine, feedbackThresholdDb])
 
   useAnimationFrame(render, isRunning || hasEverStarted)
 

@@ -142,6 +142,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
   // Keep a ref to the latest updateValueFromX so window listeners
   // always call through the current closure without re-registering.
   const updateValueFromXRef = useRef(updateValueFromX)
+  // eslint-disable-next-line react-hooks/refs -- synced to avoid re-registering listeners
   updateValueFromXRef.current = updateValueFromX
 
   const handleMouseDown = (e: React.MouseEvent) => {
