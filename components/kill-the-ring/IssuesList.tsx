@@ -154,7 +154,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
 
       <div className="pl-3 pr-1.5 py-1.5 flex flex-col gap-1">
 
-        {/* Top section: 2-column — frequency LEFT, badges RIGHT */}
+        {/* Top section: 3-column — frequency LEFT, badges MIDDLE, dismiss RIGHT */}
         <div className="flex items-start justify-between gap-2">
           {/* LEFT: Frequency hero + pitch/band */}
           <div className="flex flex-col min-w-0">
@@ -192,9 +192,9 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             )}
           </div>
 
-          {/* RIGHT: Badges in 2 rows + dismiss */}
+          {/* MIDDLE: Badges in 2 rows */}
           <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-            {/* Row 1: status — repeat, cluster, resolved, dismiss */}
+            {/* Row 1: status — repeat, cluster, resolved */}
             <div className="flex items-center gap-1 justify-end">
               {occurrenceCount >= 3 && (
                 <TooltipProvider delayDuration={300}>
@@ -232,18 +232,6 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                   Resolved
                 </span>
               )}
-
-              {onDismiss && (
-                <button
-                  onClick={() => onDismiss(advisory.id)}
-                  aria-label={`Dismiss ${exactFreqStr} issue`}
-                  className={`flex-shrink-0 flex items-center justify-center rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted/60 transition-colors ${
-                    touchFriendly ? 'w-9 h-9' : 'w-5 h-5'
-                  }`}
-                >
-                  <X className={touchFriendly ? 'w-4 h-4' : 'w-3 h-3'} />
-                </button>
-              )}
             </div>
 
             {/* Row 2: classification — severity, confidence */}
@@ -273,6 +261,19 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
               )}
             </div>
           </div>
+
+          {/* RIGHT: Dismiss ✕ */}
+          {onDismiss && (
+            <button
+              onClick={() => onDismiss(advisory.id)}
+              aria-label={`Dismiss ${exactFreqStr} issue`}
+              className={`flex-shrink-0 self-center rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted/60 transition-colors flex items-center justify-center ${
+                touchFriendly ? 'w-9 h-9' : 'w-5 h-5'
+              }`}
+            >
+              <X className={touchFriendly ? 'w-4 h-4' : 'w-3 h-3'} />
+            </button>
+          )}
         </div>
 
         {/* Runaway / warning alert — full-width below (rare, urgent) */}
