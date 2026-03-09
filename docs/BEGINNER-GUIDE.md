@@ -82,6 +82,9 @@ C:\ktr\v0sucks-killthering2\
 │   ├── kill-the-ring/            # YOUR MAIN WORK AREA — all app components
 │   │   ├── KillTheRingClient.tsx #   Wrapper: dynamic import + error boundary
 │   │   ├── KillTheRing.tsx       #   THE MAIN COMPONENT — layout, state, wiring
+│   │   ├── HeaderBar.tsx         #   Top bar (mic button, logo, toolbar icons)
+│   │   ├── DesktopLayout.tsx     #   Desktop resizable panel layout
+│   │   ├── MobileLayout.tsx      #   Mobile portrait tab layout
 │   │   ├── IssuesList.tsx        #   Issue cards (detected feedback problems)
 │   │   ├── SpectrumCanvas.tsx    #   RTA graph (frequency spectrum visualization)
 │   │   ├── GEQBarView.tsx        #   Graphic EQ bar chart visualization
@@ -89,12 +92,23 @@ C:\ktr\v0sucks-killthering2\
 │   │   ├── HelpMenu.tsx          #   Help/documentation dialog (5 tabs)
 │   │   ├── DetectionControls.tsx #   Mode selector + quick-adjust sliders
 │   │   ├── InputMeterSlider.tsx  #   Input gain slider with level meter
+│   │   ├── VerticalGainFader.tsx #   Vertical gain slider component
 │   │   ├── EQNotepad.tsx         #   Saved EQ cuts notepad
 │   │   ├── FeedbackHistoryPanel.tsx  # Historical feedback frequency log
+│   │   ├── EarlyWarningPanel.tsx     # Pre-feedback warning indicators
 │   │   ├── AlgorithmStatusBar.tsx    # Shows which detection algorithm is active
+│   │   ├── FullscreenOverlay.tsx     # Fullscreen RTA overlay
+│   │   ├── OnboardingOverlay.tsx     # First-run welcome/permissions flow
 │   │   ├── ResetConfirmDialog.tsx    # "Are you sure?" dialog for reset
 │   │   ├── ErrorBoundary.tsx     #   Catches React crashes gracefully
-│   │   └── index.ts              #   Barrel file — re-exports everything
+│   │   ├── index.ts              #   Barrel file — re-exports everything
+│   │   └── settings/             #   Settings panel tab components
+│   │       ├── AdvancedTab.tsx   #     Advanced/debug settings
+│   │       ├── AlgorithmsTab.tsx #     Detection algorithm selection
+│   │       ├── DetectionTab.tsx  #     Sensitivity/threshold controls
+│   │       ├── DisplayTab.tsx    #     Visual preferences
+│   │       ├── RoomTab.tsx       #     Room preset & dimensions
+│   │       └── SettingsShared.tsx #    Shared setting row components
 │   │
 │   └── ui/                       # SHADCN PRIMITIVES — don't edit these
 │       ├── button.tsx            #   Pre-built accessible components
@@ -105,17 +119,24 @@ C:\ktr\v0sucks-killthering2\
 │       ├── tooltip.tsx
 │       └── ... (40+ more)
 │
+├── contexts/                     # REACT CONTEXTS
+│   └── PortalContainerContext.tsx #   Portal mount point for mobile overlays
+│
 ├── hooks/                        # REACT HOOKS — reusable logic
 │   ├── useAudioAnalyzer.ts       #   THE BIG ONE — manages mic + FFT + DSP worker
 │   ├── useDSPWorker.ts           #   Creates and talks to the Web Worker
 │   ├── useAnimationFrame.ts      #   requestAnimationFrame loop helper
-│   └── useAdvisoryLogging.ts     #   Logs advisories to console for debugging
+│   ├── useAdvisoryLogging.ts     #   Records advisories to feedback history
+│   ├── useFullscreen.ts          #   Fullscreen API wrapper
+│   ├── useAudioDevices.ts        #   Enumerate/select audio input devices
+│   ├── use-mobile.ts             #   Detect mobile/portrait orientation
+│   └── use-toast.ts              #   Toast notification hook (shadcn)
 │
 ├── lib/                          # LIBRARY CODE — pure logic, no React
 │   ├── audio/
 │   │   └── createAudioAnalyzer.ts  # Mic access + AudioContext + FFT capture
 │   │
-│   ├── dsp/                      # DSP ENGINE (~6,600 lines) — the brain
+│   ├── dsp/                      # DSP ENGINE (~7,500 lines) — the brain
 │   │   ├── constants.ts          #   All magic numbers + operation mode presets
 │   │   ├── feedbackDetector.ts   #   Peak detection from FFT data
 │   │   ├── trackManager.ts       #   Tracks peaks over time (is it sustained?)
@@ -216,22 +237,27 @@ app/page.tsx
   └── KillTheRingClient         (dynamic import, error boundary)
        └── KillTheRing          ★ THE HUB — owns all state
             │
-            ├── Header
+            ├── HeaderBar
             │   ├── Start/Stop button (mic circle)
             │   ├── Logo + branding
             │   ├── InputMeterSlider (gain control + level meter)
             │   ├── FeedbackHistoryPanel (history icon)
             │   ├── HelpMenu (? icon → 5-tab dialog)
-            │   └── SettingsPanel (gear icon → 5-tab dialog)
+            │   └── SettingsPanel (gear icon → 5-tab settings)
+            │       └── settings/ tabs (Detection, Display, Room, Algorithms, Advanced)
             │
-            ├── Mobile Layout (portrait orientation)
+            ├── OnboardingOverlay (first-run, conditional)
+            ├── FullscreenOverlay (fullscreen RTA, conditional)
+            │
+            ├── MobileLayout (portrait orientation)
             │   ├── Issues tab → IssuesList
             │   ├── Graph tab → SpectrumCanvas / GEQBarView / DetectionControls
             │   └── Settings tab → DetectionControls + InputMeterSlider
             │
-            └── Desktop Layout (landscape orientation)
+            └── DesktopLayout (landscape orientation)
                 ├── Sidebar (resizable)
                 │   ├── AlgorithmStatusBar
+                │   ├── EarlyWarningPanel
                 │   ├── Issues tab → IssuesList
                 │   └── EQ Notepad tab → EQNotepad
                 │
@@ -261,7 +287,7 @@ All in `lib/dsp/`. Here's what each file does:
 | `advancedDetection.ts` | MSD + phase coherence algorithms | In worker, per track |
 | `eqAdvisor.ts` | Maps frequency → nearest GEQ band + PEQ params | In worker, per classification |
 | `dspWorker.ts` | Worker entry point, coordinates the above | In Web Worker thread |
-| `feedbackHistory.ts` | Remembers "repeat offender" frequencies | In worker |
+| `feedbackHistory.ts` | Tracks repeat offenders, stores EQ recs, exports CSV/JSON | Main thread |
 | `acousticUtils.ts` | Room mode calculations, Schroeder frequency | In worker |
 | `severityUtils.ts` | Severity level helpers | Shared |
 
@@ -564,4 +590,4 @@ import { Advisory } from '../../types/advisory'     // ❌
 
 ---
 
-*Last updated: March 2026 — Kill The Ring v1.0.6*
+*Last updated: March 2026 — Kill The Ring v1.0.116*

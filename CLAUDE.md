@@ -29,14 +29,17 @@ pnpm lint             # Run ESLint (flat config, eslint.config.mjs)
 ```
 app/                        # Next.js App Router pages + API routes
 components/
-  kill-the-ring/            # Domain components (KillTheRing, SpectrumCanvas, SettingsPanel, etc.)
-  ui/                       # shadcn/ui primitives
-hooks/                      # Custom React hooks (useAudioAnalyzer, useDSPWorker, etc.)
+  kill-the-ring/            # Domain components (~21 files)
+    settings/               # Settings panel tab components (6 files)
+  ui/                       # shadcn/ui primitives (~40 files)
+contexts/                   # React context providers (PortalContainerContext)
+hooks/                      # Custom React hooks (8 files)
 lib/
   audio/                    # AudioAnalyzer factory
   changelog.ts              # Version history (rendered in About tab)
-  dsp/                      # DSP engine (~6,600 lines): detector, classifier, advisor, worker
+  dsp/                      # DSP engine (~7,500 lines): detector, classifier, advisor, worker
   utils/                    # Math helpers, pitch utilities
+  utils.ts                  # cn() helper for Tailwind class merging
 types/                      # TypeScript interfaces (advisory.ts)
 styles/                     # Tailwind globals (OKLch theme)
 ```
@@ -47,6 +50,7 @@ styles/                     # Tailwind globals (OKLch theme)
 - **Web Worker** (`lib/dsp/dspWorker.ts`): TrackManager, Classifier, EQAdvisor — offloaded to keep UI at 60fps
 - **Data flow:** Mic → GainNode → AnalyserNode → FFT data → Worker (classify) → React state → Canvas render
 - Components in `components/kill-the-ring/` use barrel export via `index.ts`
+- `contexts/PortalContainerContext.tsx` provides a portal mount point for mobile overlays
 - **No environment variables required** — app is fully client-side with localStorage persistence
 
 ## Coding Conventions
