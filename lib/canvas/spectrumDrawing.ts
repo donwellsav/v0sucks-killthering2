@@ -1,0 +1,521 @@
+/**
+ * Spectrum Canvas Drawing Functions
+ *
+ * Pure canvas-drawing helpers extracted from SpectrumCanvas.tsx.
+ * Stateless: all data received as parameters, no React dependency.
+ */
+
+import { freqToLogPosition, clamp } from '@/lib/utils/mathHelpers'
+import { getSeverityColor } from '@/lib/dsp/eqAdvisor'
+import { formatFrequency } from '@/lib/utils/pitchUtils'
+import { CANVAS_SETTINGS, VIZ_COLORS } from '@/lib/dsp/constants'
+import type { SpectrumData, Advisory } from '@/types/advisory'
+import type { EarlyWarning } from '@/hooks/useAudioAnalyzer'
+
+// ─── Types ──────────────────────────────────────────────────────────────────────
+
+export interface DbRange {
+  dbMin: number
+  dbMax: number
+  freqMin: number
+  freqMax: number
+}
+
+// ─── Constants ──────────────────────────────────────────────────────────────────
+
+export const DB_MAJOR = [-90, -60, -30, 0]
+export const DB_MINOR = [-80, -70, -50, -40, -20, -10]
+export const DB_ALL = [...DB_MAJOR, ...DB_MINOR].sort((a, b) => a - b)
+
+export const FREQ_LABELS = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
+
+/** Peak hold decay rate: ~0.5 dB per frame at 60fps (~30 dB/sec) */
+export const PEAK_HOLD_DECAY_DB = 0.5
+
+/** Frequency->dB points describing a realistic idle room noise shape */
+export const PLACEHOLDER_CURVE: [number, number][] = [
+  [20, -92], [30, -88], [50, -78], [80, -70], [120, -64],
+  [200, -58], [350, -55], [500, -54], [800, -56], [1200, -60],
+  [2000, -64], [3500, -69], [5000, -74], [8000, -80], [12000, -86],
+  [16000, -91], [20000, -95],
+]
+
+// ─── Drawing Functions ──────────────────────────────────────────────────────────
+
+export function calcPadding(width: number, height: number) {
+  return {
+    top: Math.round(height * 0.05),
+    right: Math.round(width * 0.02),
+    bottom: Math.round(height * 0.09),
+    left: Math.round(width * 0.065),
+  }
+}
+
+export function drawGrid(
+  ctx: CanvasRenderingContext2D,
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+) {
+  // Background
+  ctx.fillStyle = '#0c0c0c'
+  ctx.fillRect(0, 0, plotWidth, plotHeight)
+
+  // Minor dB grid (subtle, drawn first)
+  ctx.strokeStyle = '#161616'
+  ctx.lineWidth = 0.5
+  ctx.beginPath()
+  for (const db of DB_MINOR) {
+    const y = ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
+    ctx.moveTo(0, y)
+    ctx.lineTo(plotWidth, y)
+  }
+  ctx.stroke()
+
+  // Major dB grid (brighter, on top)
+  ctx.strokeStyle = '#2a2a2a'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  for (const db of DB_MAJOR) {
+    const y = ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
+    ctx.moveTo(0, y)
+    ctx.lineTo(plotWidth, y)
+  }
+  ctx.stroke()
+
+  // Frequency grid
+  ctx.strokeStyle = '#1e1e1e'
+  ctx.lineWidth = 0.5
+  ctx.beginPath()
+  for (const freq of FREQ_LABELS) {
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, plotHeight)
+  }
+  ctx.stroke()
+}
+
+export function drawIndicatorLines(
+  ctx: CanvasRenderingContext2D,
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+  spectrum: SpectrumData | null,
+  showThresholdLine: boolean,
+  feedbackThresholdDb: number | undefined,
+  fontSize: number,
+) {
+  // Noise floor
+  if (spectrum?.noiseFloorDb !== null && spectrum?.noiseFloorDb !== undefined) {
+    const floorY = ((range.dbMax - spectrum.noiseFloorDb) / (range.dbMax - range.dbMin)) * plotHeight
+
+    // Semi-transparent fill below noise floor (subtle region indicator)
+    ctx.fillStyle = `${VIZ_COLORS.NOISE_FLOOR}0D` // ~5% opacity
+    ctx.fillRect(0, floorY, plotWidth, plotHeight - floorY)
+
+    // Noise floor line
+    ctx.strokeStyle = VIZ_COLORS.NOISE_FLOOR
+    ctx.globalAlpha = 0.6
+    ctx.lineWidth = 1
+    ctx.setLineDash([4, 4])
+    ctx.beginPath()
+    ctx.moveTo(0, floorY)
+    ctx.lineTo(plotWidth, floorY)
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Right-aligned label
+    ctx.font = `${Math.max(8, fontSize - 2)}px monospace`
+    ctx.fillStyle = VIZ_COLORS.NOISE_FLOOR
+    ctx.globalAlpha = 0.85
+    ctx.textAlign = 'right'
+    ctx.fillText('Floor', plotWidth - 4, floorY - 4)
+    ctx.globalAlpha = 1
+    ctx.textAlign = 'left'
+  }
+
+  // Effective threshold
+  if (showThresholdLine && spectrum?.effectiveThresholdDb != null) {
+    const threshY = ((range.dbMax - spectrum.effectiveThresholdDb) / (range.dbMax - range.dbMin)) * plotHeight
+    ctx.strokeStyle = VIZ_COLORS.THRESHOLD
+    ctx.globalAlpha = 0.5
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([6, 6])
+    ctx.beginPath()
+    ctx.moveTo(0, threshY)
+    ctx.lineTo(plotWidth, threshY)
+    ctx.stroke()
+    ctx.setLineDash([])
+    // Right-aligned label
+    const threshLabel = `Thresh +${feedbackThresholdDb ?? 0}dB`
+    ctx.font = `${Math.max(8, fontSize - 2)}px monospace`
+    ctx.fillStyle = VIZ_COLORS.THRESHOLD
+    ctx.textAlign = 'right'
+    ctx.fillText(threshLabel, plotWidth - 4, threshY - 4)
+    ctx.globalAlpha = 1
+    ctx.textAlign = 'left'
+  }
+}
+
+export function drawSpectrum(
+  ctx: CanvasRenderingContext2D,
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+  spectrum: SpectrumData | null,
+  gradientRef: { current: CanvasGradient | null },
+  gradientHeightRef: { current: number },
+  spectrumLineWidth: number,
+  peakHoldRef: { current: Float32Array | null },
+) {
+  if (!spectrum?.freqDb || !spectrum.sampleRate || !spectrum.fftSize) return
+
+  const freqDb = spectrum.freqDb
+  const hzPerBin = spectrum.sampleRate / spectrum.fftSize
+  const n = freqDb.length
+
+  // ── Update peak hold buffer ──────────────────────────────────
+  let peakHold = peakHoldRef.current
+  if (!peakHold || peakHold.length !== n) {
+    peakHold = new Float32Array(n)
+    peakHold.set(freqDb) // Initialize to current spectrum
+    peakHoldRef.current = peakHold
+  } else {
+    for (let i = 0; i < n; i++) {
+      peakHold[i] = Math.max(freqDb[i], peakHold[i] - PEAK_HOLD_DECAY_DB)
+    }
+  }
+
+  // Cached gradient fill — only recreated when plotHeight changes
+  let gradient = gradientRef.current
+  if (!gradient || gradientHeightRef.current !== plotHeight) {
+    gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)')
+    gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.35)')
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)')
+    gradientRef.current = gradient
+    gradientHeightRef.current = plotHeight
+  }
+
+  // Single merged pass: build spectrum + peak-hold paths together (saves N freqToLogPosition calls)
+  const strokePath = new Path2D()
+  const fillPath = new Path2D()
+  const holdPath = new Path2D()
+  let lastX = 0
+  let specStarted = false
+  let holdStarted = false
+  const dbSpan = range.dbMax - range.dbMin
+
+  for (let i = 1; i < n; i++) {
+    const freq = i * hzPerBin
+    if (freq < range.freqMin || freq > range.freqMax) continue
+
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+
+    // Spectrum path
+    const db = clamp(freqDb[i], range.dbMin, range.dbMax)
+    const y = ((range.dbMax - db) / dbSpan) * plotHeight
+    if (!specStarted) {
+      strokePath.moveTo(x, y)
+      fillPath.moveTo(x, plotHeight)
+      fillPath.lineTo(x, y)
+      specStarted = true
+    } else {
+      strokePath.lineTo(x, y)
+      fillPath.lineTo(x, y)
+    }
+    lastX = x
+
+    // Peak hold path (same x, different y)
+    const holdDb = clamp(peakHold[i], range.dbMin, range.dbMax)
+    const holdY = ((range.dbMax - holdDb) / dbSpan) * plotHeight
+    if (!holdStarted) {
+      holdPath.moveTo(x, holdY)
+      holdStarted = true
+    } else {
+      holdPath.lineTo(x, holdY)
+    }
+  }
+
+  // Complete fill path back to baseline
+  fillPath.lineTo(lastX, plotHeight)
+  fillPath.closePath()
+
+  // Draw fill then stroke (with glow)
+  ctx.fillStyle = gradient
+  ctx.fill(fillPath)
+
+  // Glow pass — wider, semi-transparent
+  ctx.strokeStyle = VIZ_COLORS.SPECTRUM
+  ctx.globalAlpha = 0.15
+  ctx.lineWidth = spectrumLineWidth + 2
+  ctx.stroke(strokePath)
+
+  // Sharp pass — crisp line on top
+  ctx.globalAlpha = 1
+  ctx.lineWidth = spectrumLineWidth
+  ctx.stroke(strokePath)
+
+  // ── Peak hold trace — thin white line above spectrum ──────────
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)'
+  ctx.lineWidth = 1
+  ctx.stroke(holdPath)
+}
+
+export function drawFreqRangeOverlay(
+  ctx: CanvasRenderingContext2D,
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+  freqRange: { min: number; max: number },
+) {
+  const rangeMinX = freqToLogPosition(Math.max(freqRange.min, range.freqMin), range.freqMin, range.freqMax) * plotWidth
+  const rangeMaxX = freqToLogPosition(Math.min(freqRange.max, range.freqMax), range.freqMin, range.freqMax) * plotWidth
+
+  // Dim overlay outside detection range
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)'
+  if (rangeMinX > 0) ctx.fillRect(0, 0, rangeMinX, plotHeight)
+  if (rangeMaxX < plotWidth) ctx.fillRect(rangeMaxX, 0, plotWidth - rangeMaxX, plotHeight)
+
+  // Vertical boundary lines
+  const lineColor = '#3b82f6' // blue-500
+  ctx.strokeStyle = lineColor
+  ctx.lineWidth = 2
+  ctx.globalAlpha = 0.85
+
+  // Min line
+  ctx.beginPath()
+  ctx.moveTo(rangeMinX, 0)
+  ctx.lineTo(rangeMinX, plotHeight)
+  ctx.stroke()
+
+  // Max line
+  ctx.beginPath()
+  ctx.moveTo(rangeMaxX, 0)
+  ctx.lineTo(rangeMaxX, plotHeight)
+  ctx.stroke()
+
+  // Grab handles (small rounded rects at vertical center)
+  const handleW = 6
+  const handleH = 24
+  const handleY = (plotHeight - handleH) / 2
+  ctx.fillStyle = lineColor
+  ctx.globalAlpha = 0.7
+
+  // Min handle
+  const minHandleRect = new Path2D()
+  minHandleRect.roundRect(rangeMinX - handleW / 2, handleY, handleW, handleH, 3)
+  ctx.fill(minHandleRect)
+
+  // Max handle
+  const maxHandleRect = new Path2D()
+  maxHandleRect.roundRect(rangeMaxX - handleW / 2, handleY, handleW, handleH, 3)
+  ctx.fill(maxHandleRect)
+
+  ctx.globalAlpha = 1
+}
+
+export function drawMarkers(
+  ctx: CanvasRenderingContext2D,
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+  earlyWarning: EarlyWarning | null | undefined,
+  advisories: Advisory[],
+  clearedIds: Set<string> | undefined,
+  peakMarkerRadius: number,
+  fontSize: number,
+) {
+  // Early warning predictions
+  if (earlyWarning && earlyWarning.predictedFrequencies.length > 0) {
+    const warningColor = '#f59e0b' // amber-500
+    ctx.strokeStyle = warningColor
+    ctx.lineWidth = 1.5
+    ctx.setLineDash([6, 4])
+    ctx.globalAlpha = 0.6
+
+    for (const freq of earlyWarning.predictedFrequencies) {
+      if (freq < range.freqMin || freq > range.freqMax) continue
+      const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+
+      // Vertical dashed line
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, plotHeight)
+      ctx.stroke()
+
+      // Warning triangle at top
+      ctx.fillStyle = warningColor
+      ctx.beginPath()
+      ctx.moveTo(x, 8)
+      ctx.lineTo(x - 5, 0)
+      ctx.lineTo(x + 5, 0)
+      ctx.closePath()
+      ctx.fill()
+    }
+
+    ctx.setLineDash([])
+    ctx.globalAlpha = 1
+  }
+
+  // Advisory peak markers (persist until cleared, cap at 7)
+  const visibleAdvisories = advisories
+    .filter(a => !clearedIds?.has(a.id))
+    .slice(-7)
+  for (const advisory of visibleAdvisories) {
+    const freq = advisory.trueFrequencyHz
+    const db = advisory.trueAmplitudeDb
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    const y = ((range.dbMax - clamp(db, range.dbMin, range.dbMax)) / (range.dbMax - range.dbMin)) * plotHeight
+    const color = getSeverityColor(advisory.severity)
+
+    // Vertical line
+    ctx.strokeStyle = color
+    ctx.lineWidth = 2
+    ctx.globalAlpha = 0.7
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(x, plotHeight)
+    ctx.stroke()
+    ctx.globalAlpha = 1
+
+    // Peak dot
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x, y, peakMarkerRadius, 0, Math.PI * 2)
+    ctx.fill()
+
+    // Frequency label
+    ctx.fillStyle = color
+    ctx.font = `${fontSize + 3}px monospace`
+    ctx.textAlign = 'center'
+    ctx.fillText(formatFrequency(freq), x, y - 10)
+  }
+}
+
+export function drawAxisLabels(
+  ctx: CanvasRenderingContext2D,
+  padding: { top: number; left: number; right: number; bottom: number },
+  plotWidth: number,
+  plotHeight: number,
+  range: DbRange,
+  fontSize: number,
+  width: number,
+  height: number,
+) {
+  ctx.font = `${fontSize}px monospace`
+  ctx.textBaseline = 'middle'
+
+  // Text shadow for outdoor readability (dark halo behind bright labels)
+  ctx.shadowColor = 'rgba(0,0,0,0.7)'
+  ctx.shadowBlur = 3
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 0
+  ctx.fillStyle = VIZ_COLORS.AXIS_LABEL
+
+  // Y-axis (dB)
+  ctx.textAlign = 'right'
+  for (const db of DB_ALL) {
+    const y = padding.top + ((range.dbMax - db) / (range.dbMax - range.dbMin)) * plotHeight
+    ctx.fillText(`${db}`, padding.left - 5, y)
+  }
+
+  // X-axis (Hz)
+  ctx.textAlign = 'center'
+  const xLabelY = padding.top + plotHeight + padding.bottom * 0.55
+  for (const freq of FREQ_LABELS) {
+    const x = padding.left + freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    const label = freq >= 1000 ? `${freq / 1000}k` : `${freq}`
+    ctx.fillText(label, x, xLabelY)
+  }
+
+  // Reset shadow
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+}
+
+// ─── Placeholder (pre-analysis idle state) ──────────────────────────────────────
+
+export function drawPlaceholder(
+  canvas: HTMLCanvasElement,
+  graphFontSize: number,
+  rtaDbMin: number | undefined,
+  rtaDbMax: number | undefined,
+) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const dpr = window.devicePixelRatio || 1
+  const width = canvas.width / dpr
+  const height = canvas.height / dpr
+  if (width === 0 || height === 0) return
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.scale(dpr, dpr)
+  ctx.clearRect(0, 0, width, height)
+
+  const padding = calcPadding(width, height)
+  const plotWidth = width - padding.left - padding.right
+  const plotHeight = height - padding.top - padding.bottom
+
+  const scaledFontSize = Math.max(9, Math.min(16, Math.round(width * 0.01)))
+  const fontSize = Math.round((graphFontSize + scaledFontSize) / 2)
+
+  const range: DbRange = {
+    dbMin: rtaDbMin ?? CANVAS_SETTINGS.RTA_DB_MIN,
+    dbMax: rtaDbMax ?? CANVAS_SETTINGS.RTA_DB_MAX,
+    freqMin: CANVAS_SETTINGS.RTA_FREQ_MIN,
+    freqMax: CANVAS_SETTINGS.RTA_FREQ_MAX,
+  }
+
+  ctx.save()
+  ctx.translate(padding.left, padding.top)
+
+  drawGrid(ctx, plotWidth, plotHeight, range)
+
+  // Draw fake spectrum fill + stroke using PLACEHOLDER_CURVE
+  const gradient = ctx.createLinearGradient(0, 0, 0, plotHeight)
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)')
+  gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.35)')
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.05)')
+
+  const strokePath = new Path2D()
+  const fillPath = new Path2D()
+  let started = false
+  let lastX = 0
+
+  for (const [freq, db] of PLACEHOLDER_CURVE) {
+    if (freq < range.freqMin || freq > range.freqMax) continue
+    const x = freqToLogPosition(freq, range.freqMin, range.freqMax) * plotWidth
+    const y = ((range.dbMax - clamp(db, range.dbMin, range.dbMax)) / (range.dbMax - range.dbMin)) * plotHeight
+
+    if (!started) {
+      strokePath.moveTo(x, y)
+      fillPath.moveTo(x, plotHeight)
+      fillPath.lineTo(x, y)
+      started = true
+    } else {
+      strokePath.lineTo(x, y)
+      fillPath.lineTo(x, y)
+    }
+    lastX = x
+  }
+
+  fillPath.lineTo(lastX, plotHeight)
+  fillPath.closePath()
+
+  ctx.fillStyle = gradient
+  ctx.fill(fillPath)
+
+  ctx.strokeStyle = VIZ_COLORS.SPECTRUM
+  ctx.globalAlpha = 0.15
+  ctx.lineWidth = 3.5
+  ctx.stroke(strokePath)
+  ctx.globalAlpha = 1
+  ctx.lineWidth = 1.5
+  ctx.stroke(strokePath)
+
+  ctx.restore()
+
+  drawAxisLabels(ctx, padding, plotWidth, plotHeight, range, fontSize, width, height)
+}

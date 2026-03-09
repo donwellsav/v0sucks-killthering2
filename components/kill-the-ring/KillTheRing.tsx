@@ -19,15 +19,22 @@ import { AlertTriangle, RotateCcw, X } from 'lucide-react'
 // ── Error guidance ──────────────────────────────────────────────────────────────
 
 function getErrorGuidance(error: string): string {
+  // HTTPS required for getUserMedia (except localhost)
+  if (typeof location !== 'undefined' && location.protocol !== 'https:' && location.hostname !== 'localhost')
+    return 'Microphone requires a secure (HTTPS) connection. Ask your admin to enable HTTPS.'
   const lower = error.toLowerCase()
   if (lower.includes('permission') || lower.includes('not allowed'))
-    return 'Check your browser address bar for a mic icon and click it to allow access.'
+    return 'Click the mic icon in your browser\'s address bar to allow access, or check Settings → Privacy → Microphone.'
+  if (lower.includes('abort'))
+    return 'Microphone request was cancelled. Click Start to try again.'
   if (lower.includes('not found') || lower.includes('no microphone'))
-    return 'Connect a microphone to your device and try again.'
+    return 'No microphone detected. Connect one and try again.'
   if (lower.includes('in use') || lower.includes('not readable'))
-    return 'Close the other app using your microphone, then try again.'
+    return 'Another app is using your microphone. Close it, then try again.'
   if (lower.includes('overconstrained'))
     return 'Your mic may not support the requested audio format. Try a different device.'
+  if (lower.includes('suspend') || lower.includes('resume'))
+    return 'Audio was interrupted (tab backgrounded?). Click Start to resume.'
   return 'Check your microphone connection and browser permissions.'
 }
 
@@ -35,6 +42,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const {
     isRunning,
     error,
+    workerError,
     noiseFloorDb,
     spectrumStatus,
     spectrumRef,
@@ -317,6 +325,17 @@ export const KillTheRing = memo(function KillTheRingComponent() {
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {workerError && (
+        <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/10 border-b border-amber-500/20">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+            <p className="text-[0.6875rem] text-amber-600 dark:text-amber-400">
+              DSP worker error — analysis may be degraded. Auto-recovering…
+            </p>
           </div>
         </div>
       )}

@@ -58,9 +58,36 @@ export const MobileLayout = memo(function MobileLayout({
   hasActiveRTAMarkers, hasActiveGEQBars,
   onClearRTA, onClearGEQ, onFreqRangeChange,
 }: MobileLayoutProps) {
-  // ── Swipe navigation ─────────────────────────────────────────
+  // ── Tab navigation ──────────────────────────────────────────
   const TAB_ORDER = ['issues', 'graph', 'settings'] as const
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([null, null, null])
+
+  const handleTabKeyDown = useCallback((e: React.KeyboardEvent) => {
+    const currentIndex = TAB_ORDER.indexOf(mobileTab)
+    let newIndex = currentIndex
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        newIndex = currentIndex > 0 ? currentIndex - 1 : TAB_ORDER.length - 1
+        break
+      case 'ArrowRight':
+        newIndex = currentIndex < TAB_ORDER.length - 1 ? currentIndex + 1 : 0
+        break
+      case 'Home':
+        newIndex = 0
+        break
+      case 'End':
+        newIndex = TAB_ORDER.length - 1
+        break
+      default:
+        return
+    }
+
+    e.preventDefault()
+    setMobileTab(TAB_ORDER[newIndex])
+    tabRefs.current[newIndex]?.focus()
+  }, [mobileTab, setMobileTab])
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0]
@@ -92,7 +119,7 @@ export const MobileLayout = memo(function MobileLayout({
   return (
     <>
       {/* ── Mobile: 3-tab content area (portrait only) ────────── */}
-      <div className="landscape:hidden flex-1 flex flex-col overflow-hidden" style={{ touchAction: 'pan-y' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="landscape:hidden flex-1 flex flex-col overflow-hidden" style={{ touchAction: 'pan-y' }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} role="tabpanel" aria-labelledby={`mobile-tab-${mobileTab}`}>
         {/* Issues tab */}
         {mobileTab === 'issues' && (
           <div className="flex-1 flex flex-col overflow-hidden bg-background">
@@ -136,7 +163,7 @@ export const MobileLayout = memo(function MobileLayout({
               {isRunning && (
                 <button
                   onClick={toggleFreeze}
-                  className={`absolute top-1 z-20 px-2 py-0.5 rounded text-[0.5rem] font-medium border transition-colors ${
+                  className={`absolute top-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-[0.5rem] font-medium border transition-colors flex items-center justify-center ${
                     isFrozen
                       ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                       : 'bg-card/80 text-muted-foreground border-border hover:text-foreground'
@@ -149,7 +176,7 @@ export const MobileLayout = memo(function MobileLayout({
               {hasActiveRTAMarkers && (
                 <button
                   onClick={onClearRTA}
-                  className="absolute top-1 right-1 z-20 px-2 py-0.5 rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors"
+                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
                 >
                   Clear
                 </button>
@@ -162,7 +189,7 @@ export const MobileLayout = memo(function MobileLayout({
               {hasActiveGEQBars && (
                 <button
                   onClick={onClearGEQ}
-                  className="absolute top-1 right-1 z-20 px-2 py-0.5 rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors"
+                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-[0.5rem] font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
                 >
                   Clear
                 </button>
@@ -207,24 +234,40 @@ export const MobileLayout = memo(function MobileLayout({
         )}
       </div>
 
+      {/* ── Page indicator dots (portrait only) ─────────────────── */}
+      <div className="landscape:hidden flex items-center justify-center gap-1.5 py-1 bg-card/80" aria-hidden="true">
+        {TAB_ORDER.map(id => (
+          <div
+            key={id}
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${
+              mobileTab === id ? 'bg-primary' : 'bg-muted-foreground/25'
+            }`}
+          />
+        ))}
+      </div>
+
       {/* ── Mobile bottom tab bar (portrait only) ──────────────── */}
       <nav className="landscape:hidden flex-shrink-0 border-t border-border bg-card/80 backdrop-blur-sm" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-        <div className="flex items-stretch">
+        <div className="flex items-stretch" role="tablist" onKeyDown={handleTabKeyDown}>
           {([
             { id: 'issues' as const, label: 'Issues', Icon: AlertTriangle, badge: activeAdvisoryCount },
             { id: 'graph' as const, label: 'Graph', Icon: BarChart3, badge: 0 },
             { id: 'settings' as const, label: 'Settings', Icon: Settings2, badge: 0 },
-          ]).map((tab) => (
+          ]).map((tab, i) => (
             <button
               key={tab.id}
+              ref={el => { tabRefs.current[i] = el }}
               onClick={() => setMobileTab(tab.id)}
+              role="tab"
+              id={`mobile-tab-${tab.id}`}
+              aria-selected={mobileTab === tab.id}
+              tabIndex={mobileTab === tab.id ? 0 : -1}
               className={`flex-1 flex flex-col items-center justify-center py-2 gap-0.5 min-h-[50px] transition-colors ${
                 mobileTab === tab.id
                   ? 'text-primary'
                   : 'text-muted-foreground active:text-foreground'
               }`}
               aria-label={tab.label}
-              aria-current={mobileTab === tab.id ? 'page' : undefined}
             >
               <div className="relative">
                 <tab.Icon className="w-5 h-5" />

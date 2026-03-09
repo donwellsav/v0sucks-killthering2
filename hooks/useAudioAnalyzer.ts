@@ -51,6 +51,8 @@ export interface UseAudioAnalyzerState {
   isRunning: boolean
   hasPermission: boolean
   error: string | null
+  /** Non-fatal worker error (crash/recovery in progress) — shown as amber warning */
+  workerError: string | null
   noiseFloorDb: number | null
   sampleRate: number
   fftSize: number
@@ -85,6 +87,7 @@ export function useAudioAnalyzer(
     isRunning: false,
     hasPermission: false,
     error: null,
+    workerError: null,
     noiseFloorDb: null,
     sampleRate: 48000,
     fftSize: settings.fftSize,
@@ -109,62 +112,90 @@ export function useAudioAnalyzer(
 
   // ── DSP Worker callbacks — stable refs, never change identity ───────────────
   // These refs forward to the latest closure values without causing re-renders
+
+  // Advisory Map: O(1) ID lookup instead of findIndex scans per advisory update
+  const advisoryMapRef = useRef<Map<string, Advisory>>(new Map())
+  const advisorySortedCacheRef = useRef<Advisory[]>([])
+  const advisoryDirtyRef = useRef(false)
+
+  const buildSortedAdvisories = useCallback(() => {
+    const maxIssues = settingsRef.current.maxDisplayedIssues
+    const sorted = Array.from(advisoryMapRef.current.values())
+      .sort((a, b) => {
+        // Active cards always above resolved
+        if (a.resolved !== b.resolved) return a.resolved ? 1 : -1
+        const urgencyA = getSeverityUrgency(a.severity)
+        const urgencyB = getSeverityUrgency(b.severity)
+        if (urgencyA !== urgencyB) return urgencyB - urgencyA
+        return b.trueAmplitudeDb - a.trueAmplitudeDb
+      })
+      .slice(0, maxIssues)
+    advisorySortedCacheRef.current = sorted
+    advisoryDirtyRef.current = false
+    return sorted
+  }, [])
+
   const onAdvisoryRef = useRef<(a: Advisory) => void>(() => {})
 
   onAdvisoryRef.current = (advisory) => {
-    setState(prev => {
-      const next = [...prev.advisories]
+    const map = advisoryMapRef.current
 
-      // Match by ID first (same track updating)
-      const byId = next.findIndex(a => a.id === advisory.id)
-      if (byId >= 0) {
-        next[byId] = advisory
-      } else {
-        // Frequency-proximity dedup (100 cents = 1 semitone, matches worker)
-        // Prevents duplicate cards when a peak is cleared then re-detected
-        // with a new track/advisory ID at the same frequency.
-        const byFreq = next.findIndex(a => {
-          const cents = Math.abs(1200 * Math.log2(advisory.trueFrequencyHz / a.trueFrequencyHz))
-          return cents <= 100
-        })
-        if (byFreq >= 0) {
-          next[byFreq] = advisory // Replace the old card
-        } else {
-          next.push(advisory)
+    if (map.has(advisory.id)) {
+      // O(1) — same track updating
+      map.set(advisory.id, advisory)
+    } else {
+      // Frequency-proximity dedup (100 cents = 1 semitone, matches worker)
+      // Prevents duplicate cards when a peak is cleared then re-detected
+      // with a new track/advisory ID at the same frequency.
+      let replacedKey: string | null = null
+      for (const [key, existing] of map) {
+        const cents = Math.abs(1200 * Math.log2(advisory.trueFrequencyHz / existing.trueFrequencyHz))
+        if (cents <= 100) {
+          replacedKey = key
+          break
         }
       }
-
-      return {
-        ...prev,
-        advisories: next
-          .sort((a, b) => {
-            // Active cards always above resolved
-            if (a.resolved !== b.resolved) return a.resolved ? 1 : -1
-            const urgencyA = getSeverityUrgency(a.severity)
-            const urgencyB = getSeverityUrgency(b.severity)
-            if (urgencyA !== urgencyB) return urgencyB - urgencyA
-            return b.trueAmplitudeDb - a.trueAmplitudeDb
-          })
-          .slice(0, settingsRef.current.maxDisplayedIssues),
+      if (replacedKey) {
+        map.delete(replacedKey)
       }
-    })
+      map.set(advisory.id, advisory)
+      advisoryDirtyRef.current = true // New entry — needs re-sort
+    }
+
+    // Only rebuild sorted array when structure changed; for updates, just refresh cache
+    const sorted = advisoryDirtyRef.current
+      ? buildSortedAdvisories()
+      : advisorySortedCacheRef.current.map(a => a.id === advisory.id ? advisory : a)
+
+    if (!advisoryDirtyRef.current) {
+      advisorySortedCacheRef.current = sorted
+    }
+
+    setState(prev => ({ ...prev, advisories: sorted }))
   }
 
   // Stable callbacks object — created once, never triggers re-renders
   const stableCallbacks = useRef<DSPWorkerCallbacks>({
     onAdvisory: (advisory) => onAdvisoryRef.current(advisory),
     onAdvisoryCleared: (advisoryId) => {
-      setState(prev => {
-        const idx = prev.advisories.findIndex(a => a.id === advisoryId)
-        if (idx < 0) return prev
-        if (prev.advisories[idx].resolved) return prev
-        const next = [...prev.advisories]
-        next[idx] = { ...next[idx], resolved: true, resolvedAt: Date.now() }
-        return { ...prev, advisories: next }
-      })
+      const map = advisoryMapRef.current
+      const existing = map.get(advisoryId)
+      if (!existing || existing.resolved) return
+      const resolved = { ...existing, resolved: true, resolvedAt: Date.now() }
+      map.set(advisoryId, resolved)
+      advisoryDirtyRef.current = true // resolved status changes sort order
+      const sorted = buildSortedAdvisories()
+      setState(prev => ({ ...prev, advisories: sorted }))
     },
     onTracksUpdate: (tracks) => { tracksRef.current = tracks },
-    onReady: () => { /* Worker ready */ },
+    onReady: () => {
+      // Worker (re)started successfully — clear any crash warning
+      setState(prev => prev.workerError ? { ...prev, workerError: null } : prev)
+    },
+    onError: (message) => {
+      // Surface worker errors as non-fatal amber warning (not the red error banner)
+      setState(prev => ({ ...prev, workerError: message }))
+    },
   }).current
 
   // ── DSP Worker ──────────────────────────────────────────────────────────────
@@ -266,6 +297,9 @@ export function useAudioAnalyzer(
     try {
       // Clear previous advisories + worker state when starting fresh analysis
       tracksRef.current = []
+      advisoryMapRef.current.clear()
+      advisorySortedCacheRef.current = []
+      advisoryDirtyRef.current = false
       setState(prev => ({ ...prev, advisories: [], earlyWarning: null }))
       dspWorkerRef.current.reset()
 

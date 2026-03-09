@@ -53,6 +53,7 @@ export class FeedbackDetector {
   private stream: MediaStream | null = null
   private source: MediaStreamAudioSourceNode | null = null
   private _deviceChangeHandler: (() => void) | null = null
+  private _stateChangeHandler: (() => void) | null = null
   private analyser: AnalyserNode | null = null
 
   // Preallocated buffers
@@ -263,6 +264,20 @@ export class FeedbackDetector {
       navigator.mediaDevices.addEventListener('devicechange', this._deviceChangeHandler)
     }
 
+    // Auto-resume AudioContext if browser suspends it mid-session (common on mobile background)
+    if (this.audioContext && !this._stateChangeHandler) {
+      this._stateChangeHandler = () => {
+        const ctx = this.audioContext
+        if (!ctx || !this.isRunning) return
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {
+            this.callbacks.onError?.('Audio context suspended — could not resume. Try restarting.')
+          })
+        }
+      }
+      this.audioContext.addEventListener('statechange', this._stateChangeHandler)
+    }
+
     // Start analysis loop
     this.isRunning = true
     this.lastRafTs = 0
@@ -298,6 +313,12 @@ export class FeedbackDetector {
     if (this._deviceChangeHandler) {
       navigator.mediaDevices?.removeEventListener('devicechange', this._deviceChangeHandler)
       this._deviceChangeHandler = null
+    }
+
+    // Clean up audio context suspension listener
+    if (this._stateChangeHandler) {
+      this.audioContext?.removeEventListener('statechange', this._stateChangeHandler)
+      this._stateChangeHandler = null
     }
   }
 

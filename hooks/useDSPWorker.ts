@@ -188,10 +188,13 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
         return
       }
 
-      // Flush pool when FFT size changes (buffers are wrong length)
+      // Flush pool when FFT size changes (buffers are wrong length), then pre-allocate
       if (poolFftSizeRef.current !== fftSize) {
-        specPoolRef.current = []
-        tdPoolRef.current = []
+        const binCount = spectrum.length
+        specPoolRef.current = Array.from({ length: 3 }, () => new Float32Array(binCount))
+        tdPoolRef.current = timeDomain
+          ? Array.from({ length: 3 }, () => new Float32Array(timeDomain.length))
+          : []
         poolFftSizeRef.current = fftSize
       }
 

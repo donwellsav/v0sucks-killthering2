@@ -1,9 +1,10 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, lazy, Suspense } from 'react'
 import { FeedbackHistoryPanel } from './FeedbackHistoryPanel'
-import { HelpMenu } from './HelpMenu'
-import { SettingsPanel } from './SettingsPanel'
+
+const LazyHelpMenu = lazy(() => import('./HelpMenu').then(m => ({ default: m.HelpMenu })))
+const LazySettingsPanel = lazy(() => import('./SettingsPanel').then(m => ({ default: m.SettingsPanel })))
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -209,13 +210,17 @@ export const HeaderBar = memo(function HeaderBar({
         )}
 
         <FeedbackHistoryPanel />
-        <HelpMenu />
-        <SettingsPanel
-          settings={settings}
-          onSettingsChange={onSettingsChange}
-          onModeChange={onModeChange}
-          onReset={onReset}
-        />
+        <Suspense fallback={<div className="h-10 w-10" />}>
+          <LazyHelpMenu />
+        </Suspense>
+        <Suspense fallback={<div className="h-10 w-10" />}>
+          <LazySettingsPanel
+            settings={settings}
+            onSettingsChange={onSettingsChange}
+            onModeChange={onModeChange}
+            onReset={onReset}
+          />
+        </Suspense>
       </div>
     </header>
   )

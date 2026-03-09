@@ -1,0 +1,695 @@
+/**
+ * Algorithm Fusion Engine
+ *
+ * Combines scores from MSD, Phase Coherence, Spectral Flatness, Comb Pattern,
+ * Inter-Harmonic Ratio (IHR), and Peak-to-Median Ratio (PTMR) into a unified
+ * feedback probability with confidence and verdict.
+ *
+ * Also contains: detectCombPattern (DBX paper), analyzeInterHarmonicRatio,
+ * calculatePTMR, calculateMINDS (DAFx-16), and detectContentType.
+ */
+
+import type { AlgorithmMode, ContentType } from '@/types/advisory'
+import { COMB_PATTERN_SETTINGS, COMPRESSION_SETTINGS } from './constants'
+import type { MSDResult } from './msdAnalysis'
+import { MSD_CONSTANTS } from './msdAnalysis'
+import type { PhaseCoherenceResult } from './phaseCoherence'
+import { PHASE_CONSTANTS } from './phaseCoherence'
+import type { SpectralFlatnessResult, CompressionResult } from './compressionDetection'
+import { COMPRESSION_CONSTANTS } from './compressionDetection'
+
+// Re-export from canonical source so existing imports from advancedDetection still work
+export type { AlgorithmMode, ContentType } from '@/types/advisory'
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+export interface CombPatternResult {
+  hasPattern: boolean
+  fundamentalSpacing: number | null
+  /** Estimated mic-to-speaker acoustic path length in metres.
+   *  Formula: d = c / Δf  (open round-trip path, DBX paper eq. 1) */
+  estimatedPathLength: number | null
+  matchingPeaks: number
+  predictedFrequencies: number[]
+  confidence: number
+}
+
+export interface AlgorithmScores {
+  msd: MSDResult | null
+  phase: PhaseCoherenceResult | null
+  spectral: SpectralFlatnessResult | null
+  comb: CombPatternResult | null
+  compression: CompressionResult | null
+  /** Inter-harmonic ratio analysis — low IHR = feedback, high IHR = music */
+  ihr: InterHarmonicResult | null
+  /** Peak-to-median ratio — high PTMR = narrow spectral peak (feedback) */
+  ptmr: PTMRResult | null
+}
+
+export interface FusedDetectionResult {
+  feedbackProbability: number
+  confidence: number
+  contributingAlgorithms: string[]
+  algorithmScores: AlgorithmScores
+  verdict: 'FEEDBACK' | 'POSSIBLE_FEEDBACK' | 'NOT_FEEDBACK' | 'UNCERTAIN'
+  reasons: string[]
+}
+
+export interface InterHarmonicResult {
+  /** Ratio of energy between harmonics vs at harmonics (0 = clean, 1 = noisy) */
+  interHarmonicRatio: number
+  /** Whether the harmonic pattern suggests feedback (clean, evenly-spaced) */
+  isFeedbackLike: boolean
+  /** Whether the harmonic pattern suggests music (rich, decaying harmonics) */
+  isMusicLike: boolean
+  /** Number of harmonics detected */
+  harmonicsFound: number
+  /** Feedback score contribution (0-1) */
+  feedbackScore: number
+}
+
+export interface PTMRResult {
+  /** Peak-to-median ratio in dB */
+  ptmrDb: number
+  /** Whether PTMR exceeds the feedback threshold */
+  isFeedbackLike: boolean
+  /** Feedback score contribution (0-1) */
+  feedbackScore: number
+}
+
+export interface FusionConfig {
+  mode: AlgorithmMode
+  enabledAlgorithms?: string[]
+  customWeights?: Partial<typeof FUSION_WEIGHTS.DEFAULT>
+  msdMinFrames: number
+  phaseThreshold: number
+  enableCompressionDetection: boolean
+  feedbackThreshold: number
+}
+
+export interface MINDSResult {
+  suggestedDepthDb: number
+  isGrowing: boolean
+  recentGradient: number
+  confidence: number
+  recommendation: string
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
+
+export const COMB_CONSTANTS = {
+  SPEED_OF_SOUND: COMB_PATTERN_SETTINGS.SPEED_OF_SOUND,
+  MIN_PEAKS_FOR_PATTERN: COMB_PATTERN_SETTINGS.MIN_PEAKS,
+  SPACING_TOLERANCE: COMB_PATTERN_SETTINGS.SPACING_TOLERANCE,
+  MAX_PATH_LENGTH: COMB_PATTERN_SETTINGS.MAX_PATH_LENGTH,
+} as const
+
+export const FUSION_WEIGHTS = {
+  DEFAULT: {
+    msd: 0.30,
+    phase: 0.25,
+    spectral: 0.12,
+    comb: 0.08,
+    ihr: 0.08,
+    ptmr: 0.07,
+    existing: 0.10,
+  },
+  SPEECH: {
+    msd: 0.40,
+    phase: 0.20,
+    spectral: 0.10,
+    comb: 0.05,
+    ihr: 0.05,
+    ptmr: 0.10,
+    existing: 0.10,
+  },
+  MUSIC: {
+    msd: 0.15,
+    phase: 0.35,
+    spectral: 0.10,
+    comb: 0.08,
+    ihr: 0.12,
+    ptmr: 0.05,
+    existing: 0.15,
+  },
+  COMPRESSED: {
+    msd: 0.12,
+    phase: 0.38,
+    spectral: 0.15,
+    comb: 0.08,
+    ihr: 0.10,
+    ptmr: 0.07,
+    existing: 0.10,
+  },
+} as const
+
+export const DEFAULT_FUSION_CONFIG: FusionConfig = {
+  mode: 'combined',
+  msdMinFrames: MSD_CONSTANTS.MIN_FRAMES_SPEECH,
+  phaseThreshold: PHASE_CONSTANTS.HIGH_COHERENCE,
+  enableCompressionDetection: true,
+  feedbackThreshold: 0.60,
+}
+
+// ── Comb Filter Pattern Detection — DBX paper ────────────────────────────────
+
+/**
+ * Detect comb filter pattern from multiple peak frequencies.
+ *
+ * FLAW 4 FIX: Path length formula corrected.
+ * Open round-trip: d = c / Δf (not c / 2Δf which is for closed tubes).
+ */
+export function detectCombPattern(
+  peakFrequencies: number[],
+  sampleRate: number = 48000
+): CombPatternResult {
+  if (peakFrequencies.length < COMB_CONSTANTS.MIN_PEAKS_FOR_PATTERN) {
+    return {
+      hasPattern: false,
+      fundamentalSpacing: null,
+      estimatedPathLength: null,
+      matchingPeaks: 0,
+      predictedFrequencies: [],
+      confidence: 0,
+    }
+  }
+
+  const sorted = [...peakFrequencies].sort((a, b) => a - b)
+  const tol = COMB_CONSTANTS.SPACING_TOLERANCE
+  const diffMap = new Map<number, { diff: number; count: number }>()
+  const quantize = (f: number) => Math.round(f)
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const diff = sorted[j] - sorted[i]
+
+      for (let k = 1; k <= 8; k++) {
+        const fundamental = diff / k
+        if (fundamental < 20 || fundamental > sampleRate / 4) continue
+
+        const key = quantize(fundamental)
+        let matched = false
+        for (let offset = -1; offset <= 1; offset++) {
+          const entry = diffMap.get(key + offset)
+          if (entry && Math.abs(entry.diff - fundamental) / fundamental < tol) {
+            entry.count++
+            matched = true
+            break
+          }
+        }
+        if (!matched) {
+          diffMap.set(key, { diff: fundamental, count: 1 })
+        }
+      }
+    }
+  }
+
+  if (diffMap.size === 0) {
+    return {
+      hasPattern: false,
+      fundamentalSpacing: null,
+      estimatedPathLength: null,
+      matchingPeaks: 0,
+      predictedFrequencies: [],
+      confidence: 0,
+    }
+  }
+
+  let bestSpacing = { diff: 0, count: 0 }
+  for (const entry of diffMap.values()) {
+    if (entry.count > bestSpacing.count) bestSpacing = entry
+  }
+  const tolerance = bestSpacing.diff * COMB_CONSTANTS.SPACING_TOLERANCE
+
+  let matchingPeaks = 0
+  for (const freq of sorted) {
+    const nearestHarmonic = Math.round(freq / bestSpacing.diff)
+    const expectedFreq    = nearestHarmonic * bestSpacing.diff
+    if (Math.abs(freq - expectedFreq) <= tolerance) matchingPeaks++
+  }
+
+  const estimatedPathLength = COMB_CONSTANTS.SPEED_OF_SOUND / bestSpacing.diff
+
+  if (estimatedPathLength > COMB_CONSTANTS.MAX_PATH_LENGTH || estimatedPathLength < 0.1) {
+    return {
+      hasPattern: false,
+      fundamentalSpacing: bestSpacing.diff,
+      estimatedPathLength,
+      matchingPeaks,
+      predictedFrequencies: [],
+      confidence: 0,
+    }
+  }
+
+  const maxFreq = Math.min(sampleRate / 2, 20000)
+  const predictedFrequencies: number[] = []
+  for (let n = 1; n <= 20; n++) {
+    const predicted = n * bestSpacing.diff
+    if (predicted > maxFreq) break
+    const alreadyDetected = sorted.some(f => Math.abs(f - predicted) < tolerance)
+    if (!alreadyDetected) predictedFrequencies.push(predicted)
+  }
+
+  const confidence = Math.min(matchingPeaks / sorted.length, 1) *
+                     Math.min(matchingPeaks / COMB_CONSTANTS.MIN_PEAKS_FOR_PATTERN, 1)
+
+  return {
+    hasPattern: matchingPeaks >= COMB_CONSTANTS.MIN_PEAKS_FOR_PATTERN,
+    fundamentalSpacing: bestSpacing.diff,
+    estimatedPathLength,
+    matchingPeaks,
+    predictedFrequencies: predictedFrequencies.slice(0, 5),
+    confidence,
+  }
+}
+
+// ── Inter-Harmonic Ratio (IHR) ───────────────────────────────────────────────
+
+/**
+ * Analyze inter-harmonic energy distribution to distinguish feedback from music.
+ * Low IHR = feedback (clean tone), high IHR = music (rich harmonics).
+ */
+export function analyzeInterHarmonicRatio(
+  spectrum: Float32Array,
+  fundamentalBin: number,
+  sampleRate: number,
+  fftSize: number
+): InterHarmonicResult {
+  const maxBin = spectrum.length - 1
+  const nyquistBin = Math.floor(maxBin * 0.95)
+
+  if (fundamentalBin <= 0 || fundamentalBin >= nyquistBin) {
+    return { interHarmonicRatio: 0.5, isFeedbackLike: false, isMusicLike: false, harmonicsFound: 0, feedbackScore: 0 }
+  }
+
+  const maxHarmonic = 8
+  let harmonicEnergy = 0
+  let interHarmonicEnergy = 0
+  let harmonicsFound = 0
+  const halfBinWidth = Math.max(1, Math.round(fundamentalBin * 0.02))
+
+  for (let k = 1; k <= maxHarmonic; k++) {
+    const expectedBin = Math.round(fundamentalBin * k)
+    if (expectedBin >= nyquistBin) break
+
+    let hPeak = -Infinity
+    for (let b = Math.max(0, expectedBin - halfBinWidth); b <= Math.min(maxBin, expectedBin + halfBinWidth); b++) {
+      if (spectrum[b] > hPeak) hPeak = spectrum[b]
+    }
+    const hPower = Math.pow(10, hPeak / 10)
+    harmonicEnergy += hPower
+    if (hPeak > -80) harmonicsFound++
+
+    if (k < maxHarmonic) {
+      const midBin = Math.round(fundamentalBin * (k + 0.5))
+      if (midBin < nyquistBin) {
+        let ihPeak = -Infinity
+        for (let b = Math.max(0, midBin - halfBinWidth); b <= Math.min(maxBin, midBin + halfBinWidth); b++) {
+          if (spectrum[b] > ihPeak) ihPeak = spectrum[b]
+        }
+        interHarmonicEnergy += Math.pow(10, ihPeak / 10)
+      }
+    }
+  }
+
+  const ihr = harmonicEnergy > 0 ? interHarmonicEnergy / harmonicEnergy : 0.5
+  const isFeedbackLike = ihr < 0.15 && harmonicsFound <= 2
+  const isMusicLike = ihr > 0.35 && harmonicsFound >= 3
+
+  let feedbackScore = 0
+  if (harmonicsFound <= 1) {
+    feedbackScore = Math.max(0, 1 - ihr * 5)
+  } else if (harmonicsFound <= 2) {
+    feedbackScore = Math.max(0, 0.7 - ihr * 3)
+  } else {
+    feedbackScore = Math.max(0, 0.3 - ihr)
+  }
+
+  return {
+    interHarmonicRatio: ihr,
+    isFeedbackLike,
+    isMusicLike,
+    harmonicsFound,
+    feedbackScore: Math.min(feedbackScore, 1),
+  }
+}
+
+// ── Peak-to-Median Ratio (PTMR) ─────────────────────────────────────────────
+
+/**
+ * Calculate peak-to-median ratio for a spectral peak.
+ * Feedback peaks have PTMR > 15 dB; music < 10 dB.
+ */
+export function calculatePTMR(
+  spectrum: Float32Array,
+  peakBin: number,
+  halfWidth: number = 20
+): PTMRResult {
+  const n = spectrum.length
+  const start = Math.max(0, peakBin - halfWidth)
+  const end = Math.min(n - 1, peakBin + halfWidth)
+
+  const values: number[] = []
+  for (let i = start; i <= end; i++) {
+    if (Math.abs(i - peakBin) > 2) {
+      values.push(spectrum[i])
+    }
+  }
+
+  if (values.length < 4) {
+    return { ptmrDb: 0, isFeedbackLike: false, feedbackScore: 0 }
+  }
+
+  values.sort((a, b) => a - b)
+  const mid = values.length >> 1
+  const median = (values.length & 1)
+    ? values[mid]
+    : (values[mid - 1] + values[mid]) / 2
+
+  const ptmrDb = spectrum[peakBin] - median
+  const isFeedbackLike = ptmrDb > 15
+  const feedbackScore = Math.min(Math.max((ptmrDb - 8) / 15, 0), 1)
+
+  return { ptmrDb, isFeedbackLike, feedbackScore }
+}
+
+// ── Algorithm Fusion ─────────────────────────────────────────────────────────
+
+/**
+ * Fuse multiple algorithm results into a unified detection score.
+ *
+ * FLAW 6 FIX: When comb pattern detected, doubles both numerator AND
+ * denominator weight so feedbackProbability stays in [0, 1].
+ */
+export function fuseAlgorithmResults(
+  scores: AlgorithmScores,
+  contentType: ContentType = 'unknown',
+  existingScore: number = 0.5,
+  config: FusionConfig = DEFAULT_FUSION_CONFIG
+): FusedDetectionResult {
+  const reasons: string[] = []
+  const contributingAlgorithms: string[] = []
+
+  let weights: { msd: number; phase: number; spectral: number; comb: number; ihr: number; ptmr: number; existing: number }
+  if (scores.compression?.isCompressed) {
+    weights = { ...FUSION_WEIGHTS.COMPRESSED }
+    reasons.push(`Compression detected (ratio ~${scores.compression.estimatedRatio.toFixed(1)}:1)`)
+  } else if (contentType === 'speech') {
+    weights = { ...FUSION_WEIGHTS.SPEECH }
+  } else if (contentType === 'music') {
+    weights = { ...FUSION_WEIGHTS.MUSIC }
+  } else {
+    weights = { ...FUSION_WEIGHTS.DEFAULT }
+  }
+
+  if (config.customWeights) {
+    weights = { ...weights, ...config.customWeights }
+  }
+
+  let activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
+  switch (config.mode) {
+    case 'msd':
+      activeAlgorithms = ['msd', 'ihr', 'ptmr', 'existing']
+      break
+    case 'phase':
+      activeAlgorithms = ['phase', 'ihr', 'ptmr', 'existing']
+      break
+    case 'combined':
+      activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
+      break
+    case 'all':
+      activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
+      break
+    case 'auto':
+      if (scores.msd && scores.msd.framesAnalyzed >= config.msdMinFrames) {
+        activeAlgorithms = ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
+      } else {
+        activeAlgorithms = ['phase', 'spectral', 'comb', 'ihr', 'ptmr', 'existing']
+      }
+      break
+    case 'custom':
+      activeAlgorithms = [...(config.enabledAlgorithms ?? ['msd', 'phase', 'spectral', 'comb', 'ihr', 'ptmr']), 'existing']
+      break
+  }
+
+  let weightedSum  = 0
+  let totalWeight  = 0
+
+  if (activeAlgorithms.includes('msd') && scores.msd) {
+    weightedSum += scores.msd.feedbackScore * weights.msd
+    totalWeight += weights.msd
+    contributingAlgorithms.push('MSD')
+    if (scores.msd.isFeedbackLikely) {
+      reasons.push(`MSD indicates feedback (${scores.msd.msd.toFixed(3)} dB/frame\u00b2)`)
+    }
+  }
+
+  if (activeAlgorithms.includes('phase') && scores.phase) {
+    weightedSum += scores.phase.feedbackScore * weights.phase
+    totalWeight += weights.phase
+    contributingAlgorithms.push('Phase')
+    if (scores.phase.isFeedbackLikely) {
+      reasons.push(`High phase coherence (${(scores.phase.coherence * 100).toFixed(0)}%)`)
+    }
+  }
+
+  if (activeAlgorithms.includes('spectral') && scores.spectral) {
+    weightedSum += scores.spectral.feedbackScore * weights.spectral
+    totalWeight += weights.spectral
+    contributingAlgorithms.push('Spectral')
+    if (scores.spectral.isFeedbackLikely) {
+      reasons.push(`Pure tone detected (flatness ${scores.spectral.flatness.toFixed(3)})`)
+    }
+  }
+
+  if (activeAlgorithms.includes('comb') && scores.comb && scores.comb.hasPattern) {
+    const combWeight = weights.comb * 2
+    weightedSum += scores.comb.confidence * combWeight
+    totalWeight += combWeight
+    contributingAlgorithms.push('Comb')
+    reasons.push(
+      `Comb pattern: ${scores.comb.matchingPeaks} peaks, ` +
+      `${scores.comb.fundamentalSpacing?.toFixed(0)} Hz spacing` +
+      (scores.comb.estimatedPathLength != null
+        ? ` (path ~${scores.comb.estimatedPathLength.toFixed(1)} m)`
+        : '')
+    )
+  }
+
+  if (activeAlgorithms.includes('ihr') && scores.ihr) {
+    weightedSum += scores.ihr.feedbackScore * weights.ihr
+    totalWeight += weights.ihr
+    contributingAlgorithms.push('IHR')
+    if (scores.ihr.isFeedbackLike) {
+      reasons.push(`Clean tone (IHR ${scores.ihr.interHarmonicRatio.toFixed(2)}, ${scores.ihr.harmonicsFound} harmonics)`)
+    } else if (scores.ihr.isMusicLike) {
+      reasons.push(`Rich harmonics suggest music (IHR ${scores.ihr.interHarmonicRatio.toFixed(2)})`)
+    }
+  }
+
+  if (activeAlgorithms.includes('ptmr') && scores.ptmr) {
+    weightedSum += scores.ptmr.feedbackScore * weights.ptmr
+    totalWeight += weights.ptmr
+    contributingAlgorithms.push('PTMR')
+    if (scores.ptmr.isFeedbackLike) {
+      reasons.push(`Sharp spectral peak (PTMR ${scores.ptmr.ptmrDb.toFixed(1)} dB)`)
+    }
+  }
+
+  if (activeAlgorithms.includes('existing')) {
+    weightedSum += existingScore * weights.existing
+    totalWeight += weights.existing
+    contributingAlgorithms.push('Legacy')
+  }
+
+  const feedbackProbability = totalWeight > 0
+    ? Math.min(weightedSum / totalWeight, 1)
+    : 0
+
+  const algorithmScoresList = [
+    scores.msd?.feedbackScore,
+    scores.phase?.feedbackScore,
+    scores.spectral?.feedbackScore,
+    scores.ihr?.feedbackScore,
+    scores.ptmr?.feedbackScore,
+    existingScore,
+  ].filter((s): s is number => s !== undefined && s !== null)
+
+  const mean     = algorithmScoresList.reduce((a, b) => a + b, 0) / algorithmScoresList.length
+  const variance = algorithmScoresList.reduce((sum, s) => sum + Math.pow(s - mean, 2), 0) / algorithmScoresList.length
+  const agreement = 1 - Math.sqrt(variance)
+  const confidence = agreement * feedbackProbability + (1 - agreement) * 0.5
+
+  let verdict: FusedDetectionResult['verdict']
+  if (feedbackProbability >= config.feedbackThreshold && confidence >= 0.6) {
+    verdict = 'FEEDBACK'
+  } else if (feedbackProbability >= config.feedbackThreshold * 0.7 && confidence >= 0.4) {
+    verdict = 'POSSIBLE_FEEDBACK'
+  } else if (feedbackProbability < 0.3 && confidence >= 0.6) {
+    verdict = 'NOT_FEEDBACK'
+  } else {
+    verdict = 'UNCERTAIN'
+  }
+
+  return {
+    feedbackProbability,
+    confidence,
+    contributingAlgorithms,
+    algorithmScores: scores,
+    verdict,
+    reasons,
+  }
+}
+
+// ── MINDS Algorithm — DAFx-16 ────────────────────────────────────────────────
+
+/**
+ * MINDS: MSD-Inspired Notch Depth Setting.
+ * Strategy: start shallow (-3 dB), deepen 1 dB at a time until growth stops.
+ */
+export function calculateMINDS(
+  magnitudeHistory: number[],
+  currentDepthDb: number = 0,
+  framesPerSecond: number = 50
+): MINDSResult {
+  const minFrames = 3
+
+  if (magnitudeHistory.length < minFrames) {
+    return {
+      suggestedDepthDb: -3,
+      isGrowing: false,
+      recentGradient: 0,
+      confidence: 0.3,
+      recommendation: 'Not enough data yet - try -3 dB notch',
+    }
+  }
+
+  const n = magnitudeHistory.length
+  const gradients: number[] = []
+  for (let i = 1; i < n; i++) {
+    gradients.push(magnitudeHistory[i] - magnitudeHistory[i - 1])
+  }
+
+  const lastGradient  = gradients[gradients.length - 1] || 0
+  const prevGradient  = gradients[gradients.length - 2] || 0
+  const recentGrads   = gradients.slice(-3)
+  const recentGradient = recentGrads.reduce((a, b) => a + b, 0) / recentGrads.length
+
+  const isGrowing = lastGradient > 0.1 && prevGradient > 0.1
+
+  const totalGrowth    = magnitudeHistory[n - 1] - magnitudeHistory[0]
+  const durationSec    = n / framesPerSecond
+  const growthRateDbPerSec = durationSec > 0 ? totalGrowth / durationSec : 0
+
+  let suggestedDepthDb: number
+  let confidence: number
+  let recommendation: string
+
+  if (isGrowing) {
+    const baseDepth = Math.abs(currentDepthDb) || 3
+
+    if (growthRateDbPerSec > 6) {
+      suggestedDepthDb = -Math.min(baseDepth + 6, 18)
+      confidence = 0.9
+      recommendation = `URGENT: Runaway feedback (${growthRateDbPerSec.toFixed(1)} dB/s) - apply ${suggestedDepthDb} dB notch immediately`
+    } else if (growthRateDbPerSec > 3) {
+      suggestedDepthDb = -Math.min(baseDepth + 3, 15)
+      confidence = 0.85
+      recommendation = `Growing feedback (${growthRateDbPerSec.toFixed(1)} dB/s) - suggest ${suggestedDepthDb} dB notch`
+    } else if (growthRateDbPerSec > 1) {
+      suggestedDepthDb = -Math.min(baseDepth + 2, 12)
+      confidence = 0.75
+      recommendation = `Slow growth detected - suggest ${suggestedDepthDb} dB notch`
+    } else {
+      suggestedDepthDb = -Math.min(baseDepth + 1, 9)
+      confidence = 0.6
+      recommendation = `Minor growth - try ${suggestedDepthDb} dB notch`
+    }
+  } else {
+    if (totalGrowth > 6) {
+      suggestedDepthDb = currentDepthDb || -6
+      confidence = 0.7
+      recommendation = `Level stable at high gain - maintain ${suggestedDepthDb} dB notch`
+    } else if (totalGrowth > 3) {
+      suggestedDepthDb = currentDepthDb || -4
+      confidence = 0.6
+      recommendation = `Moderate resonance - suggest ${suggestedDepthDb} dB notch`
+    } else {
+      suggestedDepthDb = -3
+      confidence = 0.5
+      recommendation = `Light resonance - try ${suggestedDepthDb} dB notch`
+    }
+  }
+
+  return { suggestedDepthDb, isGrowing, recentGradient, confidence, recommendation }
+}
+
+// ── Content Type Detection ───────────────────────────────────────────────────
+
+export function detectContentType(
+  spectrum: Float32Array,
+  crestFactor: number,
+  spectralFlatness: number
+): ContentType {
+  if (crestFactor < COMPRESSION_CONSTANTS.COMPRESSED_CREST_FACTOR) {
+    return 'compressed'
+  }
+
+  if (spectralFlatness < 0.05) {
+    return 'unknown'
+  }
+
+  if (spectralFlatness > 0.2) {
+    return 'music'
+  }
+
+  if (crestFactor > 8) {
+    return 'speech'
+  }
+
+  let totalPower = 0
+  let weightedSum = 0
+  for (let i = 0; i < spectrum.length; i++) {
+    const power = Math.pow(10, spectrum[i] / 10)
+    totalPower += power
+    weightedSum += i * power
+  }
+  const centroidNormalized = totalPower > 0 ? weightedSum / totalPower / spectrum.length : 0
+
+  const rolloffThreshold = totalPower * 0.85
+  let cumulative = 0
+  let rolloffBin = spectrum.length - 1
+  for (let i = 0; i < spectrum.length; i++) {
+    cumulative += Math.pow(10, spectrum[i] / 10)
+    if (cumulative >= rolloffThreshold) {
+      rolloffBin = i
+      break
+    }
+  }
+  const rolloffNormalized = rolloffBin / spectrum.length
+
+  let speechScore = 0
+  let musicScore = 0
+
+  if (centroidNormalized < 0.12) speechScore += 0.3
+  else if (centroidNormalized < 0.20) speechScore += 0.15
+  if (centroidNormalized > 0.15) musicScore += 0.2
+
+  if (rolloffNormalized < 0.18) speechScore += 0.25
+  else if (rolloffNormalized < 0.25) speechScore += 0.1
+  if (rolloffNormalized > 0.25) musicScore += 0.2
+
+  if (crestFactor > 10) speechScore += 0.2
+  else if (crestFactor > 8) speechScore += 0.1
+  if (crestFactor < 10 && crestFactor > 4) musicScore += 0.15
+
+  if (spectralFlatness < 0.08) speechScore += 0.25
+  else if (spectralFlatness < 0.15) speechScore += 0.1
+  if (spectralFlatness > 0.15) musicScore += 0.25
+  if (spectralFlatness > 0.3) musicScore += 0.2
+
+  if (speechScore > musicScore && speechScore > 0.4) return 'speech'
+  if (musicScore > speechScore && musicScore > 0.4) return 'music'
+
+  return 'unknown'
+}

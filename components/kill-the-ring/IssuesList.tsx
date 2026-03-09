@@ -297,7 +297,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                   copied
                     ? 'text-emerald-400'
                     : 'text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted/60'
-                } ${touchFriendly ? 'w-9 h-9' : 'w-5 h-5'}`}
+                } ${touchFriendly ? 'w-11 h-11' : 'w-5 h-5'}`}
               >
                 {copied
                   ? <Check className={touchFriendly ? 'w-4 h-4' : 'w-3 h-3'} />
@@ -305,12 +305,15 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                 }
               </button>
             )}
+            {copied && (
+              <span className="sr-only" role="status">EQ recommendation copied</span>
+            )}
             {onDismiss && (
               <button
                 onClick={() => onDismiss(advisory.id)}
                 aria-label={`Dismiss ${exactFreqStr} issue`}
                 className={`rounded text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted/60 transition-colors flex items-center justify-center ${
-                  touchFriendly ? 'w-9 h-9' : 'w-5 h-5'
+                  touchFriendly ? 'w-11 h-11' : 'w-5 h-5'
                 }`}
               >
                 <X className={touchFriendly ? 'w-4 h-4' : 'w-3 h-3'} />
