@@ -161,7 +161,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-mono text-base font-bold text-foreground leading-none tracking-tight cursor-default">
+                  <span className="font-mono text-lg font-bold text-foreground leading-none tracking-tight cursor-default">
                     {exactFreqStr}
                   </span>
                 </TooltipTrigger>

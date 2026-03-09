@@ -73,9 +73,9 @@ export function formatPitch(pitch: PitchInfo): string {
  * Format frequency for display with appropriate precision
  */
 export function formatFrequency(hz: number): string {
-  if (hz < 100) return hz.toFixed(1)
-  if (hz < 1000) return hz.toFixed(0)
-  return `${(hz / 1000).toFixed(2)}k`
+  if (hz < 100) return `${hz.toFixed(1)}Hz`
+  if (hz < 1000) return `${hz.toFixed(0)}Hz`
+  return `${(hz / 1000).toFixed(2)}kHz`
 }
 
 /**
