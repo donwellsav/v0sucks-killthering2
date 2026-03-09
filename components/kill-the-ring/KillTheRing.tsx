@@ -279,7 +279,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         onSettingsChange={handleSettingsChange}
         onModeChange={handleModeChange}
         onReset={resetSettings}
-        noiseFloorDb={noiseFloorDb}
         resetLayout={resetLayout}
         isFullscreen={isFullscreen}
         toggleFullscreen={toggleFullscreen}

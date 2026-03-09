@@ -25,7 +25,6 @@ interface HeaderBarProps {
   onSettingsChange: (s: Partial<DetectorSettings>) => void
   onModeChange: (mode: OperationMode) => void
   onReset: () => void
-  noiseFloorDb: number | null
   resetLayout: () => void
   isFullscreen: boolean
   toggleFullscreen: () => void
@@ -39,7 +38,6 @@ interface HeaderBarProps {
 export const HeaderBar = memo(function HeaderBar({
   isRunning, start, stop,
   settings, onSettingsChange, onModeChange, onReset,
-  noiseFloorDb,
   resetLayout, isFullscreen, toggleFullscreen,
   isFrozen, toggleFreeze,
   devices, selectedDeviceId, onDeviceChange,
@@ -152,12 +150,6 @@ export const HeaderBar = memo(function HeaderBar({
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-
-        {noiseFloorDb !== null && (
-          <span className="font-mono text-[0.5625rem] sm:text-[0.625rem] hidden landscape:inline">
-            Floor: {noiseFloorDb.toFixed(0)}dB
-          </span>
         )}
 
         <Tooltip>

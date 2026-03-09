@@ -279,6 +279,7 @@ export const DesktopLayout = memo(function DesktopLayout({
           onAutoGainTargetChange={(db) => onSettingsChange({ autoGainTargetDb: db, autoGainEnabled: true })}
           isRunning={isRunning}
           onToggle={isRunning ? stop : start}
+          noiseFloorDb={noiseFloorDb}
         />
       </div>
     </div>

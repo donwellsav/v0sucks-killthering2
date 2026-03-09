@@ -16,6 +16,7 @@ interface VerticalGainFaderProps {
   onAutoGainTargetChange: (db: number) => void
   isRunning: boolean
   onToggle: () => void
+  noiseFloorDb?: number | null
 }
 
 export const VerticalGainFader = memo(function VerticalGainFader({
@@ -32,6 +33,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
   onAutoGainTargetChange,
   isRunning,
   onToggle,
+  noiseFloorDb,
 }: VerticalGainFaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const trackRef = useRef<HTMLDivElement>(null)
@@ -355,6 +357,17 @@ export const VerticalGainFader = memo(function VerticalGainFader({
             style={{ bottom: `${thumbBottom}%` }}
             aria-hidden="true"
           />
+          {/* Noise floor overlay */}
+          {noiseFloorDb != null && (
+            <div className="absolute bottom-0 inset-x-0 flex flex-col items-center pb-1 pointer-events-none">
+              <span className="text-[0.5rem] font-mono text-muted-foreground/70 leading-none">
+                Floor
+              </span>
+              <span className="text-[0.5625rem] font-mono font-bold text-muted-foreground leading-none">
+                {noiseFloorDb.toFixed(0)}dB
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
