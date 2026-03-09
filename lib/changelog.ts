@@ -14,7 +14,7 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '1.0.119',
+    version: '0.74.1',
     date: '2026-03-09',
     highlights: 'Codebase audit — 27 bug fixes',
     changes: [

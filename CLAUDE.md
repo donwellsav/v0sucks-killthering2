@@ -69,6 +69,6 @@ types/                      # TypeScript interfaces (advisory.ts)
 
 ## CI/CD
 
-- **Auto-versioning:** GitHub Action (`.github/workflows/auto-version.yml`) bumps version to `v1.0.{PR#}` and auto-generates changelog entry from PR title, labels, and body on merge to `main`
+- **Versioning:** `0.{PR#}.{PATCH}` — PR merge resets patch to 0 (`auto-version.yml`), direct push increments patch (`patch-on-push.yml`). Both commit with `[skip ci]`.
 - **Deployment:** Vercel auto-deploys on push to `main`; the `[skip ci]` in auto-version commits prevents double-deploys
-- **Version flow:** `package.json` version → `next.config.mjs` reads via `readFileSync` → `NEXT_PUBLIC_APP_VERSION` env → HelpMenu About tab
+- **Version flow:** `package.json` version → `next.config.mjs` reads via `readFileSync` → `NEXT_PUBLIC_APP_VERSION` env → HeaderBar + HelpMenu
