@@ -14,6 +14,84 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.0.102',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Larger frequency readout on issue cards (14px → 16px)' },
+      { type: 'fix', description: 'Normalize badge heights in issue cards for uniform appearance' },
+    ],
+  },
+  {
+    version: '1.0.101',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Enforce 12px minimum text across all sidebar components (39 elements upgraded)' },
+    ],
+  },
+  {
+    version: '1.0.100',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Larger noise floor text on gain fader for at-a-glance readability' },
+    ],
+  },
+  {
+    version: '1.0.99',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Noise floor overlay — higher contrast white text with drop shadow' },
+    ],
+  },
+  {
+    version: '1.0.98',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Move noise floor readout from header to gain fader strip' },
+    ],
+  },
+  {
+    version: '1.0.97',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Sheet padding fix, revert tab labels to full words' },
+    ],
+  },
+  {
+    version: '1.0.96',
+    date: '2026-03-09',
+    changes: [
+      { type: 'ui', description: 'Header button cleanup, tab label shortening, help icons' },
+    ],
+  },
+  {
+    version: '1.0.95',
+    date: '2026-03-09',
+    changes: [
+      { type: 'feat', description: 'ESLint strictness, early warning panel, tsconfig cleanup' },
+    ],
+  },
+  {
+    version: '1.0.94',
+    date: '2026-03-09',
+    changes: [
+      { type: 'feat', description: 'Canvas keyboard accessibility, peak hold indicator, backpressure metrics' },
+    ],
+  },
+  {
+    version: '1.0.93',
+    date: '2026-03-09',
+    changes: [
+      { type: 'fix', description: 'Enlarge touch targets and improve mobile graph readability' },
+    ],
+  },
+  {
+    version: '1.0.92',
+    date: '2026-03-09',
+    changes: [
+      { type: 'fix', description: 'WCAG AA contrast, badge overflow, resizable handle affordance' },
+    ],
+  },
+  {
     version: '1.0.91',
     date: '2026-03-08',
     changes: [

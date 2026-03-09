@@ -160,7 +160,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="font-mono text-sm font-bold text-foreground leading-none tracking-tight cursor-default">
+                  <span className="font-mono text-base font-bold text-foreground leading-none tracking-tight cursor-default">
                     {exactFreqStr}
                   </span>
                 </TooltipTrigger>
@@ -198,7 +198,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
         {/* Row 2: Badges — severity, confidence, repeat, cluster */}
         <div className="flex items-center gap-1 flex-wrap">
           <span
-            className="text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
+            className="inline-flex items-center text-xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
             style={{ backgroundColor: `${severityColor}22`, color: severityColor, border: `1px solid ${severityColor}44` }}
           >
             {getSeverityText(advisory.severity)}
@@ -206,7 +206,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
 
           {advisory.confidence != null && (
             <span
-              className={`text-xs font-mono px-1 py-0.5 rounded-sm leading-none ${
+              className={`inline-flex items-center text-xs font-mono px-1.5 py-0.5 rounded-sm leading-none ${
                 advisory.confidence >= 0.85
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                   : advisory.confidence >= 0.70
@@ -225,7 +225,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center gap-0.5 text-xs text-amber-400 bg-amber-500/20 px-1 py-0.5 rounded-sm border border-amber-500/30">
+                  <span className="inline-flex items-center gap-0.5 text-xs text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-amber-500/30">
                     <TrendingUp className="w-2.5 h-2.5" />
                     {occurrenceCount}×
                   </span>
@@ -241,7 +241,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             <TooltipProvider delayDuration={300}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="inline-flex items-center text-xs text-sky-400 bg-sky-500/20 px-1 py-0.5 rounded-sm border border-sky-500/30">
+                  <span className="inline-flex items-center text-xs text-sky-400 bg-sky-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-sky-500/30">
                     +{(advisory.clusterCount ?? 1) - 1}
                   </span>
                 </TooltipTrigger>
@@ -253,7 +253,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
           )}
 
           {isResolved && (
-            <span className="text-xs font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none bg-muted text-muted-foreground border border-border">
+            <span className="inline-flex items-center text-xs font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none bg-muted text-muted-foreground border border-border">
               Resolved
             </span>
           )}
