@@ -301,15 +301,15 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           <div className="flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-xs font-mono font-medium text-destructive">{error}</p>
-              <p className="text-xs text-muted-foreground font-mono leading-snug">
+              <p className="text-sm font-mono font-medium text-destructive">{error}</p>
+              <p className="text-sm text-muted-foreground font-mono leading-snug">
                 {getErrorGuidance(error)}
               </p>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 onClick={handleRetry}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono font-medium bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-sm font-mono font-medium bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 Try Again
@@ -330,7 +330,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-500/5 border-b border-amber-500/20">
           <div className="flex items-center gap-2.5">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-            <p className="text-xs font-mono text-amber-600 dark:text-amber-400">
+            <p className="text-sm font-mono text-amber-600 dark:text-amber-400">
               DSP worker error — analysis may be degraded. Auto-recovering…
             </p>
           </div>

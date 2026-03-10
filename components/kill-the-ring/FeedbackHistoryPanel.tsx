@@ -95,17 +95,17 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
             </Button>
           </SheetTrigger>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs">
+        <TooltipContent side="bottom" className="text-sm">
           History
         </TooltipContent>
       </Tooltip>
-      <SheetContent side="right" className="sm:max-w-md overflow-y-auto channel-strip">
+      <SheetContent side="right" className="sm:max-w-lg overflow-y-auto channel-strip">
         <SheetHeader className="pb-1">
           <SheetTitle className="text-lg flex items-center gap-2">
             <History className="h-5 w-5" />
             Feedback History
           </SheetTitle>
-          <SheetDescription className="text-xs">
+          <SheetDescription className="text-sm">
             Tracks repeat offenders and frequency hotspots across sessions.
           </SheetDescription>
         </SheetHeader>
@@ -195,11 +195,11 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
                       <span className="font-mono text-amber-400 font-medium">
                         {formatFrequency(hotspot.centerFrequencyHz)}
                       </span>
-                      <span className="text-xs font-mono bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">
+                      <span className="text-sm font-mono bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded">
                         {hotspot.occurrences}x detected
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground font-mono">
+                    <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground font-mono">
                       <span>Avg: {hotspot.avgAmplitudeDb.toFixed(1)}dB</span>
                       <span>Max: {hotspot.maxAmplitudeDb.toFixed(1)}dB</span>
                       <span>Cut: -{hotspot.suggestedCutDb.toFixed(1)}dB</span>
@@ -221,7 +221,7 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
                 <div className="flex flex-col items-center justify-center py-8 text-muted-foreground gap-1">
                   <BarChart3 className="w-5 h-5 text-muted-foreground/50 mb-1" />
                   <span className="text-sm font-mono font-medium">No feedback events recorded yet</span>
-                  <span className="text-xs text-muted-foreground font-mono">Events will appear here as they are detected</span>
+                  <span className="text-sm text-muted-foreground font-mono">Events will appear here as they are detected</span>
                 </div>
               ) : (
                 hotspots.map((hotspot, i) => (
@@ -241,7 +241,7 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
                         <TrendingUp className="h-3 w-3 text-amber-400" />
                       )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono">
                       <span>{hotspot.occurrences}x</span>
                       <span>{(hotspot.avgConfidence * 100).toFixed(0)}%</span>
                     </div>

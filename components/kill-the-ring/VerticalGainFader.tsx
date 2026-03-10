@@ -285,7 +285,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
           aria-label={`Input gain ${valueLabel}dB, click to edit`}
         >
           {valueLabel}
-          <span className="block text-xs text-muted-foreground">dB</span>
+          <span className="block text-sm text-muted-foreground">dB</span>
         </button>
       )}
 
@@ -293,7 +293,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
       {onAutoGainToggle && (
         <button
           onClick={() => onAutoGainToggle(!autoGainEnabled)}
-          className={`flex-shrink-0 px-1 py-0.5 rounded text-xs font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-shrink-0 px-1 py-0.5 rounded text-sm font-bold uppercase tracking-wider transition-colors ${
             autoGainEnabled
               ? autoGainLocked
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -360,7 +360,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
           {/* Noise floor overlay */}
           {noiseFloorDb != null && (
             <div className="absolute bottom-0 inset-x-0 flex flex-col items-center pb-1.5 pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-              <span className="text-xs font-mono font-semibold text-white/70 leading-none">
+              <span className="text-sm font-mono font-semibold text-white/70 leading-none">
                 Floor
               </span>
               <span className="text-sm font-mono font-bold text-white leading-none">
@@ -377,7 +377,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
           <button
             key={db}
             onClick={() => onAutoGainTargetChange(db)}
-            className={`w-full px-1 py-1.5 rounded font-mono text-xs font-bold uppercase tracking-[0.15em] transition-all duration-150 active:scale-95 ${
+            className={`w-full px-1 py-1.5 rounded font-mono text-sm font-bold uppercase tracking-[0.15em] transition-all duration-150 active:scale-95 ${
               autoGainEnabled && autoGainTargetDb === db
                 ? 'bg-primary/20 border border-primary/50 text-primary'
                 : 'bg-card/40 border border-transparent text-muted-foreground hover:bg-muted'

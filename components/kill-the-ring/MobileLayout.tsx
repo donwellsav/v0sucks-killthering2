@@ -159,11 +159,11 @@ export const MobileLayout = memo(function MobileLayout({
           <div className="flex-1 flex flex-col gap-0.5 overflow-hidden p-0.5">
             {/* RTA — top half */}
             <div className="flex-1 min-h-0 bg-card/40 rounded border border-border/40 overflow-hidden relative">
-              <span className="absolute top-1 left-1.5 z-20 text-[0.625rem] text-muted-foreground font-mono font-bold uppercase tracking-[0.2em] pointer-events-none">RTA</span>
+              <span className="absolute top-1 left-1.5 z-20 text-sm text-muted-foreground font-mono font-bold uppercase tracking-[0.2em] pointer-events-none">RTA</span>
               {isRunning && (
                 <button
                   onClick={toggleFreeze}
-                  className={`absolute top-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-xs font-medium border transition-colors flex items-center justify-center ${
+                  className={`absolute top-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-sm font-medium border transition-colors flex items-center justify-center ${
                     isFrozen
                       ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                       : 'bg-card/80 text-muted-foreground border-border hover:text-foreground'
@@ -176,7 +176,7 @@ export const MobileLayout = memo(function MobileLayout({
               {hasActiveRTAMarkers && (
                 <button
                   onClick={onClearRTA}
-                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-xs font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
+                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-sm font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
                 >
                   Clear
                 </button>
@@ -185,11 +185,11 @@ export const MobileLayout = memo(function MobileLayout({
             </div>
             {/* GEQ — bottom half */}
             <div className="flex-1 min-h-0 bg-card/40 rounded border border-border/40 overflow-hidden relative">
-              <span className="absolute top-1 left-1.5 z-20 text-[0.625rem] text-muted-foreground font-mono font-bold uppercase tracking-[0.2em] pointer-events-none">GEQ</span>
+              <span className="absolute top-1 left-1.5 z-20 text-sm text-muted-foreground font-mono font-bold uppercase tracking-[0.2em] pointer-events-none">GEQ</span>
               {hasActiveGEQBars && (
                 <button
                   onClick={onClearGEQ}
-                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-xs font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
+                  className="absolute top-1 right-1 z-20 px-2 py-0.5 min-h-[44px] min-w-[44px] rounded text-sm font-medium bg-card/80 text-muted-foreground border border-border hover:text-foreground transition-colors flex items-center justify-center"
                 >
                   Clear
                 </button>
@@ -272,12 +272,12 @@ export const MobileLayout = memo(function MobileLayout({
               <div className="relative">
                 <tab.Icon className="w-5 h-5" />
                 {tab.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-primary text-primary-foreground text-[0.5rem] rounded-full min-w-[16px] h-[16px] flex items-center justify-center font-bold leading-none px-0.5">
+                  <span className="absolute -top-1.5 -right-2.5 bg-primary text-primary-foreground text-xs rounded-full min-w-[16px] h-[16px] flex items-center justify-center font-bold leading-none px-0.5">
                     {tab.badge}
                   </span>
                 )}
               </div>
-              <span className="text-xs font-mono font-bold tracking-[0.15em] leading-none">{tab.label}</span>
+              <span className="text-sm font-mono font-bold tracking-[0.15em] leading-none">{tab.label}</span>
             </button>
           ))}
         </div>

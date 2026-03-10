@@ -46,45 +46,9 @@ export const HeaderBar = memo(function HeaderBar({
   return (
     <header className="relative flex items-center justify-between gap-2 px-3 py-2 border-b border-border bg-card/90 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(75,146,255,0.08)] sm:px-4 sm:py-2 sm:gap-4">
 
-      {/* ── DESKTOP: Logo + button group (left side) ───────────────── */}
-      <div className="flex items-center gap-1.5 sm:gap-3 sm:flex-shrink-0">
-
-        {/* Desktop-only: button inside logo group */}
-        <div className="hidden sm:flex items-center gap-2.5 flex-shrink-0">
-          <div className="relative">
-            <button
-              onClick={isRunning ? stop : start}
-              aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
-              className="relative w-12 h-12 flex items-center justify-center flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full ring-1 ring-primary/20 shadow-[0_0_8px_rgba(75,146,255,0.15)]"
-            >
-              <div className={`absolute inset-1 rounded-full border-2 transition-colors duration-300 ${isRunning ? 'border-primary' : 'border-primary/50'}`} />
-              {isRunning && (
-                <div className="absolute inset-1 rounded-full border border-primary/40 animate-led-blink" />
-              )}
-              <svg
-                className={`size-6 relative z-10 transition-colors duration-300 ${isRunning ? 'text-primary drop-shadow-[0_0_4px_rgba(75,146,255,0.4)]' : 'text-muted-foreground hover:text-primary'}`}
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex flex-col justify-center gap-[3px]">
-            <div className="flex items-baseline gap-1.5 leading-none">
-              <span className="font-mono text-base font-black tracking-[0.2em] text-foreground/90">KILL THE</span>
-              <span className="font-mono text-lg font-black tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(75,146,255,0.4)]">RING</span>
-            </div>
-            <span className="text-[0.625rem] font-mono font-medium tracking-[0.25em] text-muted-foreground uppercase leading-none">
-              Don Wells AV{' '}
-              v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
-            </span>
-          </div>
-        </div>
-
-        {/* Mobile-only: inline start button + wordmark */}
-        <div className="flex sm:hidden items-center gap-2 min-w-0">
+      {/* ── Logo + start button (responsive single block) ─────────── */}
+      <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+        <div className="relative">
           <button
             onClick={isRunning ? stop : start}
             aria-label={isRunning ? 'Stop analysis' : 'Start analysis'}
@@ -102,20 +66,21 @@ export const HeaderBar = memo(function HeaderBar({
               <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.31-2.5-4.06v8.12c1.48-.75 2.5-2.29 2.5-4.06zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
             </svg>
           </button>
-          <div className="flex flex-col justify-center gap-0 min-w-0">
-            <div className="flex items-baseline gap-1 leading-none">
-              <span className="font-mono text-sm font-black tracking-[0.2em] text-foreground/90">KILL THE</span>
-              <span className="font-mono text-base font-black tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(75,146,255,0.4)]">RING</span>
-            </div>
-            <span className="text-[0.5625rem] font-mono font-medium tracking-[0.25em] text-muted-foreground uppercase leading-none">
-              Don Wells AV v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
-            </span>
+        </div>
+
+        <div className="flex flex-col justify-center gap-[2px] sm:gap-[3px] min-w-0">
+          <div className="flex items-baseline gap-1 sm:gap-1.5 leading-none">
+            <span className="font-mono text-sm sm:text-base font-black tracking-[0.2em] text-foreground/90">KILL THE</span>
+            <span className="font-mono text-base sm:text-lg font-black tracking-[0.2em] text-primary drop-shadow-[0_0_10px_rgba(75,146,255,0.4)]">RING</span>
           </div>
+          <span className="text-xs sm:text-sm font-mono font-medium tracking-[0.25em] text-muted-foreground uppercase leading-none">
+            Don Wells AV v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
+          </span>
         </div>
       </div>
 
       {/* ── Action icons (right side) ──────────────────── */}
-      <div className="flex items-center justify-end gap-2 sm:gap-2 sm:px-0 text-xs text-muted-foreground sm:flex-shrink-0">
+      <div className="flex items-center justify-end gap-2 sm:gap-2 sm:px-0 text-sm text-muted-foreground sm:flex-shrink-0">
 
         {/* Audio source selector */}
         {devices.length > 0 && (
@@ -133,17 +98,17 @@ export const HeaderBar = memo(function HeaderBar({
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
+              <TooltipContent side="bottom" className="text-sm">
                 Audio input
               </TooltipContent>
             </Tooltip>
-            <DropdownMenuContent align="end" className="max-w-[280px]">
+            <DropdownMenuContent align="end" className="max-w-[360px]">
               <DropdownMenuRadioGroup value={selectedDeviceId} onValueChange={onDeviceChange}>
-                <DropdownMenuRadioItem value="" className="text-xs">
+                <DropdownMenuRadioItem value="" className="text-sm">
                   Default (System)
                 </DropdownMenuRadioItem>
                 {devices.map(d => (
-                  <DropdownMenuRadioItem key={d.deviceId} value={d.deviceId} className="text-xs truncate">
+                  <DropdownMenuRadioItem key={d.deviceId} value={d.deviceId} className="text-sm truncate">
                     {d.label}
                   </DropdownMenuRadioItem>
                 ))}
@@ -164,7 +129,7 @@ export const HeaderBar = memo(function HeaderBar({
               <LayoutGrid className="size-6" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
+          <TooltipContent side="bottom" className="text-sm">
             Reset layout (L)
           </TooltipContent>
         </Tooltip>
@@ -181,7 +146,7 @@ export const HeaderBar = memo(function HeaderBar({
               {isFullscreen ? <Minimize2 className="size-6" /> : <Maximize2 className="size-6" />}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs">
+          <TooltipContent side="bottom" className="text-sm">
             {isFullscreen ? 'Exit fullscreen (F)' : 'Fullscreen (F)'}
           </TooltipContent>
         </Tooltip>
@@ -202,7 +167,7 @@ export const HeaderBar = memo(function HeaderBar({
                 {isFrozen ? <Play className="size-6" /> : <Pause className="size-6" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="text-xs">
+            <TooltipContent side="bottom" className="text-sm">
               {isFrozen ? 'Unfreeze (P)' : 'Freeze display (P)'}
             </TooltipContent>
           </Tooltip>

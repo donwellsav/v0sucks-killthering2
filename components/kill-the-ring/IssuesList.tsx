@@ -52,8 +52,8 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
       {sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 min-h-[120px] text-muted-foreground py-8">
           <CheckCircle2 className="w-5 h-5 text-primary/30 mb-2" />
-          <div className="font-mono text-xs font-bold tracking-[0.15em] uppercase">Standby</div>
-          <div className="font-mono text-xs mt-1 text-muted-foreground tracking-wide">Monitoring</div>
+          <div className="font-mono text-sm font-bold tracking-[0.15em] uppercase">Standby</div>
+          <div className="font-mono text-sm mt-1 text-muted-foreground tracking-wide">Monitoring</div>
         </div>
       ) : (
         <>
@@ -62,7 +62,7 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
               {onClearResolved && hasResolved && (
                 <button
                   onClick={onClearResolved}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
                 >
                   Clear Resolved
                 </button>
@@ -70,7 +70,7 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
               {onClearAll && (
                 <button
                   onClick={onClearAll}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wide"
                 >
                   Clear All
                 </button>
@@ -190,7 +190,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                   </span>
                 </TooltipTrigger>
                 {detailParts.length > 0 && (
-                  <TooltipContent side="top" className="text-xs space-y-0.5">
+                  <TooltipContent side="top" className="text-sm space-y-0.5">
                     {detailParts.map((d, i) => <div key={i}>{d}</div>)}
                   </TooltipContent>
                 )}
@@ -198,21 +198,21 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             </TooltipProvider>
             <div className="flex items-baseline gap-x-2 gap-y-0.5 flex-wrap mt-0.5">
               {pitchStr && (
-                <span className="text-xs font-mono text-muted-foreground leading-none">{pitchStr}</span>
+                <span className="text-sm font-mono text-muted-foreground leading-none">{pitchStr}</span>
               )}
               {bandHz != null && bandHz !== advisory.trueFrequencyHz && (
-                <span className="text-xs font-mono text-muted-foreground leading-none">
+                <span className="text-sm font-mono text-muted-foreground leading-none">
                   → {formatFrequency(bandHz)}
                 </span>
               )}
               {hasEq && (
-                <span className="text-xs font-mono text-muted-foreground leading-none">
+                <span className="text-sm font-mono text-muted-foreground leading-none">
                   GEQ <span className="text-foreground font-medium">{geq?.suggestedDb}dB</span>
                   {' '}PEQ <span className="text-foreground font-medium">Q{(peq?.q ?? 1).toFixed(0)} {peq?.gainDb ?? 0}dB</span>
                 </span>
               )}
               {!isResolved && (
-                <span className="text-xs text-muted-foreground leading-none font-mono">{ageStr}</span>
+                <span className="text-sm text-muted-foreground leading-none font-mono">{ageStr}</span>
               )}
             </div>
           </div>
@@ -225,12 +225,12 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center gap-0.5 text-xs text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-amber-500/30">
+                      <span className="inline-flex items-center gap-0.5 text-sm text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-amber-500/30">
                         <TrendingUp className="w-2.5 h-2.5" />
                         {occurrenceCount}×
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
+                    <TooltipContent side="top" className="text-sm">
                       Repeat offender: detected {occurrenceCount} times
                     </TooltipContent>
                   </Tooltip>
@@ -241,11 +241,11 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <span className="inline-flex items-center text-xs text-sky-400 bg-sky-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-sky-500/30">
+                      <span className="inline-flex items-center text-sm text-sky-400 bg-sky-500/20 px-1.5 py-0.5 rounded-sm leading-none border border-sky-500/30">
                         +{(advisory.clusterCount ?? 1) - 1}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="text-xs">
+                    <TooltipContent side="top" className="text-sm">
                       {advisory.clusterCount} peaks merged
                     </TooltipContent>
                   </Tooltip>
@@ -253,7 +253,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
               )}
 
               {isResolved && (
-                <span className="inline-flex items-center text-xs font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none bg-muted text-muted-foreground border border-border">
+                <span className="inline-flex items-center text-sm font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none bg-muted text-muted-foreground border border-border">
                   Resolved
                 </span>
               )}
@@ -262,7 +262,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
             {/* Row 2: classification — severity, confidence */}
             <div className="flex items-center gap-1 justify-end">
               <span
-                className="inline-flex items-center text-xs font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
+                className="inline-flex items-center text-sm font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm leading-none"
                 style={{ backgroundColor: `${severityColor}30`, color: severityColor, border: `1px solid ${severityColor}55`, boxShadow: `0 0 6px ${severityColor}20` }}
               >
                 {getSeverityText(advisory.severity)}
@@ -270,7 +270,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
 
               {advisory.confidence != null && (
                 <span
-                  className={`inline-flex items-center text-xs font-mono px-1.5 py-0.5 rounded-sm leading-none ${
+                  className={`inline-flex items-center text-sm font-mono px-1.5 py-0.5 rounded-sm leading-none ${
                     advisory.confidence >= 0.85
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : advisory.confidence >= 0.70
@@ -324,7 +324,7 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly }
 
         {/* Velocity + age — full-width below */}
         {velocity > 0 && !isResolved && (
-          <div className={`flex items-center gap-1 text-xs font-bold uppercase tracking-wide ${
+          <div className={`flex items-center gap-1 text-sm font-bold uppercase tracking-wide ${
             isRunaway ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-muted-foreground'
           }`}>
             {(isRunaway || isWarning) ? (

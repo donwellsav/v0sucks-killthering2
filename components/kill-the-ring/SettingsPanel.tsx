@@ -80,36 +80,36 @@ export const SettingsPanel = memo(function SettingsPanel({
           <Settings className="size-7 sm:size-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="sm:max-w-lg overflow-y-auto channel-strip">
+      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto channel-strip">
         <SheetHeader>
           <SheetTitle className="text-lg flex items-center gap-2">
             <Settings className="w-5 h-5" />
             Settings
           </SheetTitle>
-          <SheetDescription className="text-xs">
+          <SheetDescription className="text-sm">
             Detection, algorithms, display, room acoustics, and advanced tuning.
           </SheetDescription>
         </SheetHeader>
 
         <Tabs defaultValue="detection" className="mt-4">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="detection" className="gap-1 text-xs">
+            <TabsTrigger value="detection" className="gap-1 text-sm">
               <BarChart3 className="w-3.5 h-3.5" />
               Detection
             </TabsTrigger>
-            <TabsTrigger value="algorithms" className="gap-1 text-xs">
+            <TabsTrigger value="algorithms" className="gap-1 text-sm">
               <Cpu className="w-3.5 h-3.5" />
               Algorithms
             </TabsTrigger>
-            <TabsTrigger value="display" className="gap-1 text-xs">
+            <TabsTrigger value="display" className="gap-1 text-sm">
               <Monitor className="w-3.5 h-3.5" />
               Display
             </TabsTrigger>
-            <TabsTrigger value="room" className="gap-1 text-xs">
+            <TabsTrigger value="room" className="gap-1 text-sm">
               <Ruler className="w-3.5 h-3.5" />
               Room
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="gap-1 text-xs">
+            <TabsTrigger value="advanced" className="gap-1 text-sm">
               <Wrench className="w-3.5 h-3.5" />
               Advanced
             </TabsTrigger>
@@ -146,7 +146,7 @@ export const SettingsPanel = memo(function SettingsPanel({
               </Button>
             }
           />
-          <p className="text-xs text-muted-foreground text-center font-mono">
+          <p className="text-sm text-muted-foreground text-center font-mono">
             Restores Speech mode defaults for corporate/conference PA
           </p>
           <div className="flex gap-2">
@@ -166,7 +166,7 @@ export const SettingsPanel = memo(function SettingsPanel({
               Load Saved
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center font-mono">
+          <p className="text-sm text-muted-foreground text-center font-mono">
             {hasSavedDefaults ? 'Saved defaults available' : 'Save current settings to reuse later'}
           </p>
         </div>

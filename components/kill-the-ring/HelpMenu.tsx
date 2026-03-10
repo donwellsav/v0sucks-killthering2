@@ -40,30 +40,30 @@ export const HelpMenu = memo(function HelpMenu() {
           <HelpCircle className="size-7 sm:size-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="sm:max-w-xl overflow-y-auto channel-strip">
+      <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto channel-strip">
         <SheetHeader>
           <SheetTitle className="text-lg">Kill The Ring Help</SheetTitle>
         </SheetHeader>
 
         <Tabs defaultValue="guide" className="mt-4">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="guide" className="gap-1 text-xs">
+            <TabsTrigger value="guide" className="gap-1 text-sm">
               <BookOpen className="w-3.5 h-3.5" />
               Guide
             </TabsTrigger>
-            <TabsTrigger value="modes" className="gap-1 text-xs">
+            <TabsTrigger value="modes" className="gap-1 text-sm">
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Modes
             </TabsTrigger>
-            <TabsTrigger value="algorithms" className="gap-1 text-xs">
+            <TabsTrigger value="algorithms" className="gap-1 text-sm">
               <Cpu className="w-3.5 h-3.5" />
               Algorithms
             </TabsTrigger>
-            <TabsTrigger value="reference" className="gap-1 text-xs">
+            <TabsTrigger value="reference" className="gap-1 text-sm">
               <List className="w-3.5 h-3.5" />
               Reference
             </TabsTrigger>
-            <TabsTrigger value="about" className="gap-1 text-xs">
+            <TabsTrigger value="about" className="gap-1 text-sm">
               <Info className="w-3.5 h-3.5" />
               About
             </TabsTrigger>
@@ -137,24 +137,24 @@ export const HelpMenu = memo(function HelpMenu() {
             <Section title="Troubleshooting">
               <div className="space-y-3">
                 <div>
-                  <p className="font-medium text-foreground text-xs mb-1">No Audio Input</p>
-                  <p className="text-xs">Check browser mic permissions, verify correct input device in system settings, refresh and re-grant permissions. HTTPS required in production.</p>
+                  <p className="font-medium text-foreground text-sm mb-1">No Audio Input</p>
+                  <p className="text-sm">Check browser mic permissions, verify correct input device in system settings, refresh and re-grant permissions. HTTPS required in production.</p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-xs mb-1">Too Many False Positives</p>
-                  <p className="text-xs">Switch to Music-Aware mode. In Settings → Algorithms: raise confidence threshold. Increase sidebar Threshold to 10-14 dB. Enable whistle suppression if sibilance triggers detections.</p>
+                  <p className="font-medium text-foreground text-sm mb-1">Too Many False Positives</p>
+                  <p className="text-sm">Switch to Music-Aware mode. In Settings → Algorithms: raise confidence threshold. Increase sidebar Threshold to 10-14 dB. Enable whistle suppression if sibilance triggers detections.</p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-xs mb-1">Missing Feedback Detection</p>
-                  <p className="text-xs">Lower sidebar Threshold (4-6 dB). Increase Input Gain on the fader strip. Switch to Ring Out mode for maximum sensitivity. Increase FFT Size to 16384 for better low-frequency resolution.</p>
+                  <p className="font-medium text-foreground text-sm mb-1">Missing Feedback Detection</p>
+                  <p className="text-sm">Lower sidebar Threshold (4-6 dB). Increase Input Gain on the fader strip. Switch to Ring Out mode for maximum sensitivity. Increase FFT Size to 16384 for better low-frequency resolution.</p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-xs mb-1">Compressed Music False Positives</p>
-                  <p className="text-xs">When status bar shows COMPRESSED, phase coherence dominates automatically. Use Combined or Phase Only algorithm mode for heavily compressed content.</p>
+                  <p className="font-medium text-foreground text-sm mb-1">Compressed Music False Positives</p>
+                  <p className="text-sm">When status bar shows COMPRESSED, phase coherence dominates automatically. Use Combined or Phase Only algorithm mode for heavily compressed content.</p>
                 </div>
                 <div>
-                  <p className="font-medium text-foreground text-xs mb-1">Slow or Laggy Display</p>
-                  <p className="text-xs">Check the FPS counter in the status bar — amber means drops, red means severe. Reduce FFT Size to 4096. Close other browser tabs to free CPU.</p>
+                  <p className="font-medium text-foreground text-sm mb-1">Slow or Laggy Display</p>
+                  <p className="text-sm">Check the FPS counter in the status bar — amber means drops, red means severe. Reduce FFT Size to 4096. Close other browser tabs to free CPU.</p>
                 </div>
               </div>
             </Section>
@@ -253,7 +253,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="msd" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">1. MSD — Magnitude Slope Deviation</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">DAFx-16 Paper — Growth pattern analysis</p>
+                  <p className="text-sm italic text-muted-foreground">DAFx-16 Paper — Growth pattern analysis</p>
                   <p className="text-sm text-muted-foreground">
                     Feedback amplitude grows exponentially — linear on a dB scale — so its second derivative is near zero.
                     Music has random amplitude variations with high second derivative.
@@ -265,42 +265,42 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Classical music:</strong> 100% with 13 frames (~300ms)</li>
                     <li><strong>Rock/compressed:</strong> 22% accuracy at 50 frames — needs compression detection assist</li>
                   </ul>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Uses an optimized &ldquo;Summing MSD&rdquo; method that is 140× faster than the original algorithm
                     with zero per-frame allocations.
                   </p>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Physical Basis</p>
                     <p>Feedback amplitude: A(t) = A<sub>0</sub> · e<sup>αt</sup></p>
                     <p>In dB: L(t) = L<sub>0</sub> + (20α / ln 10) · t</p>
                     <p>This is <strong>linear in dB</strong> ⟹ d²L/dt² = 0</p>
                     <p className="mt-1 text-muted-foreground">Music amplitude varies randomly ⟹ d²L/dt² ≠ 0</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Second Derivative (Discrete)</p>
                     <p>G&apos;&apos;(k,n) = M(k,n) - 2·M(k,n-1) + M(k,n-2)</p>
                     <p className="mt-1 text-muted-foreground">where M(k,n) = magnitude in dB at bin k, frame n</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">MSD Calculation</p>
                     <p>MSD(k,m) = √[ Σ<sub>n=2..N-1</sub> |G&apos;&apos;(k,n)|² / (N - 2) ]</p>
                     <p className="mt-1">Threshold: MSD &lt; <strong>0.1 dB²/frame²</strong> → feedback</p>
                     <p className="text-muted-foreground">(Paper threshold: 1.0 for 14-frame window → normalized ≈ 0.071, adjusted to 0.1 for robustness)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Summing Method (140× Faster)</p>
                     <p>Running accumulator: sumG2 += |G&apos;&apos;|² on each new frame</p>
                     <p>On ring buffer wrap: sumG2 -= |oldest G&apos;&apos;|²</p>
                     <p>MSD = √(sumG2 / (frameCount - 2))</p>
                     <p className="mt-1 text-muted-foreground">Zero per-frame allocation. O(1) per bin per frame.</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Fast Confirmation</p>
                     <p>If MSD &lt; 0.15 for 3 consecutive frames → instant feedback flag</p>
                     <p className="mt-1 text-muted-foreground">Bypasses full-window requirement for obvious feedback.</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Required Frames for 100% Accuracy</p>
                     <p>Speech: 7 frames (~160 ms) · Classical: 13 frames (~300 ms)</p>
                     <p>Rock/compressed: 50 frames (~1.1 s) at 22% accuracy — use compression detection</p>
@@ -311,7 +311,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="phase" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">2. Phase Coherence Analysis</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">KU Leuven 2025 / Nyquist stability theory</p>
+                  <p className="text-sm italic text-muted-foreground">KU Leuven 2025 / Nyquist stability theory</p>
                   <p className="text-sm text-muted-foreground">
                     True feedback maintains constant phase relationships because it&apos;s a regenerative loop at a fixed frequency.
                     Music and noise have random phase variations frame-to-frame.
@@ -321,23 +321,23 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Medium (0.65–0.85):</strong> Uncertain</li>
                     <li><strong>Low (&lt;0.4):</strong> Random phase → likely music/noise</li>
                   </ul>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     Compression-resistant: detects phase patterns regardless of amplitude compression.
                   </p>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Nyquist Stability Criterion</p>
                     <p>Feedback occurs when both conditions are met simultaneously:</p>
                     <p>1. Magnitude: |G(ω) · F(ω)| &gt; 1 (loop gain exceeds unity)</p>
                     <p>2. Phase: ∠[G(ω) · F(ω)] = n · 2π (constructive interference)</p>
                     <p className="mt-1 text-muted-foreground">G(ω) = acoustic path transfer function, F(ω) = electrical path (PA system)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Phase Difference</p>
                     <p>Δφ(k,n) = φ(k,n) - φ(k,n-1)</p>
                     <p>Wrapped to [-π, π] for continuity</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Phasor Average (Coherence Measure)</p>
                     <p>C(k) = | 1/N · Σ<sub>n</sub> exp(j · Δφ(k,n)) |</p>
                     <p className="mt-1">Expanded into real/imaginary parts (avoids complex arithmetic):</p>
@@ -345,12 +345,12 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>imagSum = Σ sin(Δφ<sub>n</sub>) / N</p>
                     <p>C = √(realSum² + imagSum²)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Physical Intuition</p>
                     <p>Pure tone → constant phase advance per frame → all phasors align → C ≈ 1</p>
                     <p>Random signal → random phase walk → phasors cancel → C ≈ 0</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p>Thresholds: C ≥ 0.85 → feedback | 0.65–0.85 → uncertain | &lt; 0.4 → music</p>
                     <p>Min samples: 5 frames | Buffer: 10 frames per bin</p>
                   </div>
@@ -360,7 +360,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="spectral" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">3. Spectral Flatness + Kurtosis</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">Wiener entropy — Tone vs. broadband discrimination</p>
+                  <p className="text-sm italic text-muted-foreground">Wiener entropy — Tone vs. broadband discrimination</p>
                   <p className="text-sm text-muted-foreground">
                     Measures how tone-like (feedback) vs. noise-like (music) the spectrum is around a peak.
                     Kurtosis measures amplitude distribution peakiness.
@@ -372,7 +372,7 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Combined score:</strong> 60% flatness + 40% kurtosis</li>
                   </ul>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Spectral Flatness (Wiener Entropy)</p>
                     <p>Convert to linear power: P<sub>k</sub> = 10<sup>(spectrum<sub>k</sub>/10)</sup></p>
                     <p>Geometric mean: G = exp[ 1/N · Σ<sub>k</sub> ln(P<sub>k</sub>) ]</p>
@@ -381,7 +381,7 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p className="mt-1">SF = 0 → pure tone (all energy in one bin)</p>
                     <p>SF = 1 → white noise (equal energy everywhere)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Excess Kurtosis</p>
                     <p>μ = 1/N · Σ x<sub>i</sub> (mean)</p>
                     <p>σ² = 1/N · Σ (x<sub>i</sub> - μ)² (variance)</p>
@@ -389,7 +389,7 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>K<sub>excess</sub> = μ₄ / σ⁴ - 3</p>
                     <p className="mt-1">K = 0 → Gaussian (noise) | K &gt; 10 → strongly peaked (feedback)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Combined Score</p>
                     <p>S = 0.6 · flatnessScore + 0.4 · kurtosisScore</p>
                     <p>Analysis bandwidth: ±10 bins around peak</p>
@@ -400,7 +400,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="comb" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">4. Comb Filter Pattern Detection</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">DBX Paper — Acoustic path geometry</p>
+                  <p className="text-sm italic text-muted-foreground">DBX Paper — Acoustic path geometry</p>
                   <p className="text-sm text-muted-foreground">
                     A single acoustic feedback path creates peaks at regularly spaced frequencies
                     determined by the round-trip delay. Finding this pattern identifies the feedback loop
@@ -413,26 +413,26 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Prediction:</strong> Calculates future feedback frequencies before they become audible</li>
                   </ul>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Physical Derivation</p>
                     <p>Acoustic path delay: τ = d / c (seconds)</p>
                     <p>Constructive interference at: f<sub>n</sub> = n / τ = <strong>n · c / d</strong></p>
                     <p>Frequency spacing: <strong>Δf = c / d</strong></p>
                     <p className="mt-1 text-muted-foreground">Note: This is c/d (open acoustic loop with round-trip delay), NOT c/2d (standing wave in closed tube).</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Path Length Estimation</p>
                     <p>d = c / Δf = 343 / Δf (meters)</p>
                     <p>Valid range: 0.1 m &lt; d &lt; 50 m</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Detection Algorithm</p>
                     <p>1. Find all peak pairs → candidate spacings: Δf = (f<sub>j</sub> - f<sub>i</sub>) / k for k ∈ [1,8]</p>
                     <p>2. Cluster spacings within ±5% tolerance</p>
                     <p>3. Winner = most frequently occurring spacing</p>
                     <p>4. Confidence = min(matchingPeaks / totalPeaks, matchingPeaks / 3)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Prediction</p>
                     <p>Once Δf known: f<sub>predicted</sub> = n · Δf for all n where f<sub>predicted</sub> is in analysis range</p>
                     <p className="text-muted-foreground">Allows preemptive EQ cuts before feedback becomes audible.</p>
@@ -443,7 +443,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="ihr" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">5. Inter-Harmonic Ratio (IHR)</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">Harmonic vs. inter-harmonic energy analysis</p>
+                  <p className="text-sm italic text-muted-foreground">Harmonic vs. inter-harmonic energy analysis</p>
                   <p className="text-sm text-muted-foreground">
                     Compares energy at harmonic positions (k·f₀) to energy at midpoints between harmonics.
                     Feedback produces clean harmonics with no inter-harmonic energy. Musical instruments
@@ -455,7 +455,7 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Checks harmonics:</strong> Up to 8th overtone</li>
                   </ul>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Harmonic vs Inter-Harmonic Energy</p>
                     <p>Harmonics: energy at k · f₀ for k = 1, 2, ..., 8</p>
                     <p>Inter-harmonics: energy at midpoints (k + 0.5) · f₀</p>
@@ -463,12 +463,12 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>E<sub>inter</sub> = Σ 10<sup>(midpoint<sub>k</sub> / 10)</sup></p>
                     <p><strong>IHR = E<sub>inter</sub> / E<sub>harmonic</sub></strong></p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Classification</p>
                     <p>Feedback (IHR &lt; 0.15): single clean tone, no inter-harmonic energy</p>
                     <p>Music (IHR &gt; 0.35): rich harmonics with formant structure + modulation</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Score Scaling (harmonic count dependent)</p>
                     <p>1 harmonic: score = max(0, 1 - IHR · 5)</p>
                     <p>2 harmonics: score = max(0, 0.7 - IHR · 3)</p>
@@ -481,7 +481,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="ptmr" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">6. Peak-to-Median Ratio (PTMR)</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">Spectral prominence measurement</p>
+                  <p className="text-sm italic text-muted-foreground">Spectral prominence measurement</p>
                   <p className="text-sm text-muted-foreground">
                     Measures how much a peak stands above the local spectral floor using the median
                     (not mean — mean is biased upward by the peak itself). Sharp narrow peaks = feedback.
@@ -492,18 +492,18 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>PTMR &lt;8 dB:</strong> Broad peak → broadband content (music/noise)</li>
                   </ul>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Why Median, Not Mean?</p>
                     <p>Mean is pulled upward by the peak itself → underestimates prominence</p>
                     <p>Median is robust to outliers → measures true spectral floor</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Calculation</p>
                     <p>Neighborhood: ±halfWidth bins, excluding peak ±2 bins</p>
                     <p>Sort neighborhood values → find median</p>
                     <p><strong>PTMR = spectrum[peak] - median</strong> (in dB)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Score Normalization</p>
                     <p>feedbackScore = clamp((PTMR - 8) / 15, 0, 1)</p>
                     <p className="mt-1">&gt; 20 dB → strong feedback | 15–20 dB → weak | &lt; 8 dB → broadband</p>
@@ -515,7 +515,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="compression" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">7. Compression Detection</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <p className="text-xs italic text-muted-foreground">DAFx-16 research — Adaptive threshold adjustment</p>
+                  <p className="text-sm italic text-muted-foreground">DAFx-16 research — Adaptive threshold adjustment</p>
                   <p className="text-sm text-muted-foreground">
                     Dynamically compressed content (rock, pop, EDM) causes MSD false positives because sustained
                     notes have flat amplitude curves similar to early feedback. Compression detection identifies this
@@ -527,23 +527,23 @@ export const HelpMenu = memo(function HelpMenu() {
                     <li><strong>Adaptation:</strong> MSD weight drops, Phase Coherence weight increases automatically</li>
                   </ul>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Crest Factor (Peak-to-RMS Ratio)</p>
                     <p>CF = peak<sub>dB</sub> - RMS<sub>dB</sub></p>
                     <p>Uncompressed audio: CF ≈ 12–14 dB (typical speech/music)</p>
                     <p>Compressed audio: CF &lt; 6 dB (ratio ~4–8:1)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Dynamic Range</p>
                     <p>DR = max(peak<sub>dB</sub>) - min(RMS<sub>dB</sub>) over analysis window</p>
                     <p>Uncompressed: DR &gt; 20 dB | Compressed: DR &lt; 8 dB</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Detection</p>
                     <p>isCompressed = (CF &lt; 6) OR (DR &lt; 8)</p>
                     <p>Estimated ratio: R = 12 / max(CF, 1)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Impact on Fusion</p>
                     <p>When compressed: MSD weight ↓ (0.30 → 0.12), Phase weight ↑ (0.25 → 0.38)</p>
                     <p className="text-muted-foreground">Compressed audio &ldquo;fools&rdquo; MSD (sustained notes look like feedback growth). Phase coherence is amplitude-independent.</p>
@@ -558,7 +558,7 @@ export const HelpMenu = memo(function HelpMenu() {
                     All 7 algorithms vote together with content-aware weighting. The system automatically
                     detects content type (speech, music, compressed) and applies appropriate weights:
                   </p>
-                  <div className="bg-muted p-3 rounded text-xs font-mono space-y-1">
+                  <div className="bg-muted p-3 rounded text-sm font-mono space-y-1">
                     <p className="font-semibold text-foreground">Weights: [MSD, Phase, Spectral, Comb, IHR, PTMR, Legacy]</p>
                     <p>Speech:     [0.40, 0.20, 0.10, 0.05, 0.05, 0.10, 0.10]</p>
                     <p>Music:      [0.15, 0.35, 0.10, 0.08, 0.12, 0.05, 0.15]</p>
@@ -566,29 +566,29 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>Default:    [0.30, 0.25, 0.12, 0.08, 0.08, 0.07, 0.10]</p>
                   </div>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Weighted Probability</p>
                     <p>P<sub>feedback</sub> = Σ<sub>i</sub>(w<sub>i</sub> · S<sub>i</sub>) / Σ<sub>i</sub>w<sub>i</sub></p>
                     <p className="mt-1 text-muted-foreground">w<sub>i</sub> = weight for algorithm i, S<sub>i</sub> = score ∈ [0,1]</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Agreement (Inter-Algorithm Consensus)</p>
                     <p>agreement = 1 - √[ var(S₁, S₂, ..., S₇) ]</p>
                     <p className="mt-1 text-muted-foreground">High agreement = algorithms agree → high confidence. Low agreement = disagreement → uncertainty.</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Confidence Calculation</p>
                     <p>confidence = agreement · P<sub>feedback</sub> + (1 - agreement) · 0.5</p>
                     <p className="mt-1 text-muted-foreground">When algorithms disagree, confidence regresses toward 0.5 (maximum uncertainty).</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Verdict Thresholds</p>
                     <p>FEEDBACK:     P ≥ 0.65 AND confidence ≥ 0.6</p>
                     <p>POSSIBLE:     P ≥ 0.46 AND confidence ≥ 0.4</p>
                     <p>NOT_FEEDBACK: P &lt; 0.30 AND confidence ≥ 0.6</p>
                     <p>UNCERTAIN:    all other cases</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Comb Pattern Boost (Flaw 6 Fix)</p>
                     <p>When comb pattern detected: weight × 2 applied to BOTH numerator AND denominator</p>
                     <p className="text-muted-foreground">Ensures P<sub>feedback</sub> stays in [0,1] while boosting comb&apos;s influence on the final vote.</p>
@@ -599,13 +599,13 @@ export const HelpMenu = memo(function HelpMenu() {
               <AccordionItem value="physics" className="border border-border/40 rounded px-3">
                 <AccordionTrigger className="text-sm py-2">Acoustic Physics & References</AccordionTrigger>
                 <AccordionContent className="space-y-3 pb-3">
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">FFT Resolution</p>
                     <p>Δf = f<sub>s</sub> / N</p>
                     <p>At 8192pt @ 48 kHz: Δf = 48000 / 8192 = <strong>5.86 Hz/bin</strong></p>
                     <p>Bin to Hz: f = k · (f<sub>s</sub> / N)</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Quadratic Peak Interpolation (Grandke, 1983)</p>
                     <p>Given 3 adjacent bins: α = y[k-1], β = y[k], γ = y[k+1]</p>
                     <p>δ = 0.5 · (α - γ) / (α - 2β + γ)</p>
@@ -613,13 +613,13 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>A<sub>true</sub> = β - 0.25 · (α - γ) · δ</p>
                     <p className="mt-1 text-muted-foreground">Refines peak frequency beyond bin resolution by fitting a parabola through the 3 highest points.</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">dB Conversions</p>
                     <p>Power: L = 10 · log<sub>10</sub>(P), P = 10<sup>(L/10)</sup></p>
                     <p>Amplitude: L = 20 · log<sub>10</sub>(A), A = 10<sup>(L/20)</sup></p>
                   </div>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Schroeder Frequency (Hopkins, 2007)</p>
                     <p>f<sub>S</sub> = 2000 · √(T<sub>60</sub> / V)</p>
                     <p>T<sub>60</sub> = RT60 reverberation time (seconds)</p>
@@ -628,26 +628,26 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>Above f<sub>S</sub>: diffuse sound field (statistical behavior)</p>
                     <p className="mt-1 text-muted-foreground">Example: T₆₀=0.7s, V=250m³ → f<sub>S</sub> = 2000·√(0.0028) = 106 Hz</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Modal Overlap Factor</p>
                     <p>M = 1 / Q</p>
                     <p>M &lt; 0.03 (Q &gt; 33): Isolated — sharp peak, high feedback risk</p>
                     <p>M ≈ 0.1 (Q ≈ 10): Coupled — moderate resonance</p>
                     <p>M &gt; 0.33 (Q &lt; 3): Diffuse — broad peak, low feedback risk</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Q Factor Estimation</p>
                     <p>Q = f<sub>center</sub> / Δf<sub>-3dB</sub></p>
                     <p className="mt-1 text-muted-foreground">Δf<sub>-3dB</sub> = bandwidth where amplitude drops 3 dB below peak. Measured by scanning bins left/right until threshold crossed.</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Room Modes (Axial)</p>
                     <p>f = n · c / (2L)</p>
                     <p>c = 343 m/s (speed of sound), L = room dimension (m), n = mode number</p>
                     <p className="mt-1 text-muted-foreground">Axial modes (1 dimension) are strongest. Tangential (2D) and oblique (3D) modes are progressively weaker.</p>
                   </div>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">A-Weighting (IEC 61672-1)</p>
                     <p>R<sub>A</sub>(f) = (C₄² · f⁴) / [(f² + C₁²) · √((f² + C₂²)(f² + C₃²)) · (f² + C₄²)]</p>
                     <p>A(f) = 20 · log<sub>10</sub>(R<sub>A</sub>(f)) + 2.0 dB</p>
@@ -658,17 +658,17 @@ export const HelpMenu = memo(function HelpMenu() {
                     <p>Attenuates &gt;10 kHz progressively (reduces ultrasonic noise)</p>
                   </div>
 
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">MIDI Note Number</p>
                     <p>midi = 12 · log₂(f / 440) + 69</p>
                     <p>f = 440 · 2<sup>((midi - 69) / 12)</sup></p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs space-y-1">
+                  <div className="bg-muted p-3 rounded font-mono text-sm space-y-1">
                     <p className="text-foreground font-semibold">Cents (Pitch Deviation)</p>
                     <p>cents = 1200 · log₂(f₁ / f₂)</p>
                     <p>100 cents = 1 semitone | 1200 cents = 1 octave</p>
                   </div>
-                  <div className="bg-muted p-3 rounded font-mono text-xs">
+                  <div className="bg-muted p-3 rounded font-mono text-sm">
                     <p className="text-foreground font-semibold">Harmonic Series Detection</p>
                     <p>Expected: f<sub>k</sub> = k · f₀ for k = 1, 2, ..., 8</p>
                     <p>Match tolerance: ±200 cents (configurable 25–400)</p>
@@ -677,7 +677,7 @@ export const HelpMenu = memo(function HelpMenu() {
 
                   <div className="mt-3">
                     <p className="section-label mb-2">References</p>
-                    <ul className="text-xs space-y-2 text-muted-foreground">
+                    <ul className="text-sm space-y-2 text-muted-foreground">
                       <li><strong>DAFx-16:</strong> Magnitude Slope Deviation algorithm for acoustic feedback detection. Demonstrates 100% accuracy for speech/classical with 7–13 frame windows. Introduces the &ldquo;Summing MSD&rdquo; method (140× speedup).</li>
                       <li><strong>DBX:</strong> Comb filter pattern analysis for feedback suppression. Equation 1: f<sub>n</sub> = n · c / d for open acoustic loop feedback frequencies.</li>
                       <li><strong>KU Leuven (2025), arXiv 2512.01466:</strong> Two-channel AFC algorithm with PEM framework. Phase coherence as Nyquist stability proxy.</li>
@@ -710,14 +710,14 @@ export const HelpMenu = memo(function HelpMenu() {
               ═══════════════════════════════════════════════════════════════ */}
           <TabsContent value="reference" className="mt-4 space-y-4">
             <Section title="Keyboard Shortcuts">
-              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">Space</kbd><span>Start / stop analysis</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">P</kbd><span>Freeze / unfreeze spectrum display</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">F</kbd><span>Toggle fullscreen</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">L</kbd><span>Toggle layout</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">1</kbd><span>Switch to RTA view</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">2</kbd><span>Switch to GEQ view</span>
-                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">3</kbd><span>Switch to Controls view</span>
+              <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">Space</kbd><span>Start / stop analysis</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">P</kbd><span>Freeze / unfreeze spectrum display</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">F</kbd><span>Toggle fullscreen</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">L</kbd><span>Toggle layout</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">1</kbd><span>Switch to RTA view</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">2</kbd><span>Switch to GEQ view</span>
+                <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">3</kbd><span>Switch to Controls view</span>
               </div>
             </Section>
 
@@ -733,7 +733,7 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="Default Configuration (Speech Mode)">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                 <span className="text-muted-foreground">Mode</span><span className="font-mono">Speech — Corporate &amp; Conference</span>
                 <span className="text-muted-foreground">Frequency range</span><span className="font-mono">150 Hz – 8 kHz</span>
                 <span className="text-muted-foreground">FFT size</span><span className="font-mono">8192 (5.86 Hz/bin @ 48 kHz)</span>
@@ -756,7 +756,7 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="Frequency Bands">
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2 text-sm">
                 <div>
                   <strong>LOW (20–300 Hz):</strong> Room modes, sub-bass. Prominence ×1.15, Sustain ×1.2, Q threshold ×0.6.
                   Broadest peaks expected.
@@ -772,14 +772,14 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="GEQ Band Mapping">
-              <p className="mb-2 text-xs">Detected frequencies map to nearest ISO 31-band (1/3 octave) center:</p>
-              <p className="text-xs font-mono bg-muted p-2 rounded leading-relaxed">
+              <p className="mb-2 text-sm">Detected frequencies map to nearest ISO 31-band (1/3 octave) center:</p>
+              <p className="text-sm font-mono bg-muted p-2 rounded leading-relaxed">
                 20, 25, 31.5, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1k, 1.25k, 1.6k, 2k, 2.5k, 3.15k, 4k, 5k, 6.3k, 8k, 10k, 12.5k, 16k, 20k Hz
               </p>
             </Section>
 
             <Section title="EQ Presets">
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium text-foreground mb-1">Surgical</p>
                   <p>Default Q: 30 | Runaway Q: 60</p>
@@ -794,7 +794,7 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="Room Presets">
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2 text-sm">
                 <div>
                   <strong>Small Room:</strong> RT60 0.4s, Volume 80m³, Schroeder 141 Hz.
                   Boardrooms, huddle rooms, podcast booths (10–20 people).
@@ -819,7 +819,7 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="Browser Requirements">
-              <ul className="space-y-2 text-xs">
+              <ul className="space-y-2 text-sm">
                 <li><strong>Web Audio API + getUserMedia:</strong> Required for real-time audio processing</li>
                 <li><strong>Supported:</strong> Chrome 74+, Firefox 76+, Safari 14.1+, Edge 79+</li>
                 <li><strong>Sample rate:</strong> System default (typically 44.1 kHz or 48 kHz)</li>
@@ -837,7 +837,7 @@ export const HelpMenu = memo(function HelpMenu() {
                 KILL THE <span className="text-primary">RING</span>
               </div>
               <div className="text-sm text-muted-foreground/80">Real-Time Acoustic Feedback Detection</div>
-              <div className="font-mono text-xs bg-card/40 text-muted-foreground px-3 py-1.5 rounded border border-border/40">
+              <div className="font-mono text-sm bg-card/40 text-muted-foreground px-3 py-1.5 rounded border border-border/40">
                 v{process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0'}
               </div>
             </div>
@@ -855,7 +855,7 @@ export const HelpMenu = memo(function HelpMenu() {
             </Section>
 
             <Section title="Tech">
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                 <span className="text-muted-foreground">Platform</span><span className="font-mono">Progressive Web App</span>
                 <span className="text-muted-foreground">Framework</span><span className="font-mono">Next.js + React 19</span>
                 <span className="text-muted-foreground">Audio</span><span className="font-mono">Web Audio API + Web Workers</span>
@@ -866,7 +866,7 @@ export const HelpMenu = memo(function HelpMenu() {
 
             <Section title="Credits">
               <p>Built by <strong>Don Wells AV</strong></p>
-              <p className="mt-1 text-xs">
+              <p className="mt-1 text-sm">
                 Algorithm research: DAFx-16, KU Leuven (2025), DBX, Hopkins (2007), IEC 61672-1
               </p>
             </Section>

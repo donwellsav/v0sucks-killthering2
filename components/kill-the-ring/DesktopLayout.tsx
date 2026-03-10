@@ -98,7 +98,7 @@ export const DesktopLayout = memo(function DesktopLayout({
               {!issuesPanelOpen && (
                 <button
                   onClick={() => setActiveSidebarTab('issues')}
-                  className={`flex-1 py-1 text-xs font-mono font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
+                  className={`flex-1 py-1 text-sm font-mono font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
                     activeSidebarTab === 'issues'
                       ? 'text-foreground border-b border-primary bg-primary/5'
                       : 'text-muted-foreground hover:text-foreground'
@@ -112,7 +112,7 @@ export const DesktopLayout = memo(function DesktopLayout({
               )}
               <button
                 onClick={() => setActiveSidebarTab('controls')}
-                className={`flex-1 py-1 text-xs font-mono font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
+                className={`flex-1 py-1 text-sm font-mono font-bold uppercase tracking-[0.2em] transition-all duration-200 ${
                   activeSidebarTab === 'controls'
                     ? 'text-foreground border-b border-primary bg-primary/5'
                     : 'text-muted-foreground hover:text-foreground'
@@ -135,7 +135,7 @@ export const DesktopLayout = memo(function DesktopLayout({
                     <Columns2 className="w-3.5 h-3.5" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">
+                <TooltipContent side="bottom" className="text-sm">
                   {issuesPanelOpen ? 'Close split view' : 'Split: Issues'}
                 </TooltipContent>
               </Tooltip>
@@ -221,19 +221,19 @@ export const DesktopLayout = memo(function DesktopLayout({
                 <div className="h-full bg-card/40 rounded border border-border/40 overflow-hidden flex flex-col panel-recessed hover:border-border/60 transition-colors duration-300">
                   <div className="flex-shrink-0 flex items-center justify-between px-2 py-0.5 border-b border-border bg-card/60 panel-groove">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs font-mono font-bold tracking-[0.15em] text-primary">RTA</span>
+                      <span className="text-sm font-mono font-bold tracking-[0.15em] text-primary">RTA</span>
                       {isRunning && (
-                        <button onClick={toggleFreeze} className={`px-1.5 py-0.5 rounded text-xs font-medium transition-colors ${isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <button onClick={toggleFreeze} className={`px-1.5 py-0.5 rounded text-sm font-medium transition-colors ${isFrozen ? 'text-blue-400' : 'text-muted-foreground hover:text-foreground'}`}>
                           {isFrozen ? 'Live' : 'Freeze'}
                         </button>
                       )}
                       {hasActiveRTAMarkers && (
-                        <button onClick={onClearRTA} className="px-1.5 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                        <button onClick={onClearRTA} className="px-1.5 py-0.5 rounded text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                           Clear
                         </button>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                    <span className="text-sm text-muted-foreground font-mono whitespace-nowrap">
                       {isRunning && noiseFloorDb != null
                         ? `${noiseFloorDb.toFixed(0)}dB`
                         : 'Ready'}
@@ -254,9 +254,9 @@ export const DesktopLayout = memo(function DesktopLayout({
                 <div className="h-full bg-card/40 rounded border border-border/40 overflow-hidden flex flex-col min-w-0 panel-recessed hover:border-border/60 transition-colors duration-300">
                   <div className="flex-shrink-0 flex items-center px-2 py-0.5 border-b border-border bg-card/60 panel-groove">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs font-mono font-bold tracking-[0.15em] text-primary">GEQ</span>
+                      <span className="text-sm font-mono font-bold tracking-[0.15em] text-primary">GEQ</span>
                       {hasActiveGEQBars && (
-                        <button onClick={onClearGEQ} className="px-1.5 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+                        <button onClick={onClearGEQ} className="px-1.5 py-0.5 rounded text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                           Clear
                         </button>
                       )}

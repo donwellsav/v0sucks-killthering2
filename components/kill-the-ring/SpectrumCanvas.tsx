@@ -464,7 +464,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
                   </svg>
                   Mic unavailable
                 </span>
-                <span className="text-xs text-neutral-400 font-mono">Tap to retry</span>
+                <span className="text-sm text-neutral-400 font-mono">Tap to retry</span>
               </span>
             ) : (
               <span className="flex items-center gap-2 px-4 py-2 rounded bg-card/80 text-sm text-neutral-300 font-mono font-bold tracking-wide backdrop-blur-sm pointer-events-none">
@@ -484,7 +484,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
       {/* Error overlay for post-start failures (canvas shows stale data underneath) */}
       {!showPlaceholder && error && !isRunning && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-card/80 backdrop-blur-sm text-xs text-destructive font-mono font-medium">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-card/80 backdrop-blur-sm text-sm text-destructive font-mono font-medium">
             <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>
             </svg>

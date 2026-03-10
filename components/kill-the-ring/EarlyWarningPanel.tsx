@@ -36,13 +36,13 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
     <div className="mt-2 rounded border border-amber-500/20 bg-amber-500/5 overflow-hidden">
       <button
         onClick={() => setIsExpanded(prev => !prev)}
-        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-amber-400 font-medium uppercase tracking-wide hover:bg-amber-500/10 transition-colors"
+        className="w-full flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-amber-400 font-medium uppercase tracking-wide hover:bg-amber-500/10 transition-colors"
         aria-expanded={isExpanded}
       >
         <Radio className="w-3 h-3 animate-pulse" aria-hidden="true" />
         <span>Early Warning</span>
         {elapsedSec > 0 && (
-          <span className={`font-mono text-xs tabular-nums ${
+          <span className={`font-mono text-sm tabular-nums ${
             elapsedSec >= 10 ? 'text-red-400' : elapsedSec >= 5 ? 'text-amber-300' : 'text-amber-400'
           }`}>
             {elapsedSec}s
@@ -62,7 +62,7 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
             {predictedFrequencies.slice(0, 6).map((freq) => (
               <span
                 key={freq}
-                className="text-xs font-mono px-1.5 py-0.5 rounded-sm bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                className="text-sm font-mono px-1.5 py-0.5 rounded-sm bg-amber-500/10 text-amber-300 border border-amber-500/20"
               >
                 {formatFrequency(freq)}
               </span>
@@ -70,7 +70,7 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
           </div>
 
           {/* Details row */}
-          <div className="flex items-center gap-3 text-xs text-amber-400/60 font-mono">
+          <div className="flex items-center gap-3 text-sm text-amber-400/60 font-mono">
             {fundamentalSpacing && (
               <span>Spacing: {fundamentalSpacing.toFixed(0)} Hz</span>
             )}

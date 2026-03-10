@@ -23,7 +23,7 @@ function RoomModesDisplay({ lengthM, widthM, heightM }: { lengthM: number; width
 
   if (!formatted || formatted.all.length === 0) {
     return (
-      <p className="text-xs text-muted-foreground font-mono">
+      <p className="text-sm text-muted-foreground font-mono">
         Enter valid room dimensions to calculate modes.
       </p>
     )
@@ -31,22 +31,22 @@ function RoomModesDisplay({ lengthM, widthM, heightM }: { lengthM: number; width
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground font-mono">
+      <p className="text-sm text-muted-foreground font-mono">
         Found {formatted.all.length} room modes below 300Hz:
       </p>
       {formatted.axial.length > 0 && (
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-destructive" />
-            <span className="text-xs font-mono font-medium text-foreground">Axial (strongest)</span>
+            <span className="text-sm font-mono font-medium text-foreground">Axial (strongest)</span>
           </div>
           <div className="flex flex-wrap gap-1 pl-3.5">
             {formatted.axial.slice(0, 8).map((mode, i) => (
-              <span key={i} className="px-1.5 py-0.5 text-xs font-mono bg-destructive/10 text-destructive rounded" title={`Mode ${mode.label}`}>
+              <span key={i} className="px-1.5 py-0.5 text-sm font-mono bg-destructive/10 text-destructive rounded" title={`Mode ${mode.label}`}>
                 {mode.hz}Hz
               </span>
             ))}
-            {formatted.axial.length > 8 && <span className="text-xs text-muted-foreground font-mono">+{formatted.axial.length - 8} more</span>}
+            {formatted.axial.length > 8 && <span className="text-sm text-muted-foreground font-mono">+{formatted.axial.length - 8} more</span>}
           </div>
         </div>
       )}
@@ -54,15 +54,15 @@ function RoomModesDisplay({ lengthM, widthM, heightM }: { lengthM: number; width
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-yellow-500" />
-            <span className="text-xs font-mono font-medium text-foreground">Tangential (medium)</span>
+            <span className="text-sm font-mono font-medium text-foreground">Tangential (medium)</span>
           </div>
           <div className="flex flex-wrap gap-1 pl-3.5">
             {formatted.tangential.slice(0, 6).map((mode, i) => (
-              <span key={i} className="px-1.5 py-0.5 text-xs font-mono bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded" title={`Mode ${mode.label}`}>
+              <span key={i} className="px-1.5 py-0.5 text-sm font-mono bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 rounded" title={`Mode ${mode.label}`}>
                 {mode.hz}Hz
               </span>
             ))}
-            {formatted.tangential.length > 6 && <span className="text-xs text-muted-foreground font-mono">+{formatted.tangential.length - 6} more</span>}
+            {formatted.tangential.length > 6 && <span className="text-sm text-muted-foreground font-mono">+{formatted.tangential.length - 6} more</span>}
           </div>
         </div>
       )}
@@ -70,19 +70,19 @@ function RoomModesDisplay({ lengthM, widthM, heightM }: { lengthM: number; width
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-muted-foreground/50" />
-            <span className="text-xs font-mono font-medium text-foreground">Oblique (weakest)</span>
+            <span className="text-sm font-mono font-medium text-foreground">Oblique (weakest)</span>
           </div>
           <div className="flex flex-wrap gap-1 pl-3.5">
             {formatted.oblique.slice(0, 4).map((mode, i) => (
-              <span key={i} className="px-1.5 py-0.5 text-xs font-mono bg-card/40 text-muted-foreground rounded" title={`Mode ${mode.label}`}>
+              <span key={i} className="px-1.5 py-0.5 text-sm font-mono bg-card/40 text-muted-foreground rounded" title={`Mode ${mode.label}`}>
                 {mode.hz}Hz
               </span>
             ))}
-            {formatted.oblique.length > 4 && <span className="text-xs text-muted-foreground font-mono">+{formatted.oblique.length - 4} more</span>}
+            {formatted.oblique.length > 4 && <span className="text-sm text-muted-foreground font-mono">+{formatted.oblique.length - 4} more</span>}
           </div>
         </div>
       )}
-      <p className="text-xs text-muted-foreground pt-1">
+      <p className="text-sm text-muted-foreground pt-1">
         Tip: If detected feedback matches a room mode, it may be a resonance rather than feedback.
       </p>
     </div>
@@ -125,7 +125,7 @@ export const RoomTab = memo(function RoomTab({
         <div className="space-y-4">
           {/* Preset grid */}
           <div className="space-y-2">
-            <span className="text-xs text-muted-foreground font-mono tracking-wide">Room Preset</span>
+            <span className="text-sm text-muted-foreground font-mono tracking-wide">Room Preset</span>
             <div className="grid grid-cols-2 gap-1.5">
               {(Object.keys(ROOM_PRESETS) as RoomPresetKey[]).map((key) => {
                 const preset = ROOM_PRESETS[key]
@@ -153,8 +153,8 @@ export const RoomTab = memo(function RoomTab({
                         : 'bg-card/40 border border-transparent hover:bg-muted'
                     }`}
                   >
-                    <span className="text-xs font-mono font-bold">{preset.label}</span>
-                    <span className="text-xs text-muted-foreground font-mono">{preset.description}</span>
+                    <span className="text-sm font-mono font-bold">{preset.label}</span>
+                    <span className="text-sm text-muted-foreground font-mono">{preset.description}</span>
                   </button>
                 )
               })}
@@ -166,13 +166,13 @@ export const RoomTab = memo(function RoomTab({
             <>
               {/* Unit toggle */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground font-mono tracking-wide">Unit:</span>
+                <span className="text-sm text-muted-foreground font-mono tracking-wide">Unit:</span>
                 <div className="flex gap-1">
                   {(['meters', 'feet'] as const).map((unit) => (
                     <button
                       key={unit}
                       onClick={() => onSettingsChange({ roomDimensionsUnit: unit })}
-                      className={`px-2 py-0.5 text-xs rounded ${
+                      className={`px-2 py-0.5 text-sm rounded ${
                         settings.roomDimensionsUnit === unit
                           ? 'bg-primary/20 text-primary'
                           : 'bg-card/40 text-muted-foreground hover:bg-muted'
@@ -192,7 +192,7 @@ export const RoomTab = memo(function RoomTab({
                   ['Height', 'roomHeightM', 30] as const,
                 ]).map(([label, field, max]) => (
                   <div key={field} className="space-y-1">
-                    <label className="text-xs text-muted-foreground font-mono">{label}</label>
+                    <label className="text-sm text-muted-foreground font-mono">{label}</label>
                     <input
                       type="number"
                       value={settings[field]}
@@ -205,7 +205,7 @@ export const RoomTab = memo(function RoomTab({
                         }
                         onSettingsChange(update)
                       }}
-                      className="w-full h-7 px-2 text-xs rounded border border-border/40 bg-input font-mono focus:outline-none focus:border-primary"
+                      className="w-full h-7 px-2 text-sm rounded border border-border/40 bg-input font-mono focus:outline-none focus:border-primary"
                       min={1} max={max} step={0.5}
                     />
                   </div>
@@ -214,7 +214,7 @@ export const RoomTab = memo(function RoomTab({
 
               {/* Treatment selector */}
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground font-mono">Acoustic Treatment</label>
+                <label className="text-sm text-muted-foreground font-mono">Acoustic Treatment</label>
                 <div className="flex gap-1">
                   {([
                     ['untreated', 'Untreated'],
@@ -228,7 +228,7 @@ export const RoomTab = memo(function RoomTab({
                         if (settings.roomPreset !== 'custom') update.roomPreset = 'custom'
                         onSettingsChange(update)
                       }}
-                      className={`flex-1 px-2 py-1 text-xs rounded ${
+                      className={`flex-1 px-2 py-1 text-sm rounded ${
                         settings.roomTreatment === val
                           ? 'bg-primary/20 text-primary'
                           : 'bg-card/40 text-muted-foreground hover:bg-muted'
@@ -241,7 +241,7 @@ export const RoomTab = memo(function RoomTab({
               </div>
 
               {/* Auto-derived readouts */}
-              <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground">
+              <div className="grid grid-cols-3 gap-2 text-sm text-muted-foreground">
                 <div className="bg-card/40 panel-recessed rounded px-2 py-1.5 text-center">
                   <div className="font-mono font-medium text-foreground tabular-nums">{settings.roomRT60.toFixed(1)}s</div>
                   <div>RT60</div>

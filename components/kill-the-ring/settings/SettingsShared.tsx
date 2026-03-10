@@ -40,7 +40,7 @@ export const Section = memo(function Section({ title, tooltip, showTooltip = tru
               <TooltipTrigger asChild>
                 <HelpCircle className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground cursor-help" />
               </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[220px] text-xs">
+              <TooltipContent side="right" className="max-w-[280px] text-sm">
                 {tooltip}
               </TooltipContent>
             </Tooltip>

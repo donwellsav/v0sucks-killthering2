@@ -258,7 +258,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
       {onAutoGainToggle && (
         <button
           onClick={() => onAutoGainToggle(!autoGainEnabled)}
-          className={`flex-shrink-0 px-1.5 py-0.5 rounded text-[0.5625rem] font-bold uppercase tracking-wider transition-colors ${
+          className={`flex-shrink-0 px-1.5 py-0.5 rounded text-sm font-bold uppercase tracking-wider transition-colors ${
             autoGainEnabled
               ? autoGainLocked
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
@@ -325,7 +325,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
         {/* 0dB unity label — positioned at the center (50%) of the range */}
         {!compact && (
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 pointer-events-none">
-            <span className="text-[0.625rem] text-muted-foreground font-mono leading-none">0</span>
+            <span className="text-sm text-muted-foreground font-mono leading-none">0</span>
           </div>
         )}
       </div>
@@ -336,7 +336,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
           autoFocus
           type="text"
           defaultValue={String(displayValue)}
-          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-[0.5rem] w-9 h-4' : 'text-xs w-12 h-5'}`}
+          className={`font-mono bg-input border border-primary rounded px-1 text-center text-foreground focus-visible:outline-none flex-shrink-0 ${compact ? 'text-xs w-9 h-4' : 'text-sm w-12 h-5'}`}
           onBlur={(e) => commitEdit(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter') commitEdit((e.target as HTMLInputElement).value)
@@ -347,7 +347,7 @@ export const InputMeterSlider = memo(function InputMeterSlider({
         />
       ) : (
         <button
-          className={`font-mono text-right transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-[0.5rem] w-9' : 'text-xs w-12'} ${
+          className={`font-mono text-right transition-colors cursor-text flex-shrink-0 tabular-nums ${compact ? 'text-xs w-9' : 'text-sm w-12'} ${
             autoGainEnabled ? 'text-primary hover:text-primary/80' : 'text-foreground hover:text-primary'
           }`}
           onClick={() => setEditing(true)}

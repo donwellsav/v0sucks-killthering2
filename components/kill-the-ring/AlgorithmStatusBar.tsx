@@ -55,7 +55,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
 
   if (!isRunning) {
     return (
-      <div className="flex items-center gap-1.5 px-2 py-0.5 text-xs tracking-wide text-muted-foreground">
+      <div className="flex items-center gap-1.5 px-2 py-0.5 text-sm tracking-wide text-muted-foreground">
         <span className="font-mono">ALGO: {ALGORITHM_MODE_LABELS[algorithmMode]}</span>
         <span className="text-muted-foreground/25 mx-0.5">|</span>
         <span className="font-mono">Waiting for audio...</span>
@@ -65,7 +65,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-1.5 px-2 py-0.5 text-xs tracking-wide font-mono">
+      <div className="flex items-center gap-1.5 px-2 py-0.5 text-sm tracking-wide font-mono">
         {/* Algorithm Mode + auto-selected indicators */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -78,7 +78,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
               )}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs max-w-[220px]">
+          <TooltipContent side="bottom" className="text-sm max-w-[280px]">
             <p className="font-semibold">Algorithm Mode: {algorithmMode}</p>
             <p className="text-muted-foreground mt-1">
               {algorithmMode === 'combined' && 'MSD + Phase coherence (recommended)'}
@@ -102,7 +102,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
               {contentInfo.label}
             </span>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+          <TooltipContent side="bottom" className="text-sm max-w-[260px]">
             <p className="font-semibold">Detected Content: {contentType}</p>
             <p className="text-muted-foreground mt-1">
               {contentType === 'speech' && 'Vocal content detected - MSD highly accurate'}
@@ -133,7 +133,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
               <span className="text-muted-foreground">{msdFrameCount}</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="text-xs max-w-[220px]">
+          <TooltipContent side="bottom" className="text-sm max-w-[280px]">
             <p className="font-semibold">MSD History Buffer: {msdFrameCount} frames</p>
             <p className="text-muted-foreground mt-1">
               {msdFrameCount < 7 && 'Collecting frames... (need 7+ for speech)'}
@@ -141,7 +141,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
               {msdFrameCount >= 13 && msdFrameCount < 30 && 'Ready for music analysis'}
               {msdFrameCount >= 30 && 'Optimal buffer for compressed content'}
             </p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
+            <p className="text-sm text-muted-foreground/70 mt-1">
               From DAFx-16: 7 frames = 100% speech accuracy
             </p>
           </TooltipContent>
@@ -157,12 +157,12 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
                   COMP {compressionRatio.toFixed(1)}:1
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+              <TooltipContent side="bottom" className="text-sm max-w-[260px]">
                 <p className="font-semibold">Dynamic Compression Detected</p>
                 <p className="text-muted-foreground mt-1">
                   Estimated ratio: {compressionRatio.toFixed(1)}:1
                 </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
+                <p className="text-sm text-muted-foreground/70 mt-1">
                   Thresholds automatically adjusted to reduce false positives from sustained notes.
                 </p>
               </TooltipContent>
@@ -182,7 +182,7 @@ export const AlgorithmStatusBar = memo(function AlgorithmStatusBar({
                   {actualFps}fps
                 </span>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+              <TooltipContent side="bottom" className="text-sm max-w-[260px]">
                 <p className="font-semibold">Rendering: {actualFps} fps</p>
                 {droppedPercent > 0 && (
                   <p className={`mt-1 ${droppedPercent > 20 ? 'text-red-400' : 'text-amber-400'}`}>

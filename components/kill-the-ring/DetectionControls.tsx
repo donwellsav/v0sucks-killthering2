@@ -106,7 +106,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => onSettingsChange({ quickControlsMode: true })}
-            className={`px-3 py-1 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+            className={`px-3 py-1 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
               isQuick
                 ? 'bg-primary/20 text-primary border border-primary/40'
                 : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -116,7 +116,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
           </button>
           <button
             onClick={() => onSettingsChange({ quickControlsMode: false })}
-            className={`px-3 py-1 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+            className={`px-3 py-1 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
               !isQuick
                 ? 'bg-primary/20 text-primary border border-primary/40'
                 : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -140,7 +140,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                     minFrequency: preset.minFrequency,
                     maxFrequency: preset.maxFrequency,
                   })}
-                  className={`px-1.5 py-0.5 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+                  className={`px-1.5 py-0.5 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
                     isActive
                       ? 'bg-primary/20 text-primary border border-primary/40'
                       : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -154,8 +154,8 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
 
           {/* Hz range label */}
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-muted-foreground tracking-wide">Freq Range</span>
-            <span className="text-xs font-mono text-foreground tabular-nums">
+            <span className="text-sm font-mono text-muted-foreground tracking-wide">Freq Range</span>
+            <span className="text-sm font-mono text-foreground tabular-nums">
               {formatFreqLabel(settings.minFrequency)}-{formatFreqLabel(settings.maxFrequency)}
             </span>
           </div>
@@ -177,19 +177,19 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
         {!isQuick && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">Music-Aware</span>
+            <span className="text-sm text-muted-foreground">Music-Aware</span>
             {settings.showTooltips && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="w-3 h-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help" />
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                <TooltipContent side="right" className="max-w-[260px] text-sm">
                   Auto-activates when signal rises {settings.autoMusicAwareHysteresisDb}dB above noise floor.
                 </TooltipContent>
               </Tooltip>
             )}
             {settings.autoMusicAware && (
-              <span className={`px-1 py-px rounded text-xs font-medium border leading-4 ${
+              <span className={`px-1 py-px rounded text-sm font-medium border leading-4 ${
                 settings.musicAware
                   ? 'bg-primary/10 border-primary/40 text-primary'
                   : 'bg-muted border-border text-muted-foreground'
@@ -227,7 +227,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
             />
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
-              <label htmlFor="show-threshold-line" className="text-xs text-muted-foreground cursor-pointer">Show on RTA</label>
+              <label htmlFor="show-threshold-line" className="text-sm text-muted-foreground cursor-pointer">Show on RTA</label>
               <Switch
                 id="show-threshold-line"
                 checked={settings.showThresholdLine}
@@ -307,7 +307,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                 onSettingsChange({ algorithmMode: 'custom' as AlgorithmMode })
               }
             }}
-            className={`w-full px-1.5 py-0.5 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+            className={`w-full px-1.5 py-0.5 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
               settings.algorithmMode === 'auto'
                 ? 'bg-primary/20 text-primary border border-primary/40'
                 : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -342,7 +342,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                     }
                     onSettingsChange({ enabledAlgorithms: next })
                   }}
-                  className={`px-1 py-0.5 rounded text-xs font-mono font-bold text-center transition-colors ${
+                  className={`px-1 py-0.5 rounded text-sm font-mono font-bold text-center transition-colors ${
                     isAuto
                       ? autoActive
                         ? 'text-primary/60 border border-primary/20 bg-transparent'
@@ -364,13 +364,13 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
         {!isQuick && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">A-Weight</span>
+            <span className="text-sm text-muted-foreground">A-Weight</span>
             {settings.showTooltips && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <HelpCircle className="w-3 h-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help" />
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[200px] text-xs">
+                <TooltipContent side="right" className="max-w-[260px] text-sm">
                   Apply IEC 61672-1 A-weighting. Emphasizes frequencies humans hear most (1-5kHz). Disable for flat response.
                 </TooltipContent>
               </Tooltip>
@@ -414,7 +414,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                   <button
                     key={mode}
                     onClick={() => onModeChange(mode)}
-                    className={`px-1.5 py-0.5 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+                    className={`px-1.5 py-0.5 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
                       isActive
                         ? 'bg-primary/20 text-primary border border-primary/40'
                         : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -466,7 +466,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                       <button
                         key={style}
                         onClick={() => onSettingsChange({ eqPreset: style })}
-                        className={`px-1.5 py-0.5 rounded text-xs font-mono font-bold tracking-wide transition-colors ${
+                        className={`px-1.5 py-0.5 rounded text-sm font-mono font-bold tracking-wide transition-colors ${
                           isActive
                             ? 'bg-primary/20 text-primary border border-primary/40'
                             : 'text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
@@ -480,13 +480,13 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground">Harmonics</span>
+                  <span className="text-sm text-muted-foreground">Harmonics</span>
                   {settings.showTooltips && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle className="w-3 h-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help" />
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-[200px] text-xs">
+                      <TooltipContent side="right" className="max-w-[260px] text-sm">
                         Filter harmonic series to reduce false positives from instruments. Disable for ring-out or monitors.
                       </TooltipContent>
                     </Tooltip>
@@ -518,7 +518,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                   <div key={preset.name} className="inline-flex items-center gap-0.5">
                     <button
                       onClick={() => handleLoadPreset(preset)}
-                      className="px-1.5 py-0.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border transition-colors"
+                      className="px-1.5 py-0.5 rounded text-sm font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border transition-colors"
                     >
                       {preset.name}
                     </button>
@@ -543,20 +543,20 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
                 onChange={(e) => setPresetName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSavePreset()}
                 placeholder="Preset name..."
-                className="flex-1 px-1.5 py-0.5 rounded text-xs bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 px-1.5 py-0.5 rounded text-sm bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 autoFocus
                 maxLength={20}
               />
               <button
                 onClick={handleSavePreset}
                 disabled={!presetName.trim()}
-                className="px-1.5 py-0.5 rounded text-xs font-medium bg-primary/20 text-primary border border-primary/40 disabled:opacity-40 transition-colors"
+                className="px-1.5 py-0.5 rounded text-sm font-medium bg-primary/20 text-primary border border-primary/40 disabled:opacity-40 transition-colors"
               >
                 Save
               </button>
               <button
                 onClick={() => { setShowSaveInput(false); setPresetName('') }}
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-sm text-muted-foreground hover:text-foreground"
               >
                 ✕
               </button>
@@ -565,7 +565,7 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
             customPresets.length < MAX_CUSTOM_PRESETS && (
               <button
                 onClick={() => setShowSaveInput(true)}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Save className="w-3 h-3" />
                 Save as Preset
@@ -596,19 +596,19 @@ function SliderRow({ label, value, tooltip, min, max, step, sliderValue, onChang
     <div className="space-y-0.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <span className="text-xs font-mono text-muted-foreground tracking-wide">{label}</span>
+          <span className="text-sm font-mono text-muted-foreground tracking-wide">{label}</span>
           {tooltip && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <HelpCircle className="w-3 h-3 text-muted-foreground/70 hover:text-muted-foreground cursor-help flex-shrink-0" />
               </TooltipTrigger>
-              <TooltipContent side="right" className="max-w-[200px] text-xs">
+              <TooltipContent side="right" className="max-w-[260px] text-sm">
                 {tooltip}
               </TooltipContent>
             </Tooltip>
           )}
         </div>
-        <span className="text-xs font-mono text-foreground tabular-nums">{value}</span>
+        <span className="text-sm font-mono text-foreground tabular-nums">{value}</span>
       </div>
       <Slider
         value={[sliderValue]}
