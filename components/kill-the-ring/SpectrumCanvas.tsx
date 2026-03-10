@@ -113,23 +113,23 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
         const dpr = window.devicePixelRatio || 1
         dprRef.current = dpr
 
-        // Invalidate cached objects on resize (canvas element may change)
+        // Invalidate cached objects on resize
         ctxRef.current = null
         gradientRef.current = null
         dirtyRef.current = true
 
         const canvas = canvasRef.current
-        if (canvas) {
+        if (canvas && !hasEverStarted) {
+          // Pre-analysis: size canvas + draw placeholder directly in observer
+          // (RAF loop isn't running yet so we must handle it here)
           canvas.width = Math.floor(width * dpr)
           canvas.height = Math.floor(height * dpr)
           canvas.style.width = `${width}px`
           canvas.style.height = `${height}px`
-
-          // Redraw placeholder on resize (before analysis starts)
-          if (!hasEverStarted) {
-            drawPlaceholder(canvas, graphFontSize, rtaDbMinProp, rtaDbMaxProp)
-          }
+          drawPlaceholder(canvas, graphFontSize, rtaDbMinProp, rtaDbMaxProp)
         }
+        // During analysis: the render callback syncs canvas dimensions
+        // atomically with the redraw, preventing flash from observer clearing
       }
     })
 
@@ -150,13 +150,26 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
     const canvas = canvasRef.current
     if (!canvas) return
 
-    if (!ctxRef.current) ctxRef.current = canvas.getContext('2d')
-    const ctx = ctxRef.current
-    if (!ctx) return
-
     const dpr = dprRef.current
     const { width, height } = dimensionsRef.current
     if (width === 0 || height === 0) return
+
+    // Sync canvas buffer to container dimensions inside the RAF callback
+    // so that buffer clear (from setting .width) + redraw are atomic — no flash
+    const targetW = Math.floor(width * dpr)
+    const targetH = Math.floor(height * dpr)
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW
+      canvas.height = targetH
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      ctxRef.current = null
+      gradientRef.current = null
+    }
+
+    if (!ctxRef.current) ctxRef.current = canvas.getContext('2d')
+    const ctx = ctxRef.current
+    if (!ctx) return
 
     // Clear
     ctx.setTransform(1, 0, 0, 1, 0, 0)

@@ -157,7 +157,7 @@ export function drawIndicatorLines(
     ctx.stroke()
     ctx.setLineDash([])
     // Right-aligned label
-    const threshLabel = `Thresh +${feedbackThresholdDb ?? 0}dB`
+    const threshLabel = `Sens +${feedbackThresholdDb ?? 0}dB`
     ctx.font = `${Math.max(8, fontSize - 2)}px monospace`
     ctx.fillStyle = VIZ_COLORS.THRESHOLD
     ctx.textAlign = 'right'

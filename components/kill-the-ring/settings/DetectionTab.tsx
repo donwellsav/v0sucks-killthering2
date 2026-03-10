@@ -52,22 +52,22 @@ export const DetectionTab = memo(function DetectionTab({
         </Section>
 
         <Section
-          title="Feedback Threshold"
+          title="Feedback Sensitivity"
           showTooltip={settings.showTooltips}
-          tooltip="Primary sensitivity. 4-6 dB sensitive (speech/monitors), 8-10 dB balanced (worship/outdoor), 12+ dB conservative (live music)."
+          tooltip="Detection sensitivity. Slide right for more sensitive (catches early feedback). Slide left for less sensitive (ignores weak peaks)."
         >
           <div className="space-y-1">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground font-mono tracking-wide">Threshold</span>
+              <span className="text-sm text-muted-foreground font-mono tracking-wide">Sensitivity</span>
               <span className="text-sm font-mono tabular-nums">{settings.feedbackThresholdDb}dB</span>
             </div>
             <Slider
-              value={[settings.feedbackThresholdDb]}
-              onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: v })}
-              min={2} max={20} step={1}
+              value={[52 - settings.feedbackThresholdDb]}
+              onValueChange={([v]) => onSettingsChange({ feedbackThresholdDb: 52 - v })}
+              min={2} max={50} step={1}
             />
             <div className="flex justify-between text-sm text-muted-foreground font-mono">
-              <span>Aggressive</span><span>Conservative</span>
+              <span>Conservative</span><span>Aggressive</span>
             </div>
           </div>
         </Section>

@@ -117,7 +117,7 @@ export const HelpMenu = memo(function HelpMenu() {
               <ul className="space-y-2">
                 <li><strong>Quick / Full Controls:</strong> Pill toggle at top. Quick mode shows essentials; Full mode shows all settings.</li>
                 <li><strong>Freq Range Presets:</strong> Vocal (200–8 kHz), Monitor (300–3 kHz), Full (20–20 kHz), Sub (20–250 Hz).</li>
-                <li><strong>Threshold:</strong> Primary sensitivity (4–6 dB speech/monitors, 8–10 dB worship/outdoor, 12+ dB live music).</li>
+                <li><strong>Sensitivity:</strong> Detection sensitivity — slide right for more sensitive. Lower dB values catch earlier feedback.</li>
                 <li><strong>Mode Selector:</strong> Operation mode presets plus any saved custom presets.</li>
                 <li><strong>Save as Preset:</strong> Save current settings as a named custom preset (up to 5). Load from mode dropdown.</li>
                 <li><strong>Full Controls extras:</strong> Ring, Growth, Music-Aware, Sustain, Confidence, Algorithm grid, A-Weighting, and more.</li>
@@ -142,11 +142,11 @@ export const HelpMenu = memo(function HelpMenu() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground text-sm mb-1">Too Many False Positives</p>
-                  <p className="text-sm">Switch to Music-Aware mode. In Settings → Algorithms: raise confidence threshold. Increase sidebar Threshold to 10-14 dB. Enable whistle suppression if sibilance triggers detections.</p>
+                  <p className="text-sm">Switch to Music-Aware mode. In Settings → Algorithms: raise confidence threshold. Lower sidebar Sensitivity (slide left). Enable whistle suppression if sibilance triggers detections.</p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground text-sm mb-1">Missing Feedback Detection</p>
-                  <p className="text-sm">Lower sidebar Threshold (4-6 dB). Increase Input Gain on the fader strip. Switch to Ring Out mode for maximum sensitivity. Increase FFT Size to 16384 for better low-frequency resolution.</p>
+                  <p className="text-sm">Raise sidebar Sensitivity (slide right). Increase Input Gain on the fader strip. Switch to Ring Out mode for maximum sensitivity. Increase FFT Size to 16384 for better low-frequency resolution.</p>
                 </div>
                 <div>
                   <p className="font-medium text-foreground text-sm mb-1">Compressed Music False Positives</p>

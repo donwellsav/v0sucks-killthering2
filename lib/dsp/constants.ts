@@ -283,7 +283,6 @@ export interface ModePreset {
   // Sensitivity
   confidenceThreshold: number
   prominenceDb: number
-  relativeThresholdDb: number
   // Display/EQ
   eqPreset: 'surgical' | 'heavy'
   aWeightingEnabled: boolean
@@ -304,23 +303,22 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   speech: {
     label: 'Speech',
     description: 'Corporate & Conference',
-    feedbackThresholdDb: 6,
-    ringThresholdDb: 3,
+    feedbackThresholdDb: 30, // Real-world tested — 30 dB above noise floor in quiet conference room
+    ringThresholdDb: 5,      // Proven value — filters HVAC/ambient without missing genuine resonances
     growthRateThreshold: 1.0,
     musicAware: false,
     autoMusicAware: false,
     fftSize: 8192,           // 5.9 Hz resolution, 170 ms time constant at 48 kHz
     minFrequency: 150,       // Extended for chest-resonance body mics
     maxFrequency: 10000,     // Catches condenser sibilance feedback in 8–10 kHz range
-    sustainMs: 200,          // Filters speech plosives (~100 ms) while catching sustained feedback
+    sustainMs: 300,          // 300 ms — filters plosives/transients while still catching real feedback
     clearMs: 400,            // Slightly longer decay reduces display flicker
     holdTimeMs: 4000,        // Long hold — time to walk to EQ rack during load-in
     confidenceThreshold: 0.35, // Catches early quiet feedback while filtering noise
     prominenceDb: 8,         // Lowered to catch quieter peaks with MSD confirmation
-    relativeThresholdDb: 16, // Headroom above noise floor in quiet conference rooms
     eqPreset: 'surgical',   // Narrow cuts preserve speech clarity
     aWeightingEnabled: true, // Prioritizes 2–5 kHz speech intelligibility band
-    inputGainDb: 6,
+    inputGainDb: 0,          // Zero gain — modern interfaces deliver adequate signal
     ignoreWhistle: true,
   },
 
@@ -335,7 +333,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   worship: {
     label: 'Worship',
     description: 'House of Worship',
-    feedbackThresholdDb: 8,
+    feedbackThresholdDb: 35, // Reverberant — reflections cause many false positives
     ringThresholdDb: 5,
     growthRateThreshold: 2.0,
     musicAware: true,
@@ -348,10 +346,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 4000,        // Long hold in reverberant space
     confidenceThreshold: 0.45, // Slightly more aggressive — surface more during setup
     prominenceDb: 12,        // Lowered to catch quieter resonances during load-in
-    relativeThresholdDb: 20, // Higher relative threshold for reverberant noise floor
     eqPreset: 'surgical',   // Narrow cuts avoid coloring worship music
     aWeightingEnabled: false, // Full spectrum important for organ/choir
-    inputGainDb: 10,
+    inputGainDb: 2,          // Modest gain — mix of close and distant mics
     ignoreWhistle: true,
   },
 
@@ -366,7 +363,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   liveMusic: {
     label: 'Live Music',
     description: 'Concerts & Events',
-    feedbackThresholdDb: 14,
+    feedbackThresholdDb: 42, // Most conservative — high SPL, harmonic content causes false positives
     ringThresholdDb: 8,
     growthRateThreshold: 4.0,
     musicAware: true,
@@ -379,7 +376,6 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 3000,        // Extended — time to walk to EQ during sound check
     confidenceThreshold: 0.55, // Slightly more sensitive for load-in discovery
     prominenceDb: 14,        // Lowered to catch resonances in empty venue
-    relativeThresholdDb: 24, // Very high — only extreme peaks relative to noise
     eqPreset: 'heavy',      // Wider cuts for emergency feedback killing
     aWeightingEnabled: false, // Flat weighting at high SPL
     inputGainDb: 0,          // Hot line-level signal from console
@@ -396,7 +392,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   theater: {
     label: 'Theater',
     description: 'Drama & Musicals',
-    feedbackThresholdDb: 7,
+    feedbackThresholdDb: 28, // Treated theater — between speech and reverberant environments
     ringThresholdDb: 4,
     growthRateThreshold: 1.5,
     musicAware: true,
@@ -409,10 +405,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 4000,        // Extended — time to walk to EQ during load-in
     confidenceThreshold: 0.40, // More aggressive — surface more during setup
     prominenceDb: 10,        // Lowered to catch quieter resonances in empty theater
-    relativeThresholdDb: 18,
     eqPreset: 'surgical',   // Narrow cuts preserve dialogue clarity
     aWeightingEnabled: true, // A-weighting helps for dialogue-focused detection
-    inputGainDb: 12,         // Moderate gain for body mics
+    inputGainDb: 4,          // Body mics need modest gain boost
     ignoreWhistle: true,
   },
 
@@ -427,7 +422,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   monitors: {
     label: 'Monitors',
     description: 'Stage Wedges',
-    feedbackThresholdDb: 5,
+    feedbackThresholdDb: 15, // Stage — fast detection, but less false positives from stage noise
     ringThresholdDb: 3,
     growthRateThreshold: 0.8,
     musicAware: false,       // Monitor feedback is priority over music discrimination
@@ -440,10 +435,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 3000,        // Extended — time to walk to EQ during load-in
     confidenceThreshold: 0.35, // More aggressive — surface everything during ring-out
     prominenceDb: 8,         // Lowered to catch subtler resonances during setup
-    relativeThresholdDb: 15,
     eqPreset: 'surgical',   // Narrow notches preserve monitor clarity
     aWeightingEnabled: false,
-    inputGainDb: 5,          // Hot signal from console
+    inputGainDb: 0,          // Console sends are hot — no software gain needed
     ignoreWhistle: false,    // Whistle-like feedback is real in monitors
   },
 
@@ -457,7 +451,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   ringOut: {
     label: 'Ring Out',
     description: 'System Calibration',
-    feedbackThresholdDb: 4,
+    feedbackThresholdDb: 12, // Calibration — most sensitive, catch every resonance
     ringThresholdDb: 2,
     growthRateThreshold: 0.5,
     musicAware: false,
@@ -470,10 +464,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 5000,        // Long hold for reference during EQ adjustments
     confidenceThreshold: 0.30, // Surface everything
     prominenceDb: 8,         // Very low prominence threshold
-    relativeThresholdDb: 12, // Very sensitive
     eqPreset: 'surgical',   // Precise notch placement
     aWeightingEnabled: false, // Full spectrum during calibration
-    inputGainDb: 6,
+    inputGainDb: 0,          // Zero gain — calibration uses raw signal
     autoGainTargetDb: -12, // Hot target — ring-out needs maximum sensitivity to catch every resonance
     ignoreWhistle: true,
   },
@@ -488,7 +481,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   broadcast: {
     label: 'Broadcast',
     description: 'Studio & Podcast',
-    feedbackThresholdDb: 5,
+    feedbackThresholdDb: 22, // Quiet studio — more sensitive than speech, low noise floor
     ringThresholdDb: 3,
     growthRateThreshold: 1.0,
     musicAware: false,
@@ -501,10 +494,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 4000,        // Extended — time to walk to EQ during setup
     confidenceThreshold: 0.30, // Very aggressive — surface everything in quiet studio
     prominenceDb: 8,         // Lowered to catch subtle resonances in treated room
-    relativeThresholdDb: 14, // Sensitive — low noise floor makes relative work well
     eqPreset: 'surgical',   // Precise cuts for broadcast quality
     aWeightingEnabled: true, // A-weighting for speech focus
-    inputGainDb: 6,
+    inputGainDb: 0,          // Studio interfaces deliver adequate signal
     autoGainTargetDb: -24, // Conservative — studio/streaming, minimal false positives
     ignoreWhistle: true,
   },
@@ -520,7 +512,7 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
   outdoor: {
     label: 'Outdoor',
     description: 'Open Air & Festivals',
-    feedbackThresholdDb: 10,
+    feedbackThresholdDb: 38, // Conservative — wind and ambient noise cause false positives
     ringThresholdDb: 6,
     growthRateThreshold: 2.5,
     musicAware: false,       // User enables if music present
@@ -533,10 +525,9 @@ export const OPERATION_MODES: Record<string, ModePreset> = {
     holdTimeMs: 3500,        // Extended — time to walk to EQ during load-in
     confidenceThreshold: 0.45, // Slightly more aggressive — less ambient during setup
     prominenceDb: 12,        // Lowered — quieter environment during load-in
-    relativeThresholdDb: 22, // Higher relative threshold for noisy outdoor
     eqPreset: 'heavy',      // Wider cuts for outdoor PA
     aWeightingEnabled: true, // A-weighting helps filter wind rumble perception
-    inputGainDb: 5,          // Line level from console
+    inputGainDb: 0,          // Console sends — no software gain needed
     ignoreWhistle: true,
   },
 } as const
@@ -553,8 +544,8 @@ export const DEFAULT_SETTINGS: DetectorSettings = {
   smoothingTimeConstant: 0.5, // Faster response for quick detection
   minFrequency: 150, // Extended for body mic chest resonance (Everest: speech starts ~170 Hz)
   maxFrequency: 10000, // Condenser sibilance feedback upper bound (extends beyond intelligibility band)
-  feedbackThresholdDb: 8, // Balanced — catch feedback while filtering room resonances
-  ringThresholdDb: 5, // Balanced — genuine resonances only, not HVAC/ambient
+  feedbackThresholdDb: 30, // Real-world tested — 30 dB above noise floor in quiet conference room
+  ringThresholdDb: 5, // Proven default — filters HVAC/ambient without missing genuine resonances
   growthRateThreshold: 1.0, // Allows MSD analysis on slower-growing early feedback
   holdTimeMs: 4000, // Long hold — time to walk to EQ rack during load-in
   noiseFloorDecay: 0.98, // Fast adaptation for dynamic conference environments
@@ -564,7 +555,7 @@ export const DEFAULT_SETTINGS: DetectorSettings = {
   musicAware: false, // Disabled — no music in corporate/conference
   autoMusicAware: false, // Auto music-aware off for speech systems
   autoMusicAwareHysteresisDb: 15, // 15 dB above noise floor = band is playing
-  inputGainDb: 6, // Default input gain (adjustable -40 to +40 dB)
+  inputGainDb: 0, // Zero gain — modern interfaces deliver adequate signal
   autoGainEnabled: false, // Auto-gain off by default — user clicks venue pill to start calibration
   autoGainTargetDb: -18, // Target post-gain peak level (-18 dBFS = 18 dB headroom, balanced for detection)
   graphFontSize: 15, // Default label size for canvas graphs (8–26 px)
@@ -593,11 +584,11 @@ export const DEFAULT_SETTINGS: DetectorSettings = {
   roomHeightM: 5, // Default ceiling height — ballroom (~16 ft)
   roomDimensionsUnit: 'meters' as const,
   // Peak timing — filters speech plosives while catching sustained feedback
-  sustainMs: 350, // 350 ms persistence — filters plosives, catches real feedback
+  sustainMs: 300, // 300 ms — filters plosives/transients while still catching real feedback
   clearMs: 400, // Slightly longer decay reduces display flicker
   // Threshold control
   thresholdMode: 'hybrid' as const,
-  relativeThresholdDb: 18, // Headroom above noise floor in quiet conference rooms
+  relativeThresholdDb: 30, // Matches feedbackThresholdDb — headroom above noise floor
   prominenceDb: 8, // Lowered to catch quieter peaks with MSD confirmation
   // Noise floor timing
   noiseFloorAttackMs: 200, // Fast attack for dynamic conference environments
@@ -624,7 +615,7 @@ export const ROOM_PRESETS = {
     lengthM: 15, widthM: 12, heightM: 5, // Safe fallbacks (never used — gated by roomPreset !== 'none')
     treatment: 'typical' as const,
     roomRT60: 1.0, roomVolume: 1000, schroederFreq: 63,
-    feedbackThresholdDb: 6, ringThresholdDb: 4,
+    feedbackThresholdDb: 30, ringThresholdDb: 4, // Neutral — no room physics active (matches Speech)
   },
   small: {
     label: 'Small Room',
@@ -632,7 +623,7 @@ export const ROOM_PRESETS = {
     lengthM: 6.1, widthM: 4.6, heightM: 2.9, // ~81 m³
     treatment: 'treated' as const,
     roomRT60: 0.4, roomVolume: 80, schroederFreq: 141,
-    feedbackThresholdDb: 5, ringThresholdDb: 3,
+    feedbackThresholdDb: 22, ringThresholdDb: 3, // Quiet treated room — sensitive (like Broadcast)
   },
   medium: {
     label: 'Medium Room',
@@ -640,7 +631,7 @@ export const ROOM_PRESETS = {
     lengthM: 10.7, widthM: 8.5, heightM: 3.4, // ~309 m³
     treatment: 'typical' as const,
     roomRT60: 0.7, roomVolume: 300, schroederFreq: 97,
-    feedbackThresholdDb: 6, ringThresholdDb: 4,
+    feedbackThresholdDb: 30, ringThresholdDb: 4, // Conference room — matches Speech
   },
   large: {
     label: 'Large Venue',
@@ -648,7 +639,7 @@ export const ROOM_PRESETS = {
     lengthM: 15.2, widthM: 12.2, heightM: 5.5, // ~1019 m³
     treatment: 'typical' as const,
     roomRT60: 1.0, roomVolume: 1000, schroederFreq: 63,
-    feedbackThresholdDb: 7, ringThresholdDb: 5,
+    feedbackThresholdDb: 32, ringThresholdDb: 5, // Ballroom — slightly conservative
   },
   arena: {
     label: 'Arena / Hall',
@@ -656,7 +647,7 @@ export const ROOM_PRESETS = {
     lengthM: 30, widthM: 25, heightM: 6.7, // ~5025 m³
     treatment: 'untreated' as const,
     roomRT60: 1.8, roomVolume: 5000, schroederFreq: 38,
-    feedbackThresholdDb: 9, ringThresholdDb: 6,
+    feedbackThresholdDb: 38, ringThresholdDb: 6, // Large venue — conservative (like Outdoor)
   },
   worship: {
     label: 'Worship Space',
@@ -664,7 +655,7 @@ export const ROOM_PRESETS = {
     lengthM: 20, widthM: 14, heightM: 7.1, // ~1988 m³
     treatment: 'untreated' as const,
     roomRT60: 2.0, roomVolume: 2000, schroederFreq: 63,
-    feedbackThresholdDb: 8, ringThresholdDb: 5,
+    feedbackThresholdDb: 35, ringThresholdDb: 5, // Reverberant — matches Worship mode
   },
   custom: {
     label: 'Custom',
@@ -672,7 +663,7 @@ export const ROOM_PRESETS = {
     lengthM: 15, widthM: 12, heightM: 5,
     treatment: 'typical' as const,
     roomRT60: 1.0, roomVolume: 1000, schroederFreq: 63,
-    feedbackThresholdDb: 6, ringThresholdDb: 4,
+    feedbackThresholdDb: 30, ringThresholdDb: 4, // Safe default (matches Speech)
   },
 } as const
 

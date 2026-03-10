@@ -216,15 +216,15 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
 
         {/* Sliders */}
         <div className="space-y-0">
-          {/* Threshold — always visible */}
+          {/* Sensitivity (inverted threshold) — always visible */}
           <div className="pb-1.5">
             <SliderRow
-              label="Threshold"
+              label="Sensitivity"
               value={`${settings.feedbackThresholdDb}dB`}
-              tooltip={settings.showTooltips ? 'Primary sensitivity. 4-6 dB sensitive (speech/monitors), 8-10 dB balanced (worship/outdoor), 12+ dB conservative (live music).' : undefined}
-              min={2} max={20} step={1}
-              sliderValue={settings.feedbackThresholdDb}
-              onChange={(v) => onSettingsChange({ feedbackThresholdDb: v })}
+              tooltip={settings.showTooltips ? 'Detection sensitivity. Slide right for more sensitive (catches early feedback). Slide left for less sensitive (ignores weak peaks).' : undefined}
+              min={2} max={50} step={1}
+              sliderValue={52 - settings.feedbackThresholdDb}
+              onChange={(v) => onSettingsChange({ feedbackThresholdDb: 52 - v })}
             />
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
               <label htmlFor="show-threshold-line" className="text-sm text-muted-foreground cursor-pointer">Show on RTA</label>

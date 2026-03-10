@@ -6,12 +6,6 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--turbopack", "--port", "3002"],
       "port": 3002
-    },
-    {
-      "name": "next-start",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "start"],
-      "port": 3000
     }
   ]
 }

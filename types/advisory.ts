@@ -335,7 +335,7 @@ export interface DetectorSettings {
   clearMs: number // Time before peak declared dead (100-2000, default 400)
   // Threshold control
   thresholdMode: ThresholdMode // 'absolute' | 'relative' | 'hybrid' (default 'hybrid')
-  relativeThresholdDb: number // Relative threshold above noise (6-30, default 18)
+  relativeThresholdDb: number // Relative threshold above noise (2-50, default 18)
   prominenceDb: number // Peak prominence required (4-30, default 12)
   // Noise floor timing
   noiseFloorAttackMs: number // Noise floor attack time (50-1000, default 200)
@@ -359,22 +359,22 @@ export const DEFAULT_CONFIG: AnalysisConfig = {
   minHz: 150, // Body mic chest resonance lower bound
   maxHz: 10000, // Condenser sibilance feedback upper bound
   analysisIntervalMs: 20, // Faster analysis for quicker detection
-  sustainMs: 350, // Filters speech plosives while catching sustained feedback
+  sustainMs: 300, // 300 ms — filters plosives/transients while catching real feedback (matches DEFAULT_SETTINGS)
   clearMs: 400, // Slightly longer decay reduces display flicker
   thresholdMode: 'hybrid',
-  thresholdDb: -40, // More sensitive absolute threshold
-  relativeThresholdDb: 18, // Headroom above noise floor in quiet rooms
+  thresholdDb: -80, // Safety floor only — relative threshold (noise floor + slider) controls detection
+  relativeThresholdDb: 30, // Matches feedbackThresholdDb — headroom above noise floor
   prominenceDb: 8, // Lowered to catch quieter peaks with MSD confirmation
   neighborhoodBins: 8, // ±2 exclusion means effective 6 each side
   maxIssues: 12, // Show more issues for comprehensive tuning
   ignoreWhistle: true,
   preset: 'surgical',
   mode: 'speech', // Matches DEFAULT_SETTINGS.mode for consistency
-  aWeightingEnabled: false,
+  aWeightingEnabled: true, // A-weighting on — prioritizes speech intelligibility band (2–5 kHz)
   noiseFloorEnabled: true,
   noiseFloorSampleCount: 160, // Faster noise floor sampling
   noiseFloorAttackMs: 200, // Faster attack for dynamic environments
   noiseFloorReleaseMs: 1000, // Faster release
-  inputGainDb: 15, // Default gain for speech systems (adjustable -40 to +40 dB) — matches DEFAULT_SETTINGS
-  autoGainEnabled: true, // Auto-gain on by default
+  inputGainDb: 0, // Zero gain — modern interfaces deliver adequate signal (matches DEFAULT_SETTINGS)
+  autoGainEnabled: false, // Auto-gain off by default — user clicks venue pill to start calibration
 }

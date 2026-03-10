@@ -111,12 +111,12 @@ export class FeedbackDetector {
   // Harmonic detection — runtime override (set via updateSettings)
   private harmonicToleranceCents: number = HARMONIC_SETTINGS.TOLERANCE_CENTS
 
-  // Smoothing time constant for AnalyserNode (0-1, default 0.6)
-  private smoothingTimeConstant: number = 0.6
+  // Smoothing time constant for AnalyserNode (0-1, matches DEFAULT_SETTINGS)
+  private smoothingTimeConstant: number = 0.5
 
-  // Ring/growth detection thresholds (mapped from DetectorSettings)
-  private ringThresholdDb: number = -10
-  private growthRateThreshold: number = 1.5
+  // Ring/growth detection thresholds (mapped from DetectorSettings, matches DEFAULT_SETTINGS)
+  private ringThresholdDb: number = 3
+  private growthRateThreshold: number = 1.0
 
   // Auto-gain control — adjusts inputGainDb to keep signal in optimal detection range
   private _autoGainEnabled: boolean = false
@@ -226,17 +226,12 @@ export class FeedbackDetector {
     // Set FFT size and allocate buffers
     this.setFftSize(this.config.fftSize)
 
-    // Initialize auto-gain EMA coefficients based on analysis rate (~50 fps)
-    // Attack 300ms (gain decreases fast), Release 1000ms (gain recovers slowly)
+    // Recalculate EMA coefficients for this audio context's frame rate
     const fps = 1000 / this.config.analysisIntervalMs
-    this._autoGainAttackCoeff = 1 - Math.exp(-1 / (0.3 * fps))  // 300ms attack
-    this._autoGainReleaseCoeff = 1 - Math.exp(-1 / (1.0 * fps)) // 1000ms release
-    this._autoGainEnabled = this.config.autoGainEnabled ?? false
-    this._autoGainDb = this.config.inputGainDb ?? 6
-    // Reset calibration state so measure-then-lock starts fresh
-    this._autoGainLocked = false
-    this._autoGainCalibrationStartMs = 0
-    this._autoGainSignalFrames = 0
+    this._autoGainAttackCoeff = 1 - Math.exp(-1 / (0.3 * fps))
+    this._autoGainReleaseCoeff = 1 - Math.exp(-1 / (1.0 * fps))
+    // Auto-gain state is NOT touched here — managed entirely by updateSettings()
+    // when user clicks LOUD/MED/QUIET calibration buttons
 
     // Connect source (PASSIVE - no output routing)
     if (this.source) {
@@ -411,7 +406,7 @@ export class FeedbackDetector {
       mappedConfig.autoGainEnabled = settings.autoGainEnabled
       // When switching to auto, seed from current manual setting and restart calibration
       if (settings.autoGainEnabled) {
-        this._autoGainDb = this.config.inputGainDb ?? 6
+        this._autoGainDb = this.config.inputGainDb ?? 0
         this._autoGainLocked = false
         this._autoGainCalibrationStartMs = 0
         this._autoGainSignalFrames = 0
@@ -470,9 +465,10 @@ export class FeedbackDetector {
     if (settings.thresholdMode !== undefined) {
       mappedConfig.thresholdMode = settings.thresholdMode
     }
-    if (settings.relativeThresholdDb !== undefined) {
-      mappedConfig.relativeThresholdDb = settings.relativeThresholdDb
-    }
+    // NOTE: relativeThresholdDb is NOT mapped here — it's controlled exclusively
+    // via feedbackThresholdDb (the UI slider) at line 385-386 above.
+    // DetectorSettings.relativeThresholdDb exists in presets but is legacy;
+    // the slider value is the single source of truth for this config field.
     if (settings.prominenceDb !== undefined) {
       mappedConfig.prominenceDb = settings.prominenceDb
     }
@@ -1284,13 +1280,16 @@ export class FeedbackDetector {
     }
 
     const relT = this.noiseFloorDb + this.config.relativeThresholdDb
+    const result = (() => {
+      switch (this.config.thresholdMode) {
+        case 'absolute': return absT
+        case 'relative': return relT
+        case 'hybrid': return Math.max(absT, relT)
+        default: return Math.max(absT, relT)
+      }
+    })()
 
-    switch (this.config.thresholdMode) {
-      case 'absolute': return absT
-      case 'relative': return relT
-      case 'hybrid': return Math.max(absT, relT)
-      default: return Math.max(absT, relT)
-    }
+    return result
   }
 
   // ==================== MSD Algorithm (DAFx-16) ====================

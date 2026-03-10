@@ -249,7 +249,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
       holdTimeMs: preset.holdTimeMs,
       confidenceThreshold: preset.confidenceThreshold,
       prominenceDb: preset.prominenceDb,
-      relativeThresholdDb: preset.relativeThresholdDb,
       eqPreset: preset.eqPreset,
       aWeightingEnabled: preset.aWeightingEnabled,
       inputGainDb: preset.inputGainDb,
