@@ -1,0 +1,140 @@
+/**
+ * FeedbackDetector unit tests
+ *
+ * Tests the pure-math portions of the detector: bin↔frequency conversion,
+ * constructor defaults, getState snapshot, and config propagation.
+ * Web Audio integration (start/stop/analyze) requires browser APIs
+ * and is verified via manual browser testing.
+ */
+
+import { describe, it, expect } from 'vitest'
+import { FeedbackDetector } from '../feedbackDetector'
+import { DEFAULT_CONFIG } from '@/types/advisory'
+
+describe('FeedbackDetector', () => {
+  // ── Constructor ──────────────────────────────────────────────────
+
+  describe('constructor', () => {
+    it('uses DEFAULT_CONFIG when no config provided', () => {
+      const detector = new FeedbackDetector()
+      const state = detector.getState()
+      expect(state.fftSize).toBe(DEFAULT_CONFIG.fftSize)
+      expect(state.isRunning).toBe(false)
+    })
+
+    it('merges partial config with defaults', () => {
+      const detector = new FeedbackDetector({ fftSize: 4096 })
+      const state = detector.getState()
+      expect(state.fftSize).toBe(4096)
+    })
+  })
+
+  // ── Bin ↔ Frequency conversion ──────────────────────────────────
+  // These are pure-math functions: freq = (bin * sampleRate) / fftSize
+  // Without AudioContext, sampleRate defaults to 48000
+
+  describe('binToFrequency', () => {
+    it('converts bin 0 to 0 Hz (DC)', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      expect(detector.binToFrequency(0)).toBe(0)
+    })
+
+    it('converts bin to correct frequency at default 48kHz', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      // bin 1 = 48000/8192 ≈ 5.859 Hz
+      const freq = detector.binToFrequency(1)
+      expect(freq).toBeCloseTo(48000 / 8192, 2)
+    })
+
+    it('converts Nyquist bin correctly', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      const nyquistBin = 8192 / 2
+      // Nyquist = sampleRate / 2 = 24000 Hz
+      expect(detector.binToFrequency(nyquistBin)).toBeCloseTo(24000, 0)
+    })
+
+    it('works with different FFT sizes', () => {
+      const detector = new FeedbackDetector({ fftSize: 4096 })
+      // bin 100 at 4096 FFT, 48kHz: 100 * 48000 / 4096 ≈ 1171.875 Hz
+      expect(detector.binToFrequency(100)).toBeCloseTo(1171.875, 1)
+    })
+  })
+
+  describe('frequencyToBin', () => {
+    it('converts 0 Hz to bin 0', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      expect(detector.frequencyToBin(0)).toBe(0)
+    })
+
+    it('round-trips with binToFrequency', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      const originalBin = 170
+      const freq = detector.binToFrequency(originalBin)
+      const recoveredBin = detector.frequencyToBin(freq)
+      expect(recoveredBin).toBe(originalBin)
+    })
+
+    it('rounds to nearest bin for non-exact frequencies', () => {
+      const detector = new FeedbackDetector({ fftSize: 8192 })
+      // 1000 Hz → bin = round(1000 * 8192 / 48000) = round(170.67) = 171
+      expect(detector.frequencyToBin(1000)).toBe(171)
+    })
+  })
+
+  // ── getState snapshot ────────────────────────────────────────────
+
+  describe('getState', () => {
+    it('returns all required fields', () => {
+      const detector = new FeedbackDetector()
+      const state = detector.getState()
+
+      expect(state).toHaveProperty('isRunning')
+      expect(state).toHaveProperty('noiseFloorDb')
+      expect(state).toHaveProperty('effectiveThresholdDb')
+      expect(state).toHaveProperty('sampleRate')
+      expect(state).toHaveProperty('fftSize')
+      expect(state).toHaveProperty('autoGainEnabled')
+      expect(state).toHaveProperty('autoGainDb')
+      expect(state).toHaveProperty('autoGainLocked')
+    })
+
+    it('isRunning defaults to false', () => {
+      const detector = new FeedbackDetector()
+      expect(detector.getState().isRunning).toBe(false)
+    })
+
+    it('defaults sampleRate to 48000 without AudioContext', () => {
+      const detector = new FeedbackDetector()
+      expect(detector.getState().sampleRate).toBe(48000)
+      expect(detector.getSampleRate()).toBe(48000)
+    })
+  })
+
+  // ── setAlgorithmState ────────────────────────────────────────────
+
+  describe('setAlgorithmState', () => {
+    it('updates algorithm state fields', () => {
+      const detector = new FeedbackDetector()
+      detector.setAlgorithmState({
+        algorithmMode: 'combined',
+        contentType: 'speech',
+        isCompressed: false,
+      })
+
+      const state = detector.getState()
+      expect(state.algorithmMode).toBe('combined')
+      expect(state.contentType).toBe('speech')
+      expect(state.isCompressed).toBe(false)
+    })
+
+    it('partial updates preserve existing algorithm state', () => {
+      const detector = new FeedbackDetector()
+      detector.setAlgorithmState({ algorithmMode: 'msd' })
+      detector.setAlgorithmState({ contentType: 'music' })
+
+      const state = detector.getState()
+      expect(state.algorithmMode).toBe('msd')
+      expect(state.contentType).toBe('music')
+    })
+  })
+})

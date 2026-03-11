@@ -22,6 +22,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // eslint-disable-next-line no-console -- error boundaries must log to console for debugging
     console.error('[ErrorBoundary] Caught error:', error, errorInfo)
   }
 

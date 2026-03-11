@@ -196,7 +196,7 @@ export const VerticalGainFader = memo(function VerticalGainFader({
   }
 
   const updateValueFromYRef = useRef(updateValueFromY)
-  updateValueFromYRef.current = updateValueFromY
+  useEffect(() => { updateValueFromYRef.current = updateValueFromY })
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (editing) return

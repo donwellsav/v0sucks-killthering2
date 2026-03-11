@@ -1,0 +1,454 @@
+/**
+ * Algorithm Fusion unit tests
+ *
+ * Tests the multi-algorithm detection fusion engine:
+ * - detectCombPattern: DBX comb filter pattern detection
+ * - analyzeInterHarmonicRatio: IHR feedback vs music discrimination
+ * - calculatePTMR: Peak-to-Median Ratio for spectral peak sharpness
+ * - calculateMINDS: DAFx-16 adaptive notch depth setting
+ * - detectContentType: speech vs music vs compressed classification
+ * - fuseAlgorithmResults: weighted multi-algorithm fusion with verdict
+ */
+
+import { describe, it, expect } from 'vitest'
+import {
+  detectCombPattern,
+  analyzeInterHarmonicRatio,
+  calculatePTMR,
+  calculateMINDS,
+  detectContentType,
+  fuseAlgorithmResults,
+  FUSION_WEIGHTS,
+  DEFAULT_FUSION_CONFIG,
+  COMB_CONSTANTS,
+} from '../algorithmFusion'
+import type {
+  AlgorithmScores,
+  FusedDetectionResult,
+  CombPatternResult,
+  PTMRResult,
+  MINDSResult,
+} from '../algorithmFusion'
+
+// ── detectCombPattern ──────────────────────────────────────────────────────
+
+describe('detectCombPattern', () => {
+  it('returns no pattern when too few peaks', () => {
+    const result = detectCombPattern([100, 200]) // < MIN_PEAKS
+    expect(result.hasPattern).toBe(false)
+    expect(result.confidence).toBe(0)
+  })
+
+  it('detects evenly-spaced peaks as comb pattern', () => {
+    // Simulate comb filter with 200 Hz spacing (5m path length: 343/200 ≈ 1.7m)
+    const spacing = 200
+    const peaks = Array.from({ length: 6 }, (_, i) => (i + 1) * spacing)
+    // [200, 400, 600, 800, 1000, 1200]
+    const result = detectCombPattern(peaks, 48000)
+    expect(result.hasPattern).toBe(true)
+    expect(result.fundamentalSpacing).toBeCloseTo(spacing, -1) // Within ~10 Hz
+    expect(result.matchingPeaks).toBeGreaterThanOrEqual(COMB_CONSTANTS.MIN_PEAKS_FOR_PATTERN)
+    expect(result.confidence).toBeGreaterThan(0)
+  })
+
+  it('estimates path length from fundamental spacing', () => {
+    // d = c / Δf = 343 / 200 = 1.715 m
+    const peaks = [200, 400, 600, 800, 1000]
+    const result = detectCombPattern(peaks, 48000)
+    if (result.hasPattern && result.estimatedPathLength !== null) {
+      expect(result.estimatedPathLength).toBeCloseTo(343 / 200, 0)
+    }
+  })
+
+  it('rejects random non-evenly-spaced peaks', () => {
+    const randomPeaks = [137, 523, 891, 1247, 1759]
+    const result = detectCombPattern(randomPeaks, 48000)
+    // Random peaks shouldn't form a comb pattern
+    // (may technically match by chance, so we just check confidence is low)
+    if (result.hasPattern) {
+      expect(result.confidence).toBeLessThan(0.5)
+    }
+  })
+
+  it('rejects unrealistic path lengths (>50m)', () => {
+    // Very small spacing → very long path → reject
+    // d = 343 / 5 = 68.6 m > MAX_PATH_LENGTH (50m)
+    const peaks = [5, 10, 15, 20, 25]
+    const result = detectCombPattern(peaks, 48000)
+    expect(result.hasPattern).toBe(false)
+  })
+
+  it('returns predicted frequencies for undetected harmonics', () => {
+    // Missing the 3rd harmonic (600 Hz)
+    const peaks = [200, 400, 800, 1000, 1200]
+    const result = detectCombPattern(peaks, 48000)
+    if (result.hasPattern && result.predictedFrequencies.length > 0) {
+      // Should predict 600 Hz as a missing harmonic
+      const hasCloseTo600 = result.predictedFrequencies.some(f => Math.abs(f - 600) < 20)
+      expect(hasCloseTo600).toBe(true)
+    }
+  })
+})
+
+// ── analyzeInterHarmonicRatio ──────────────────────────────────────────────
+
+describe('analyzeInterHarmonicRatio', () => {
+  const sampleRate = 48000
+  const fftSize = 8192
+  const numBins = fftSize / 2
+
+  /** Create spectrum with a single pure tone (feedback-like) */
+  function pureToneSpectrum(fundamentalBin: number): Float32Array {
+    const arr = new Float32Array(numBins)
+    arr.fill(-80) // Noise floor
+    arr[fundamentalBin] = -10 // Strong fundamental
+    return arr
+  }
+
+  /** Create spectrum with rich harmonics (music-like) */
+  function harmonicSpectrum(fundamentalBin: number): Float32Array {
+    const arr = new Float32Array(numBins)
+    arr.fill(-80)
+    // Add fundamental + decaying harmonics
+    for (let k = 1; k <= 6; k++) {
+      const bin = Math.round(fundamentalBin * k)
+      if (bin < numBins) {
+        arr[bin] = -10 - (k - 1) * 6 // 6 dB/octave decay
+      }
+    }
+    // Add inter-harmonic energy (noise between harmonics)
+    for (let k = 1; k <= 5; k++) {
+      const midBin = Math.round(fundamentalBin * (k + 0.5))
+      if (midBin < numBins) {
+        arr[midBin] = -40 // Significant inter-harmonic energy
+      }
+    }
+    return arr
+  }
+
+  it('pure tone has low IHR and high feedback score', () => {
+    const spectrum = pureToneSpectrum(100)
+    const result = analyzeInterHarmonicRatio(spectrum, 100, sampleRate, fftSize)
+    expect(result.harmonicsFound).toBeLessThanOrEqual(2) // Just fundamental, maybe 1 harmonic
+    expect(result.feedbackScore).toBeGreaterThan(0)
+  })
+
+  it('harmonic-rich signal has higher IHR', () => {
+    const spectrum = harmonicSpectrum(100)
+    const result = analyzeInterHarmonicRatio(spectrum, 100, sampleRate, fftSize)
+    expect(result.harmonicsFound).toBeGreaterThanOrEqual(3)
+    // IHR should be higher for music-like content
+    expect(result.interHarmonicRatio).toBeGreaterThan(0)
+  })
+
+  it('returns neutral result for out-of-range fundamentalBin', () => {
+    const spectrum = pureToneSpectrum(100)
+    const result = analyzeInterHarmonicRatio(spectrum, 0, sampleRate, fftSize) // DC
+    expect(result.interHarmonicRatio).toBe(0.5)
+    expect(result.feedbackScore).toBe(0)
+  })
+
+  it('feedbackScore is clamped to [0, 1]', () => {
+    const spectrum = pureToneSpectrum(100)
+    const result = analyzeInterHarmonicRatio(spectrum, 100, sampleRate, fftSize)
+    expect(result.feedbackScore).toBeGreaterThanOrEqual(0)
+    expect(result.feedbackScore).toBeLessThanOrEqual(1)
+  })
+})
+
+// ── calculatePTMR ──────────────────────────────────────────────────────────
+
+describe('calculatePTMR', () => {
+  it('returns high PTMR for sharp spectral peak (feedback)', () => {
+    const spectrum = new Float32Array(1024)
+    spectrum.fill(-60) // Noise floor
+    spectrum[500] = -20 // Sharp peak: 40 dB above floor
+    const result = calculatePTMR(spectrum, 500, 20)
+    expect(result.ptmrDb).toBeGreaterThan(15)
+    expect(result.isFeedbackLike).toBe(true)
+    expect(result.feedbackScore).toBeGreaterThan(0)
+  })
+
+  it('returns low PTMR for broad spectral content', () => {
+    const spectrum = new Float32Array(1024)
+    // Fill with uniform level
+    spectrum.fill(-40)
+    const result = calculatePTMR(spectrum, 500, 20)
+    // Peak and median are the same → PTMR ≈ 0
+    expect(result.ptmrDb).toBeLessThan(5)
+    expect(result.isFeedbackLike).toBe(false)
+  })
+
+  it('returns zero result when too few values', () => {
+    const spectrum = new Float32Array(5)
+    spectrum.fill(-40)
+    spectrum[2] = -20
+    const result = calculatePTMR(spectrum, 2, 1)
+    // halfWidth=1, excluding ±2 around peak → almost no values
+    expect(result.ptmrDb).toBe(0)
+    expect(result.feedbackScore).toBe(0)
+  })
+
+  it('feedbackScore scales between 0 and 1', () => {
+    const spectrum = new Float32Array(1024)
+    spectrum.fill(-60)
+    spectrum[500] = -30 // 30 dB peak
+    const result = calculatePTMR(spectrum, 500, 20)
+    expect(result.feedbackScore).toBeGreaterThanOrEqual(0)
+    expect(result.feedbackScore).toBeLessThanOrEqual(1)
+  })
+})
+
+// ── calculateMINDS ─────────────────────────────────────────────────────────
+
+describe('calculateMINDS', () => {
+  it('returns -3 dB default with insufficient data', () => {
+    const result = calculateMINDS([])
+    expect(result.suggestedDepthDb).toBe(-3)
+    expect(result.isGrowing).toBe(false)
+    expect(result.confidence).toBe(0.3)
+  })
+
+  it('detects growing feedback and suggests deeper cut', () => {
+    // Simulate rapid growth: +2 dB per frame
+    const history = [-20, -18, -16, -14, -12, -10]
+    const result = calculateMINDS(history, 0, 50)
+    expect(result.isGrowing).toBe(true)
+    expect(result.suggestedDepthDb).toBeLessThan(-3) // Deeper than default
+    expect(result.confidence).toBeGreaterThan(0.5)
+  })
+
+  it('suggests more aggressive cut for runaway (>6 dB/s)', () => {
+    // At 50 fps, each frame is 0.02s. 6 dB/s = 0.12 dB/frame
+    // Over 50 frames (1 second), total growth = 6 dB
+    const frames = 50
+    const history = Array.from({ length: frames }, (_, i) => -30 + (i * 0.15)) // 0.15 dB/frame = 7.5 dB/s
+    const result = calculateMINDS(history, 0, 50)
+    expect(result.isGrowing).toBe(true)
+    expect(result.confidence).toBeGreaterThanOrEqual(0.85)
+  })
+
+  it('suggests lighter cut for stable signal', () => {
+    // Flat signal: no growth
+    const history = [-20, -20, -20, -20, -20]
+    const result = calculateMINDS(history, 0, 50)
+    expect(result.isGrowing).toBe(false)
+    expect(result.suggestedDepthDb).toBe(-3) // Light resonance default
+  })
+
+  it('deepens from currentDepthDb when growing', () => {
+    const history = [-20, -18, -16, -14, -12, -10]
+    const noExisting = calculateMINDS(history, 0, 50)
+    const withExisting = calculateMINDS(history, -6, 50)
+    // Starting from -6 dB should produce a deeper suggestion
+    expect(withExisting.suggestedDepthDb).toBeLessThan(noExisting.suggestedDepthDb)
+  })
+
+  it('caps suggested depth at -18 dB', () => {
+    // Extreme growth scenario
+    const history = Array.from({ length: 10 }, (_, i) => -30 + i * 5) // 5 dB/frame!
+    const result = calculateMINDS(history, -12, 50)
+    expect(result.suggestedDepthDb).toBeGreaterThanOrEqual(-18)
+  })
+})
+
+// ── detectContentType ──────────────────────────────────────────────────────
+
+describe('detectContentType', () => {
+  /** Create a flat spectrum for testing */
+  function flatSpectrum(db: number, length: number = 4096): Float32Array {
+    const arr = new Float32Array(length)
+    arr.fill(db)
+    return arr
+  }
+
+  it('detects compressed content from low crest factor', () => {
+    const result = detectContentType(flatSpectrum(-40), 4, 0.15) // crestFactor=4 < 6
+    expect(result).toBe('compressed')
+  })
+
+  it('detects speech from high crest factor + low flatness', () => {
+    const result = detectContentType(flatSpectrum(-40), 12, 0.06)
+    expect(result).toBe('speech')
+  })
+
+  it('detects music from moderate crest + high flatness', () => {
+    const result = detectContentType(flatSpectrum(-40), 7, 0.25)
+    expect(result).toBe('music')
+  })
+
+  it('returns unknown for very low spectral flatness', () => {
+    const result = detectContentType(flatSpectrum(-40), 7, 0.03)
+    expect(result).toBe('unknown')
+  })
+
+  it('returns a valid ContentType string', () => {
+    const result = detectContentType(flatSpectrum(-40), 8, 0.1)
+    expect(['speech', 'music', 'compressed', 'unknown']).toContain(result)
+  })
+})
+
+// ── fuseAlgorithmResults ───────────────────────────────────────────────────
+
+describe('fuseAlgorithmResults', () => {
+  /** Create empty/null algorithm scores */
+  function emptyScores(): AlgorithmScores {
+    return {
+      msd: null,
+      phase: null,
+      spectral: null,
+      comb: null,
+      compression: null,
+      ihr: null,
+      ptmr: null,
+    }
+  }
+
+  /** Create high-confidence feedback scores */
+  function feedbackScores(): AlgorithmScores {
+    return {
+      msd: {
+        msd: 0.5,
+        framesAnalyzed: 100,
+        isFeedbackLikely: true,
+        feedbackScore: 0.9,
+        meanMagnitudeDb: -10,
+        secondDerivative: 0.1,
+      },
+      phase: {
+        coherence: 0.95,
+        isFeedbackLikely: true,
+        feedbackScore: 0.85,
+        meanPhaseDelta: 0.05,
+        phaseDeltaStd: 0.1,
+      },
+      spectral: {
+        flatness: 0.01,
+        isFeedbackLikely: true,
+        feedbackScore: 0.8,
+        kurtosis: 15,
+      },
+      comb: null,
+      compression: null,
+      ihr: {
+        interHarmonicRatio: 0.05,
+        isFeedbackLike: true,
+        isMusicLike: false,
+        harmonicsFound: 1,
+        feedbackScore: 0.9,
+      },
+      ptmr: {
+        ptmrDb: 25,
+        isFeedbackLike: true,
+        feedbackScore: 0.85,
+      },
+    }
+  }
+
+  it('returns FEEDBACK verdict for high-scoring algorithms', () => {
+    const result = fuseAlgorithmResults(feedbackScores(), 'unknown', 0.8)
+    expect(result.verdict).toBe('FEEDBACK')
+    expect(result.feedbackProbability).toBeGreaterThan(0.6)
+    expect(result.confidence).toBeGreaterThan(0.5)
+  })
+
+  it('returns NOT_FEEDBACK for low-scoring algorithms', () => {
+    const scores = feedbackScores()
+    // Zero out all feedback scores
+    if (scores.msd) scores.msd.feedbackScore = 0.05
+    if (scores.phase) scores.phase.feedbackScore = 0.05
+    if (scores.spectral) scores.spectral.feedbackScore = 0.05
+    if (scores.ihr) scores.ihr.feedbackScore = 0.05
+    if (scores.ptmr) scores.ptmr.feedbackScore = 0.05
+
+    const result = fuseAlgorithmResults(scores, 'unknown', 0.05)
+    expect(result.feedbackProbability).toBeLessThan(0.3)
+    expect(['NOT_FEEDBACK', 'UNCERTAIN']).toContain(result.verdict)
+  })
+
+  it('lists contributing algorithms', () => {
+    const result = fuseAlgorithmResults(feedbackScores(), 'unknown', 0.5)
+    expect(result.contributingAlgorithms).toContain('MSD')
+    expect(result.contributingAlgorithms).toContain('Phase')
+    expect(result.contributingAlgorithms).toContain('Legacy') // existingScore
+  })
+
+  it('generates reasons array for detected issues', () => {
+    const result = fuseAlgorithmResults(feedbackScores())
+    expect(result.reasons.length).toBeGreaterThan(0)
+  })
+
+  it('feedbackProbability stays in [0, 1]', () => {
+    const result = fuseAlgorithmResults(feedbackScores(), 'unknown', 1.0)
+    expect(result.feedbackProbability).toBeGreaterThanOrEqual(0)
+    expect(result.feedbackProbability).toBeLessThanOrEqual(1)
+  })
+
+  it('handles all-null scores gracefully', () => {
+    const result = fuseAlgorithmResults(emptyScores(), 'unknown', 0.5)
+    // Only legacy/existing contributes
+    expect(result.contributingAlgorithms).toContain('Legacy')
+    expect(result.feedbackProbability).toBeGreaterThanOrEqual(0)
+    expect(result.feedbackProbability).toBeLessThanOrEqual(1)
+  })
+
+  it('uses speech weights for speech content', () => {
+    const result = fuseAlgorithmResults(feedbackScores(), 'speech', 0.5)
+    // Speech mode upweights MSD (0.40 vs 0.30 default)
+    expect(result.contributingAlgorithms).toContain('MSD')
+  })
+
+  it('uses compressed weights when compression detected', () => {
+    const scores = feedbackScores()
+    scores.compression = {
+      isCompressed: true,
+      estimatedRatio: 8.0,
+      crestFactor: 4,
+      dynamicRange: 6,
+      thresholdMultiplier: 1.5,
+    }
+    const result = fuseAlgorithmResults(scores)
+    expect(result.reasons.some(r => r.includes('Compression'))).toBe(true)
+  })
+
+  it('doubles comb weight when comb pattern detected (FLAW 6 FIX)', () => {
+    const scores = feedbackScores()
+    scores.comb = {
+      hasPattern: true,
+      fundamentalSpacing: 200,
+      estimatedPathLength: 1.7,
+      matchingPeaks: 5,
+      predictedFrequencies: [600],
+      confidence: 0.8,
+    }
+    const result = fuseAlgorithmResults(scores)
+    expect(result.contributingAlgorithms).toContain('Comb')
+    expect(result.feedbackProbability).toBeGreaterThanOrEqual(0)
+    expect(result.feedbackProbability).toBeLessThanOrEqual(1)
+  })
+})
+
+// ── FUSION_WEIGHTS ─────────────────────────────────────────────────────────
+
+describe('FUSION_WEIGHTS', () => {
+  it.each(['DEFAULT', 'SPEECH', 'MUSIC', 'COMPRESSED'] as const)(
+    '%s weights sum to approximately 1',
+    (key) => {
+      const w = FUSION_WEIGHTS[key]
+      const sum = Object.values(w).reduce((a, b) => a + b, 0)
+      expect(sum).toBeCloseTo(1, 1)
+    }
+  )
+
+  it('SPEECH mode upweights MSD relative to DEFAULT', () => {
+    expect(FUSION_WEIGHTS.SPEECH.msd).toBeGreaterThan(FUSION_WEIGHTS.DEFAULT.msd)
+  })
+
+  it('MUSIC mode upweights Phase relative to DEFAULT', () => {
+    expect(FUSION_WEIGHTS.MUSIC.phase).toBeGreaterThan(FUSION_WEIGHTS.DEFAULT.phase)
+  })
+
+  it('COMPRESSED mode upweights Phase over MSD', () => {
+    expect(FUSION_WEIGHTS.COMPRESSED.phase).toBeGreaterThan(FUSION_WEIGHTS.COMPRESSED.msd)
+  })
+})

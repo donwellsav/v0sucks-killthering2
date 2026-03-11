@@ -148,7 +148,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
     const spectrumChanged = spectrum !== lastSpectrumRef.current
     if (!spectrumChanged && !dirtyRef.current) return
     lastSpectrumRef.current = spectrum
-    dirtyRef.current = false // eslint-disable-line react-hooks/immutability -- rAF dirty-bit optimization
+    dirtyRef.current = false
 
     const canvas = canvasRef.current
     if (!canvas) return
@@ -289,9 +289,7 @@ export const SpectrumCanvas = memo(function SpectrumCanvas({ spectrumRef, adviso
   useAnimationFrame(render, isRunning || hasEverStarted, canvasTargetFps)
 
   // Mark dirty when display props change (triggers redraw on next rAF tick)
-  // eslint-disable-next-line react-hooks/immutability -- rAF dirty-bit optimization
   useEffect(() => { dirtyRef.current = true }, [graphFontSize, earlyWarning, rtaDbMinProp, rtaDbMaxProp, spectrumLineWidthProp, showThresholdLine, feedbackThresholdDb])
-  // eslint-disable-next-line react-hooks/immutability -- rAF dirty-bit optimization
   useEffect(() => { dirtyRef.current = true }, [advisories, clearedIds])
 
   // Pointer event handlers for dragging frequency range lines

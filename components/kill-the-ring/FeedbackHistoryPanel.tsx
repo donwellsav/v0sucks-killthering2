@@ -36,7 +36,6 @@ export const FeedbackHistoryPanel = memo(function FeedbackHistoryPanel() {
 
   useEffect(() => {
     if (isOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load data on open
       refreshData()
       // Also set up interval to refresh while open
       const interval = setInterval(refreshData, 2000)

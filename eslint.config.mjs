@@ -9,14 +9,20 @@ const eslintConfig = [
   ...coreWebVitals,
   ...typescript,
   {
-    ignores: ['.claude/**'],
+    ignores: ['.claude/**', 'public/**'],
   },
   {
     rules: {
       'no-console': 'warn',
       'prefer-const': 'error',
       '@typescript-eslint/consistent-type-imports': ['warn', { prefer: 'type-imports' }],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'error',
+      // React 19 experimental rules — downgrade from error (eslint-config-next default)
+      // to warn. These flag legitimate patterns: setState in effects for browser-API
+      // synchronization, "latest ref" pattern, and Date.now() in render paths.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/purity': 'warn',
     },
   },
 ]

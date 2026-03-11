@@ -54,6 +54,7 @@ export const OnboardingOverlay = memo(function OnboardingOverlay() {
     // Only show on first visit
     try {
       if (!localStorage.getItem(STORAGE_KEY)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init from localStorage
         setVisible(true)
       }
     } catch {

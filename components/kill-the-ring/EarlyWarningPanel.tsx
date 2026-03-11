@@ -25,6 +25,7 @@ export const EarlyWarningPanel = memo(function EarlyWarningPanel({ earlyWarning 
       setElapsedSec(Math.round((Date.now() - timestampRef.current) / 1000))
     }, 1000)
     return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when timestamp changes, not on earlyWarning object identity
   }, [earlyWarning?.timestamp])
 
   if (!earlyWarning || earlyWarning.predictedFrequencies.length === 0) return null

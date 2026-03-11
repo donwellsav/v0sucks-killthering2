@@ -28,28 +28,28 @@ interface IssuesListProps {
 }
 
 export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10, dismissedIds, onDismiss, onClearAll, onClearResolved, touchFriendly, isRunning, onStart, onFalsePositive, falsePositiveIds }: IssuesListProps) {
-  // Filter dismissed, sort repeat offenders to top by hit count, then slice to max
+  // Filter dismissed, sort repeat offenders to top by hit count, then slice to max.
+  // We attach occurrenceCount here so IssueCard doesn't need to re-query feedbackHistory.
   const sorted = useMemo(() => {
     const history = getFeedbackHistory()
     return [...advisories]
       .filter((a) => !dismissedIds?.has(a.id))
+      .map((a) => ({ advisory: a, occurrenceCount: history.getOccurrenceCount(a.trueFrequencyHz) }))
       .sort((a, b) => {
         // 1. Active before resolved
-        if (a.resolved !== b.resolved) return a.resolved ? 1 : -1
+        if (a.advisory.resolved !== b.advisory.resolved) return a.advisory.resolved ? 1 : -1
         // 2. Repeat offenders (3+) float to top, sorted by count desc
-        const aCount = history.getOccurrenceCount(a.trueFrequencyHz)
-        const bCount = history.getOccurrenceCount(b.trueFrequencyHz)
-        const aRepeat = aCount >= 3
-        const bRepeat = bCount >= 3
+        const aRepeat = a.occurrenceCount >= 3
+        const bRepeat = b.occurrenceCount >= 3
         if (aRepeat !== bRepeat) return aRepeat ? -1 : 1
-        if (aRepeat && bRepeat) return bCount - aCount
+        if (aRepeat && bRepeat) return b.occurrenceCount - a.occurrenceCount
         // 3. Non-repeaters: frequency ascending
-        return (a.trueFrequencyHz ?? 0) - (b.trueFrequencyHz ?? 0)
+        return (a.advisory.trueFrequencyHz ?? 0) - (b.advisory.trueFrequencyHz ?? 0)
       })
       .slice(0, maxIssues)
   }, [advisories, dismissedIds, maxIssues])
 
-  const hasResolved = sorted.some(a => a.resolved)
+  const hasResolved = sorted.some(s => s.advisory.resolved)
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -108,10 +108,11 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
               )}
             </div>
           )}
-          {sorted.map((advisory) => (
+          {sorted.map(({ advisory, occurrenceCount }) => (
             <IssueCard
               key={advisory.id}
               advisory={advisory}
+              occurrenceCount={occurrenceCount}
               onDismiss={onDismiss}
               touchFriendly={touchFriendly}
               onFalsePositive={onFalsePositive}
@@ -126,43 +127,49 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
 
 interface IssueCardProps {
   advisory: Advisory
+  occurrenceCount: number
   onDismiss?: (id: string) => void
   touchFriendly?: boolean
   onFalsePositive?: (advisoryId: string) => void
   isFalsePositive?: boolean
 }
 
-const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly, onFalsePositive, isFalsePositive }: IssueCardProps) {
-  const occurrenceCount = useMemo(
-    () => getFeedbackHistory().getOccurrenceCount(advisory.trueFrequencyHz),
-    [advisory.trueFrequencyHz]
-  )
-  const severityColor = getSeverityColor(advisory.severity)
-  const pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : null
-  const exactFreqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
+const IssueCard = memo(function IssueCard({ advisory, occurrenceCount, onDismiss, touchFriendly, onFalsePositive, isFalsePositive }: IssueCardProps) {
+  // Memoize derived values that only change when the advisory object changes
+  const {
+    severityColor, pitchStr, exactFreqStr, geq, peq, bandHz,
+    velocity, isRunaway, isWarning, isResolved, hasEq, timeToClipStr,
+  } = useMemo(() => {
+    const _severityColor = getSeverityColor(advisory.severity)
+    const _pitchStr = advisory.advisory?.pitch ? formatPitch(advisory.advisory.pitch) : null
+    const _exactFreqStr = advisory.trueFrequencyHz != null ? formatFrequency(advisory.trueFrequencyHz) : '---'
+    const _geq = advisory.advisory?.geq
+    const _peq = advisory.advisory?.peq
+    const _velocity = advisory.velocityDbPerSec ?? 0
+    const _isRunaway = _velocity >= RUNAWAY_VELOCITY_THRESHOLD || advisory.isRunaway
+    const _isWarning = _velocity >= WARNING_VELOCITY_THRESHOLD && !_isRunaway
+    const _isResolved = advisory.resolved === true
+    const _hasEq = !!(_geq && _peq)
+    const _timeToClipMs = advisory.predictedTimeToClipMs ?? (
+      _velocity > 0 && advisory.trueAmplitudeDb < 0
+        ? ((0 - advisory.trueAmplitudeDb) / _velocity) * 1000
+        : null
+    )
+    const _timeToClipStr = _timeToClipMs != null && _timeToClipMs < 5000
+      ? `~${(_timeToClipMs / 1000).toFixed(1)}s`
+      : null
+    return {
+      severityColor: _severityColor, pitchStr: _pitchStr, exactFreqStr: _exactFreqStr,
+      geq: _geq, peq: _peq, bandHz: _geq?.bandHz,
+      velocity: _velocity, isRunaway: _isRunaway, isWarning: _isWarning,
+      isResolved: _isResolved, hasEq: _hasEq, timeToClipStr: _timeToClipStr,
+    }
+  }, [advisory])
 
-  // Issue age: how long this advisory has been active
+  // Age display — refreshes naturally on advisory updates (~10Hz)
+  // eslint-disable-next-line react-hooks/purity -- benign: Date.now() in render is intentional for live age display
   const ageSec = Math.max(0, Math.round((Date.now() - advisory.timestamp) / 1000))
   const ageStr = ageSec < 5 ? 'just now' : ageSec < 60 ? `${ageSec}s` : `${Math.floor(ageSec / 60)}m`
-
-  const geq = advisory.advisory?.geq
-  const peq = advisory.advisory?.peq
-  const bandHz = geq?.bandHz
-
-  const velocity = advisory.velocityDbPerSec ?? 0
-  const isRunaway = velocity >= RUNAWAY_VELOCITY_THRESHOLD || advisory.isRunaway
-  const isWarning = velocity >= WARNING_VELOCITY_THRESHOLD && !isRunaway
-  const isResolved = advisory.resolved === true
-  const hasEq = !!(geq && peq)
-
-  const timeToClipMs = advisory.predictedTimeToClipMs ?? (
-    velocity > 0 && advisory.trueAmplitudeDb < 0
-      ? ((0 - advisory.trueAmplitudeDb) / velocity) * 1000
-      : null
-  )
-  const timeToClipStr = timeToClipMs != null && timeToClipMs < 5000
-    ? `~${(timeToClipMs / 1000).toFixed(1)}s`
-    : null
 
   // Copy-to-clipboard state
   const [copied, setCopied] = useState(false)
@@ -185,13 +192,16 @@ const IssueCard = memo(function IssueCard({ advisory, onDismiss, touchFriendly, 
   }, [exactFreqStr, pitchStr, hasEq, geq, peq])
 
   // Build tooltip detail string for niche metadata
-  const detailParts: string[] = []
-  if (advisory.modalOverlapFactor != null && advisory.modalOverlapFactor < 0.3)
-    detailParts.push(`Modal overlap: ${advisory.modalOverlapFactor.toFixed(2)} (isolated)`)
-  if (advisory.cumulativeGrowthDb != null && advisory.cumulativeGrowthDb > 3)
-    detailParts.push(`Buildup: +${advisory.cumulativeGrowthDb.toFixed(1)}dB`)
-  if (advisory.frequencyBand)
-    detailParts.push(`Band: ${advisory.frequencyBand}`)
+  const detailParts = useMemo(() => {
+    const parts: string[] = []
+    if (advisory.modalOverlapFactor != null && advisory.modalOverlapFactor < 0.3)
+      parts.push(`Modal overlap: ${advisory.modalOverlapFactor.toFixed(2)} (isolated)`)
+    if (advisory.cumulativeGrowthDb != null && advisory.cumulativeGrowthDb > 3)
+      parts.push(`Buildup: +${advisory.cumulativeGrowthDb.toFixed(1)}dB`)
+    if (advisory.frequencyBand)
+      parts.push(`Band: ${advisory.frequencyBand}`)
+    return parts
+  }, [advisory.modalOverlapFactor, advisory.cumulativeGrowthDb, advisory.frequencyBand])
 
   return (
     <div

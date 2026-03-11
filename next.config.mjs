@@ -12,7 +12,23 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === "development",
 });
 
+const isDev = process.env.NODE_ENV === 'development'
+
+// CSP: restrictive baseline, loosened only where the audio pipeline requires it.
+// 'unsafe-eval' is dev-only (webpack eval source maps); production strips it.
+const cspValue = [
+  "default-src 'self'",
+  isDev ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'" : "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "worker-src 'self' blob:",
+  isDev ? "connect-src 'self' ws:" : "connect-src 'self'",
+  "img-src 'self' data: blob:",
+  "media-src 'self' blob: mediastream:",
+  "font-src 'self'",
+].join('; ')
+
 const securityHeaders = [
+  { key: 'Content-Security-Policy', value: cspValue },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

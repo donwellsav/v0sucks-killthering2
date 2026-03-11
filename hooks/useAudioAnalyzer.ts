@@ -1,10 +1,11 @@
 // KillTheRing2 React Hook - Manages audio analyzer lifecycle
 // DSP post-processing (classification, EQ advisory) runs in a Web Worker via useDSPWorker.
+// Advisory state management (Map, sorting, dedup) delegated to useAdvisoryMap.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AudioAnalyzer, createAudioAnalyzer } from '@/lib/audio/createAudioAnalyzer'
 import { useDSPWorker, type DSPWorkerCallbacks } from './useDSPWorker'
-import { getSeverityUrgency } from '@/lib/dsp/classifier'
+import { useAdvisoryMap } from './useAdvisoryMap'
 import type {
   Advisory,
   AlgorithmMode,
@@ -77,6 +78,9 @@ export interface UseAudioAnalyzerReturn extends UseAudioAnalyzerState {
   tracksRef: React.RefObject<TrackedPeak[]>
 }
 
+/** Internal state — advisories owned by useAdvisoryMap */
+type InternalAnalyzerState = Omit<UseAudioAnalyzerState, 'advisories'>
+
 export function useAudioAnalyzer(
   initialSettings: Partial<DetectorSettings> = {}
 ): UseAudioAnalyzerReturn {
@@ -85,7 +89,18 @@ export function useAudioAnalyzer(
     ...initialSettings,
   }))
 
-  const [state, setState] = useState<UseAudioAnalyzerState>({
+  const settingsRef = useRef(settings)
+
+  // Keep settings ref in sync
+  useEffect(() => {
+    settingsRef.current = settings
+  }, [settings])
+
+  // ── Advisory state (Map, sorting, dedup) — extracted hook ──────────────────
+  const { advisories, onAdvisory, onAdvisoryCleared, clearMap } = useAdvisoryMap(settingsRef)
+
+  // ── Internal state (everything except advisories) ─────────────────────────
+  const [state, setState] = useState<InternalAnalyzerState>({
     isRunning: false,
     isStarting: false,
     hasPermission: false,
@@ -95,101 +110,23 @@ export function useAudioAnalyzer(
     sampleRate: 48000,
     fftSize: settings.fftSize,
     spectrumStatus: null,
-    advisories: [],
     earlyWarning: null,
   })
 
   const analyzerRef = useRef<AudioAnalyzer | null>(null)
-  const settingsRef = useRef(settings)
 
   // Hot-path refs: written every frame, read imperatively by canvas
   const spectrumRef = useRef<SpectrumData | null>(null)
   const tracksRef = useRef<TrackedPeak[]>([])
   // Throttle timestamp for React state updates (~4fps)
   const lastStatusUpdateRef = useRef(0)
-  
-  // Keep settings ref in sync
-  useEffect(() => {
-    settingsRef.current = settings
-  }, [settings])
 
   // ── DSP Worker callbacks — stable refs, never change identity ───────────────
-  // These refs forward to the latest closure values without causing re-renders
-
-  // Advisory Map: O(1) ID lookup instead of findIndex scans per advisory update
-  const advisoryMapRef = useRef<Map<string, Advisory>>(new Map())
-  const advisorySortedCacheRef = useRef<Advisory[]>([])
-  const advisoryDirtyRef = useRef(false)
-
-  const buildSortedAdvisories = useCallback(() => {
-    const maxIssues = settingsRef.current.maxDisplayedIssues
-    const sorted = Array.from(advisoryMapRef.current.values())
-      .sort((a, b) => {
-        // Active cards always above resolved
-        if (a.resolved !== b.resolved) return a.resolved ? 1 : -1
-        const urgencyA = getSeverityUrgency(a.severity)
-        const urgencyB = getSeverityUrgency(b.severity)
-        if (urgencyA !== urgencyB) return urgencyB - urgencyA
-        return b.trueAmplitudeDb - a.trueAmplitudeDb
-      })
-      .slice(0, maxIssues)
-    advisorySortedCacheRef.current = sorted
-    advisoryDirtyRef.current = false
-    return sorted
-  }, [])
-
-  const onAdvisoryRef = useRef<(a: Advisory) => void>(() => {})
-
-  onAdvisoryRef.current = (advisory) => {
-    const map = advisoryMapRef.current
-
-    if (map.has(advisory.id)) {
-      // O(1) — same track updating
-      map.set(advisory.id, advisory)
-    } else {
-      // Frequency-proximity dedup (100 cents = 1 semitone, matches worker)
-      // Prevents duplicate cards when a peak is cleared then re-detected
-      // with a new track/advisory ID at the same frequency.
-      let replacedKey: string | null = null
-      for (const [key, existing] of map) {
-        const cents = Math.abs(1200 * Math.log2(advisory.trueFrequencyHz / existing.trueFrequencyHz))
-        if (cents <= 100) {
-          replacedKey = key
-          break
-        }
-      }
-      if (replacedKey) {
-        map.delete(replacedKey)
-      }
-      map.set(advisory.id, advisory)
-      advisoryDirtyRef.current = true // New entry — needs re-sort
-    }
-
-    // Only rebuild sorted array when structure changed; for updates, just refresh cache
-    const sorted = advisoryDirtyRef.current
-      ? buildSortedAdvisories()
-      : advisorySortedCacheRef.current.map(a => a.id === advisory.id ? advisory : a)
-
-    if (!advisoryDirtyRef.current) {
-      advisorySortedCacheRef.current = sorted
-    }
-
-    setState(prev => ({ ...prev, advisories: sorted }))
-  }
 
   // Stable callbacks object — created once, never triggers re-renders
   const stableCallbacks = useRef<DSPWorkerCallbacks>({
-    onAdvisory: (advisory) => onAdvisoryRef.current(advisory),
-    onAdvisoryCleared: (advisoryId) => {
-      const map = advisoryMapRef.current
-      const existing = map.get(advisoryId)
-      if (!existing || existing.resolved) return
-      const resolved = { ...existing, resolved: true, resolvedAt: Date.now() }
-      map.set(advisoryId, resolved)
-      advisoryDirtyRef.current = true // resolved status changes sort order
-      const sorted = buildSortedAdvisories()
-      setState(prev => ({ ...prev, advisories: sorted }))
-    },
+    onAdvisory,
+    onAdvisoryCleared,
     onTracksUpdate: (tracks) => { tracksRef.current = tracks },
     onReady: () => {
       // Worker (re)started successfully — clear any crash warning
@@ -300,10 +237,8 @@ export function useAudioAnalyzer(
     try {
       // Clear previous advisories + worker state when starting fresh analysis
       tracksRef.current = []
-      advisoryMapRef.current.clear()
-      advisorySortedCacheRef.current = []
-      advisoryDirtyRef.current = false
-      setState(prev => ({ ...prev, isStarting: true, advisories: [], earlyWarning: null }))
+      clearMap()
+      setState(prev => ({ ...prev, isStarting: true, earlyWarning: null }))
       dspWorkerRef.current.reset()
 
       await analyzerRef.current.start({ deviceId: deviceId || undefined })
@@ -331,7 +266,7 @@ export function useAudioAnalyzer(
         hasPermission: false,
       }))
     }
-  }, []) // all deps accessed via stable refs
+  }, [clearMap]) // clearMap is stable (useCallback with [] deps)
 
   const stop = useCallback(() => {
     if (!analyzerRef.current) return
@@ -367,6 +302,7 @@ export function useAudioAnalyzer(
 
   return {
     ...state,
+    advisories,
     settings,
     start,
     stop,

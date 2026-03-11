@@ -1,6 +1,6 @@
 'use client'
 
-import React, { memo, useCallback, useState, useMemo } from 'react'
+import React, { memo, useCallback, useState } from 'react'
 import { HelpCircle, Save, Trash2 } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Switch } from '@/components/ui/switch'
@@ -76,11 +76,9 @@ export const DetectionControls = memo(function DetectionControls({ settings, onM
   const handleSavePreset = useCallback(() => {
     const name = presetName.trim()
     if (!name) return
-    const snap: Partial<DetectorSettings> = {}
-    for (const key of PRESET_KEYS) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(snap as any)[key] = settings[key]
-    }
+    const snap = Object.fromEntries(
+      PRESET_KEYS.map(key => [key, settings[key]])
+    ) as Partial<DetectorSettings>
     const updated = [...customPresets.filter(p => p.name !== name), { name, settings: snap }].slice(-MAX_CUSTOM_PRESETS)
     setCustomPresets(updated)
     saveCustomPresets(updated)

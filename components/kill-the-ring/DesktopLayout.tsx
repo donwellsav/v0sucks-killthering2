@@ -8,35 +8,23 @@ import { GEQBarView } from './GEQBarView'
 import { DetectionControls } from './DetectionControls'
 import { AlgorithmStatusBar } from './AlgorithmStatusBar'
 import { VerticalGainFader } from './VerticalGainFader'
+import { useAudioState } from '@/contexts/AudioStateContext'
+import { useDetection } from '@/contexts/DetectionContext'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AlertTriangle, PanelLeftClose, Columns2 } from 'lucide-react'
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
-import type { Advisory, DetectorSettings, OperationMode, SpectrumData } from '@/types/advisory'
-import type { SpectrumStatus, EarlyWarning } from '@/hooks/useAudioAnalyzer'
+import type { DetectorSettings, OperationMode } from '@/types/advisory'
+import type { SpectrumStatus } from '@/hooks/useAudioAnalyzer'
 
 interface DesktopLayoutProps {
   layoutKey: number
-  isRunning: boolean
-  isStarting: boolean
-  error: string | null
-  start: () => void
-  stop: () => void
-  isFrozen: boolean
-  toggleFreeze: () => void
-  advisories: Advisory[]
-  activeAdvisoryCount: number
   settings: DetectorSettings
   onSettingsChange: (s: Partial<DetectorSettings>) => void
   onModeChange: (mode: OperationMode) => void
-  spectrumRef: React.RefObject<SpectrumData | null>
   spectrumStatus: SpectrumStatus | null
-  earlyWarning: EarlyWarning | null
   noiseFloorDb: number | null
-  dismissedIds: Set<string>
-  onDismiss: (id: string) => void
-  onClearAll: () => void
   issuesPanelOpen: boolean
   issuesPanelRef: React.RefObject<ImperativePanelHandle | null>
   activeSidebarTab: 'issues' | 'controls'
@@ -44,39 +32,36 @@ interface DesktopLayoutProps {
   openIssuesPanel: () => void
   closeIssuesPanel: () => void
   setIssuesPanelOpen: (open: boolean) => void
-  rtaClearedIds: Set<string>
-  geqClearedIds: Set<string>
-  hasActiveRTAMarkers: boolean
-  hasActiveGEQBars: boolean
-  onClearRTA: () => void
-  onClearGEQ: () => void
   onFreqRangeChange: (min: number, max: number) => void
-  inputLevel: number
-  isAutoGain: boolean
-  autoGainDb: number | undefined
-  autoGainLocked: boolean
   actualFps?: number
   droppedPercent?: number
-  onFalsePositive?: (advisoryId: string) => void
-  falsePositiveIds?: ReadonlySet<string>
 }
 
 export const DesktopLayout = memo(function DesktopLayout({
-  layoutKey, isRunning, isStarting, error, start, stop, isFrozen, toggleFreeze,
-  advisories, activeAdvisoryCount,
+  layoutKey,
   settings, onSettingsChange, onModeChange,
-  spectrumRef, spectrumStatus, earlyWarning, noiseFloorDb,
-  dismissedIds, onDismiss, onClearAll,
+  spectrumStatus, noiseFloorDb,
   issuesPanelOpen, issuesPanelRef,
   activeSidebarTab, setActiveSidebarTab,
   openIssuesPanel, closeIssuesPanel, setIssuesPanelOpen,
-  rtaClearedIds, geqClearedIds,
-  hasActiveRTAMarkers, hasActiveGEQBars,
-  onClearRTA, onClearGEQ, onFreqRangeChange,
-  inputLevel, isAutoGain, autoGainDb, autoGainLocked,
+  onFreqRangeChange,
   actualFps, droppedPercent,
-  onFalsePositive, falsePositiveIds,
 }: DesktopLayoutProps) {
+  const {
+    isRunning, isStarting, error, start, stop,
+    isFrozen, toggleFreeze,
+    spectrumRef,
+    inputLevel, isAutoGain, autoGainDb, autoGainLocked,
+  } = useAudioState()
+
+  const {
+    advisories, activeAdvisoryCount, earlyWarning,
+    dismissedIds, onDismiss, onClearAll,
+    rtaClearedIds, geqClearedIds,
+    hasActiveRTAMarkers, hasActiveGEQBars,
+    onClearRTA, onClearGEQ,
+    onFalsePositive, falsePositiveIds,
+  } = useDetection()
   return (
     <div className="hidden landscape:flex flex-1 overflow-hidden">
       <ResizablePanelGroup key={layoutKey} direction="horizontal" autoSaveId="ktr-layout-main-v4">

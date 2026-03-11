@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, useMemo, memo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo, memo, lazy, Suspense } from 'react'
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer'
 import { useAudioDevices } from '@/hooks/useAudioDevices'
 import { useAdvisoryLogging } from '@/hooks/useAdvisoryLogging'
@@ -10,8 +10,11 @@ import { useCalibrationSession } from '@/hooks/useCalibrationSession'
 import { HeaderBar } from './HeaderBar'
 import { MobileLayout } from './MobileLayout'
 import { DesktopLayout } from './DesktopLayout'
-import { OnboardingOverlay } from './OnboardingOverlay'
 import { PortalContainerProvider } from '@/contexts/PortalContainerContext'
+
+const LazyOnboardingOverlay = lazy(() => import('./OnboardingOverlay').then(m => ({ default: m.OnboardingOverlay })))
+import { AudioStateProvider } from '@/contexts/AudioStateContext'
+import { DetectionProvider } from '@/contexts/DetectionContext'
 import type { OperationMode } from '@/types/advisory'
 import { OPERATION_MODES } from '@/lib/dsp/constants'
 import type { ImperativePanelHandle } from 'react-resizable-panels'
@@ -62,11 +65,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const { actualFps, droppedPercent } = useFpsMonitor(isRunning, settings.canvasTargetFps)
   const calibration = useCalibrationSession(spectrumRef, isRunning, settings)
 
-  const activeAdvisoryCount = useMemo(
-    () => advisories.filter(a => !a.resolved).length,
-    [advisories]
-  )
-
   const [mobileTab, setMobileTab] = useState<'issues' | 'graph' | 'settings'>('issues')
   const [activeSidebarTab, setActiveSidebarTab] = useState<'issues' | 'controls'>('controls')
   const [layoutKey, setLayoutKey] = useState(0)
@@ -79,8 +77,14 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   const [isErrorDismissed, setIsErrorDismissed] = useState(false)
   useEffect(() => { setIsErrorDismissed(false) }, [error])
 
-  // Fullscreen
+  // Fullscreen + portal container
+  // Callback ref syncs both: rootRef (for useFullscreen imperative API) + rootEl state (for render-time portal)
   const rootRef = useRef<HTMLDivElement>(null)
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null)
+  const rootCallbackRef = useCallback((node: HTMLDivElement | null) => {
+    rootRef.current = node
+    setRootEl(node)
+  }, [])
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(rootRef)
 
   // Wrap start to always pass the persisted device preference
@@ -95,7 +99,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   // Auto-unfreeze when stopping analysis
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset UI state on stop
     if (!isRunning) setIsFrozen(false)
   }, [isRunning])
 
@@ -119,74 +122,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isRunning, toggleFreeze, startWithDevice, stop])
-
-  // Dismissed advisory IDs — hidden until the advisory disappears and a new one is detected
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set())
-
-  const handleDismiss = useCallback((id: string) => {
-    setDismissedIds((prev) => new Set(prev).add(id))
-  }, [])
-
-  const handleClearAllIssues = useCallback(() => {
-    setDismissedIds(new Set(advisories.map(a => a.id)))
-  }, [advisories])
-
-  const handleClearResolvedIssues = useCallback(() => {
-    setDismissedIds(prev => {
-      const next = new Set(prev)
-      advisories.forEach(a => { if (a.resolved) next.add(a.id) })
-      return next
-    })
-  }, [advisories])
-
-  // GEQ-specific cleared IDs — independent from issue card dismissals
-  const [geqClearedIds, setGeqClearedIds] = useState<Set<string>>(new Set())
-
-  const handleClearGEQ = useCallback(() => {
-    setGeqClearedIds(new Set(advisories.map(a => a.id)))
-  }, [advisories])
-
-  // True when at least one advisory has a GEQ recommendation that hasn't been cleared
-  const hasActiveGEQBars = useMemo(() =>
-    advisories.some(a => !geqClearedIds.has(a.id) && a.advisory?.geq),
-    [advisories, geqClearedIds]
-  )
-
-  // RTA-specific cleared IDs — independent from issue cards and GEQ
-  const [rtaClearedIds, setRtaClearedIds] = useState<Set<string>>(new Set())
-
-  const handleClearRTA = useCallback(() => {
-    setRtaClearedIds(new Set(advisories.map(a => a.id)))
-  }, [advisories])
-
-  // True when at least one advisory hasn't been cleared from the RTA
-  const hasActiveRTAMarkers = useMemo(() =>
-    advisories.some(a => !rtaClearedIds.has(a.id)),
-    [advisories, rtaClearedIds]
-  )
-
-  // Auto-expire dismissed/cleared IDs once the advisory is no longer in the live list
-  useEffect(() => {
-    if (dismissedIds.size === 0 && geqClearedIds.size === 0 && rtaClearedIds.size === 0) return
-    const liveIds = new Set(advisories.map((a) => a.id))
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: prune stale IDs when advisories change
-    setDismissedIds((prev) => {
-      const next = new Set<string>()
-      prev.forEach((id) => { if (liveIds.has(id)) next.add(id) })
-      return next.size === prev.size ? prev : next
-    })
-    setGeqClearedIds((prev) => {
-      const next = new Set<string>()
-      prev.forEach((id) => { if (liveIds.has(id)) next.add(id) })
-      return next.size === prev.size ? prev : next
-    })
-    setRtaClearedIds((prev) => {
-      const next = new Set<string>()
-      prev.forEach((id) => { if (liveIds.has(id)) next.add(id) })
-      return next.size === prev.size ? prev : next
-    })
-  }, [advisories, dismissedIds.size, geqClearedIds.size, rtaClearedIds.size])
-
 
   // Auto music-aware: watch spectrumStatus.peak vs noise floor
   const autoMusicDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -312,8 +247,8 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   }), [calibration, spectrumRef, handleCalibrationExport])
 
   return (
-    <div ref={rootRef} className="flex flex-col h-screen bg-background">
-      <PortalContainerProvider value={isFullscreen ? rootRef.current : null}>
+    <div ref={rootCallbackRef} className="flex flex-col h-screen bg-background">
+      <PortalContainerProvider value={isFullscreen ? rootEl : null}>
       <HeaderBar
         isRunning={isRunning}
         start={startWithDevice}
@@ -380,88 +315,60 @@ export const KillTheRing = memo(function KillTheRingComponent() {
         </div>
       )}
 
-      <MobileLayout
-        mobileTab={mobileTab}
-        setMobileTab={setMobileTab}
+      <AudioStateProvider
         isRunning={isRunning}
         isStarting={isStarting}
         error={error}
-        start={startWithDevice}
-        isFrozen={isFrozen}
-        toggleFreeze={toggleFreeze}
-        advisories={advisories}
-        activeAdvisoryCount={activeAdvisoryCount}
-        settings={settings}
-        onSettingsChange={handleSettingsChange}
-        onModeChange={handleModeChange}
-        onReset={resetSettings}
-        dismissedIds={dismissedIds}
-        onDismiss={handleDismiss}
-        onClearAll={handleClearAllIssues}
-        onClearResolved={handleClearResolvedIssues}
-        spectrumRef={spectrumRef}
-        earlyWarning={earlyWarning}
         inputLevel={inputLevel}
         isAutoGain={isAutoGain}
         autoGainDb={autoGainDb}
         autoGainLocked={isAutoGainLocked}
-        rtaClearedIds={rtaClearedIds}
-        geqClearedIds={geqClearedIds}
-        hasActiveRTAMarkers={hasActiveRTAMarkers}
-        hasActiveGEQBars={hasActiveGEQBars}
-        onClearRTA={handleClearRTA}
-        onClearGEQ={handleClearGEQ}
-        onFreqRangeChange={handleFreqRangeChange}
-        onFalsePositive={calibration.calibrationEnabled ? calibration.onFalsePositive : undefined}
-        falsePositiveIds={calibration.calibrationEnabled ? calibration.falsePositiveIds : undefined}
-      />
-
-      <DesktopLayout
-        layoutKey={layoutKey}
-        isRunning={isRunning}
-        isStarting={isStarting}
-        error={error}
+        spectrumRef={spectrumRef}
+        isFrozen={isFrozen}
+        toggleFreeze={toggleFreeze}
         start={startWithDevice}
         stop={stop}
-        isFrozen={isFrozen}
-        toggleFreeze={toggleFreeze}
-        advisories={advisories}
-        activeAdvisoryCount={activeAdvisoryCount}
-        settings={settings}
-        onSettingsChange={handleSettingsChange}
-        onModeChange={handleModeChange}
-        spectrumRef={spectrumRef}
-        spectrumStatus={spectrumStatus}
-        earlyWarning={earlyWarning}
-        noiseFloorDb={noiseFloorDb}
-        dismissedIds={dismissedIds}
-        onDismiss={handleDismiss}
-        onClearAll={handleClearAllIssues}
-        issuesPanelOpen={issuesPanelOpen}
-        issuesPanelRef={issuesPanelRef}
-        activeSidebarTab={activeSidebarTab}
-        setActiveSidebarTab={setActiveSidebarTab}
-        openIssuesPanel={openIssuesPanel}
-        closeIssuesPanel={closeIssuesPanel}
-        setIssuesPanelOpen={setIssuesPanelOpen}
-        rtaClearedIds={rtaClearedIds}
-        geqClearedIds={geqClearedIds}
-        hasActiveRTAMarkers={hasActiveRTAMarkers}
-        hasActiveGEQBars={hasActiveGEQBars}
-        onClearRTA={handleClearRTA}
-        onClearGEQ={handleClearGEQ}
-        onFreqRangeChange={handleFreqRangeChange}
-        inputLevel={inputLevel}
-        isAutoGain={isAutoGain}
-        autoGainDb={autoGainDb}
-        autoGainLocked={isAutoGainLocked}
-        actualFps={actualFps}
-        droppedPercent={droppedPercent}
-        onFalsePositive={calibration.calibrationEnabled ? calibration.onFalsePositive : undefined}
-        falsePositiveIds={calibration.calibrationEnabled ? calibration.falsePositiveIds : undefined}
-      />
+      >
+        <DetectionProvider
+          advisories={advisories}
+          earlyWarning={earlyWarning}
+          onFalsePositive={calibration.calibrationEnabled ? calibration.onFalsePositive : undefined}
+          falsePositiveIds={calibration.calibrationEnabled ? calibration.falsePositiveIds : undefined}
+        >
+          <MobileLayout
+            mobileTab={mobileTab}
+            setMobileTab={setMobileTab}
+            settings={settings}
+            onSettingsChange={handleSettingsChange}
+            onModeChange={handleModeChange}
+            onReset={resetSettings}
+            onFreqRangeChange={handleFreqRangeChange}
+          />
 
-      <OnboardingOverlay />
+          <DesktopLayout
+            layoutKey={layoutKey}
+            settings={settings}
+            onSettingsChange={handleSettingsChange}
+            onModeChange={handleModeChange}
+            spectrumStatus={spectrumStatus}
+            noiseFloorDb={noiseFloorDb}
+            issuesPanelOpen={issuesPanelOpen}
+            issuesPanelRef={issuesPanelRef}
+            activeSidebarTab={activeSidebarTab}
+            setActiveSidebarTab={setActiveSidebarTab}
+            openIssuesPanel={openIssuesPanel}
+            closeIssuesPanel={closeIssuesPanel}
+            setIssuesPanelOpen={setIssuesPanelOpen}
+            onFreqRangeChange={handleFreqRangeChange}
+            actualFps={actualFps}
+            droppedPercent={droppedPercent}
+          />
+        </DetectionProvider>
+      </AudioStateProvider>
+
+      <Suspense fallback={null}>
+        <LazyOnboardingOverlay />
+      </Suspense>
       </PortalContainerProvider>
     </div>
   )

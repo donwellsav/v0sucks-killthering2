@@ -19,7 +19,7 @@ import { DisplayTab } from './settings/DisplayTab'
 import { AdvancedTab } from './settings/AdvancedTab'
 import { RoomTab } from './settings/RoomTab'
 import { CalibrationTab } from './settings/CalibrationTab'
-import type { DetectorSettings, Algorithm, OperationMode, SpectrumData } from '@/types/advisory'
+import type { DetectorSettings, Algorithm, OperationMode } from '@/types/advisory'
 import type { CalibrationTabProps } from './settings/CalibrationTab'
 
 interface SettingsPanelProps {
@@ -41,6 +41,7 @@ export const SettingsPanel = memo(function SettingsPanel({
 
   useEffect(() => {
     const saved = localStorage.getItem('ktr-custom-defaults')
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time init from localStorage
     setHasSavedDefaults(!!saved)
   }, [])
 
@@ -72,6 +73,7 @@ export const SettingsPanel = memo(function SettingsPanel({
         }
         onSettingsChange(defaults)
       } catch {
+        // eslint-disable-next-line no-console -- legitimate error for corrupt localStorage data
         console.error('Failed to load saved defaults from localStorage')
       }
     }

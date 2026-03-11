@@ -8,62 +8,45 @@ import { GEQBarView } from './GEQBarView'
 import { DetectionControls } from './DetectionControls'
 import { InputMeterSlider } from './InputMeterSlider'
 import { ResetConfirmDialog } from './ResetConfirmDialog'
+import { useAudioState } from '@/contexts/AudioStateContext'
+import { useDetection } from '@/contexts/DetectionContext'
 import { Button } from '@/components/ui/button'
 import { RotateCcw, AlertTriangle, BarChart3, Settings2 } from 'lucide-react'
-import type { Advisory, DetectorSettings, OperationMode, SpectrumData } from '@/types/advisory'
-import type { EarlyWarning } from '@/hooks/useAudioAnalyzer'
+import type { DetectorSettings, OperationMode } from '@/types/advisory'
+
+const TAB_ORDER = ['issues', 'graph', 'settings'] as const
 
 interface MobileLayoutProps {
   mobileTab: 'issues' | 'graph' | 'settings'
   setMobileTab: (tab: 'issues' | 'graph' | 'settings') => void
-  isRunning: boolean
-  isStarting: boolean
-  error: string | null
-  start: () => void
-  isFrozen: boolean
-  toggleFreeze: () => void
-  advisories: Advisory[]
-  activeAdvisoryCount: number
   settings: DetectorSettings
   onSettingsChange: (s: Partial<DetectorSettings>) => void
   onModeChange: (mode: OperationMode) => void
   onReset: () => void
-  dismissedIds: Set<string>
-  onDismiss: (id: string) => void
-  onClearAll: () => void
-  onClearResolved: () => void
-  spectrumRef: React.RefObject<SpectrumData | null>
-  earlyWarning: EarlyWarning | null
-  inputLevel: number
-  isAutoGain: boolean
-  autoGainDb: number | undefined
-  autoGainLocked: boolean
-  rtaClearedIds: Set<string>
-  geqClearedIds: Set<string>
-  hasActiveRTAMarkers: boolean
-  hasActiveGEQBars: boolean
-  onClearRTA: () => void
-  onClearGEQ: () => void
   onFreqRangeChange: (min: number, max: number) => void
-  onFalsePositive?: (advisoryId: string) => void
-  falsePositiveIds?: ReadonlySet<string>
 }
 
 export const MobileLayout = memo(function MobileLayout({
   mobileTab, setMobileTab,
-  isRunning, isStarting, error, start, isFrozen, toggleFreeze,
-  advisories, activeAdvisoryCount,
   settings, onSettingsChange, onModeChange, onReset,
-  dismissedIds, onDismiss, onClearAll, onClearResolved,
-  spectrumRef, earlyWarning,
-  inputLevel, isAutoGain, autoGainDb, autoGainLocked,
-  rtaClearedIds, geqClearedIds,
-  hasActiveRTAMarkers, hasActiveGEQBars,
-  onClearRTA, onClearGEQ, onFreqRangeChange,
-  onFalsePositive, falsePositiveIds,
+  onFreqRangeChange,
 }: MobileLayoutProps) {
+  const {
+    isRunning, isStarting, error, start,
+    isFrozen, toggleFreeze,
+    spectrumRef,
+    inputLevel, isAutoGain, autoGainDb, autoGainLocked,
+  } = useAudioState()
+
+  const {
+    advisories, activeAdvisoryCount, earlyWarning,
+    dismissedIds, onDismiss, onClearAll, onClearResolved,
+    rtaClearedIds, geqClearedIds,
+    hasActiveRTAMarkers, hasActiveGEQBars,
+    onClearRTA, onClearGEQ,
+    onFalsePositive, falsePositiveIds,
+  } = useDetection()
   // ── Tab navigation ──────────────────────────────────────────
-  const TAB_ORDER = ['issues', 'graph', 'settings'] as const
   const tabIndex = TAB_ORDER.indexOf(mobileTab)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([null, null, null])

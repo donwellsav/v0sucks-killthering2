@@ -261,6 +261,14 @@ export const HARMONIC_SETTINGS = {
 // Band cooldown — suppresses re-triggering the same GEQ band after an advisory is explicitly cleared
 export const BAND_COOLDOWN_MS = 1500
 
+// Memory management — bounds for long-running sessions (live gigs run hours)
+export const MEMORY_LIMITS = {
+  /** Maximum advisories in the worker Map before pruning oldest entries */
+  MAX_ADVISORIES: 200,
+  /** TTL for recentDecays entries (ms) — entries older than this are pruned unconditionally */
+  DECAY_HISTORY_TTL_MS: 30_000,
+} as const
+
 // Canvas rendering settings
 export const CANVAS_SETTINGS = {
   RTA_DB_MIN: -100,
