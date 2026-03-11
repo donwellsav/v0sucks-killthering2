@@ -59,7 +59,7 @@ export const KillTheRing = memo(function KillTheRingComponent() {
 
   const { devices, selectedDeviceId, setSelectedDeviceId } = useAudioDevices()
   const { actualFps, droppedPercent } = useFpsMonitor(isRunning, settings.canvasTargetFps)
-  const calibration = useCalibrationSession(spectrumRef, isRunning)
+  const calibration = useCalibrationSession(spectrumRef, isRunning, settings)
 
   const activeAdvisoryCount = useMemo(
     () => advisories.filter(a => !a.resolved).length,

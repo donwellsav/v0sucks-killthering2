@@ -54,6 +54,7 @@ export interface UseCalibrationSessionReturn {
 export function useCalibrationSession(
   spectrumRef: React.RefObject<SpectrumData | null>,
   isAnalysisRunning: boolean,
+  settings: DetectorSettings,
 ): UseCalibrationSessionReturn {
   const [calibrationEnabled, setCalibrationEnabled] = useState(false)
   const [room, setRoom] = useState<RoomProfile>(loadRoom)
@@ -67,6 +68,9 @@ export function useCalibrationSession(
   const sessionRef = useRef<CalibrationSession | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const settingsSnapshotRef = useRef<DetectorSettings | null>(null)
+
+  // Keep settings snapshot in sync so session creation guard works
+  useEffect(() => { settingsSnapshotRef.current = settings }, [settings])
 
   const isRecording = calibrationEnabled && isAnalysisRunning && sessionRef.current !== null
 
@@ -241,31 +245,9 @@ export function useCalibrationSession(
     downloadCalibrationExport(data)
   }, [room, ambientCapture])
 
-  // Initialize settings snapshot when calibration is enabled
-  const setCalibrationEnabledWithSnapshot = useCallback((enabled: boolean) => {
-    setCalibrationEnabled(enabled)
-    if (!enabled) {
-      // Keep session data alive for export even after disabling
-    }
-  }, [])
-
-  // Expose a way to set the initial settings snapshot
-  const updateSettingsSnapshot = useCallback((settings: DetectorSettings) => {
-    settingsSnapshotRef.current = settings
-    // Auto-create session if analysis is running and calibration just enabled
-    if (calibrationEnabled && isAnalysisRunning && !sessionRef.current) {
-      sessionRef.current = new CalibrationSession(settings)
-      setFalsePositiveIds(new Set())
-    }
-  }, [calibrationEnabled, isAnalysisRunning])
-
-  // Expose updateSettingsSnapshot via a ref so KillTheRing can call it
-  // Actually, simpler: just keep settingsSnapshotRef always updated
-  // We'll handle this in the integration
-
   return {
     calibrationEnabled,
-    setCalibrationEnabled: setCalibrationEnabledWithSnapshot,
+    setCalibrationEnabled,
     isRecording,
     room,
     updateRoom,
