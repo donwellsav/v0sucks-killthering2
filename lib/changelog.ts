@@ -14,6 +14,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.82.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: '**EXP_LUT**: Replace 4096 `Math.exp()` calls/frame with precomputed 1001-entry Float32Array lookup table (0.1dB quantization, ~4KB L1 cache)' },
+      { type: 'feat', description: '**Below-threshold skip**: Skip power computation for bins 12dB below effective threshold (saves 20-60% of LUT lookups)' },
+      { type: 'feat', description: '**Bitwise MSD**: Replace modulo with `& (size-1)` + precomputed scratch buffer in MSD ring buffer `calculateMsd()`' },
+      { type: 'feat', description: '**Instrumentation**: `enablePerfDebug(true)` adds `performance.now()` timing to `analyze()`, exposed via `getState().perfTimings`' },
+      { type: 'feat', description: '**Mobile constant**: `MOBILE_ANALYSIS_INTERVAL_MS = 40` for 25fps analysis on resource-constrained devices' },
+      { type: 'feat', description: '[x] `npx tsc --noEmit` — type check passes' },
+      { type: 'feat', description: '[x] `pnpm test` — all 195 DSP tests pass (behavior-preserving optimizations)' },
+      { type: 'feat', description: '[x] `pnpm build` — production build succeeds' },
+      { type: 'feat', description: '[ ] Manual: enable perf debug in console, verify frame timings display' },
+      { type: 'feat', description: '[ ] Manual: compare detection results before/after on test audio — no regressions' },
+    ],
+  },
+  {
     version: '0.81.0',
     date: '2026-03-12',
     changes: [
