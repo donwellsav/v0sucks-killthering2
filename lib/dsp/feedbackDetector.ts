@@ -79,12 +79,17 @@ export class FeedbackDetector {
   private activeBinPos: Int32Array | null = null
   private activeCount: number = 0
   
-  // MSD (Magnitude Slope Deviation) buffers - DAFx-16 algorithm
-  // Stores magnitude history per frequency bin for growth analysis
-  private msdHistory: Float32Array[] | null = null // [bin][frame] ring buffer
-  private msdHistoryIndex: Uint8Array | null = null // Current write index per bin
-  private msdFrameCount: Uint16Array | null = null // How many frames we have per bin
-  private msdConfirmFrames: Uint8Array | null = null // Frames below fast confirm threshold
+  // MSD (Magnitude Slope Deviation) — pooled sparse allocation (KTR-LIVE-021)
+  // Instead of 4096 ring buffers (1MB), we use a fixed pool of POOL_SIZE slots (64KB).
+  // Bins are assigned slots on demand; LRU eviction reclaims stale slots.
+  private _msdPool: Float32Array | null = null        // Contiguous: POOL_SIZE * HISTORY_SIZE floats
+  private _msdSlotIndex: Uint8Array | null = null      // Write index per slot
+  private _msdSlotFrameCount: Uint16Array | null = null // Frame count per slot
+  private _msdSlotConfirmFrames: Uint8Array | null = null // Frames below fast confirm threshold
+  private _msdSlotAge: Uint32Array | null = null       // Last update frame (for LRU eviction)
+  private _msdBinToSlot: Map<number, number> = new Map() // bin → slot index
+  private _msdFreeSlots: number[] = []                 // Available slot indices
+  private _msdFrameCounter: number = 0                 // Global frame counter for LRU
   private msdMinFrames: number = MSD_SETTINGS.DEFAULT_MIN_FRAMES // Content-adaptive (synced with worker)
 
   // Peak Persistence Scoring - Phase 2 Enhancement
@@ -619,15 +624,17 @@ export class FeedbackDetector {
 
     this.recomputeAnalysisDbBounds()
 
-    // MSD history buffers - ring buffer per bin
+    // MSD pooled sparse allocation — 256 slots × 64 frames = 64KB (vs 1MB dense)
+    const poolSize = MSD_SETTINGS.POOL_SIZE
     const historySize = MSD_SETTINGS.HISTORY_SIZE
-    this.msdHistory = new Array(n)
-    for (let i = 0; i < n; i++) {
-      this.msdHistory[i] = new Float32Array(historySize)
-    }
-    this.msdHistoryIndex = new Uint8Array(n)
-    this.msdFrameCount = new Uint16Array(n)
-    this.msdConfirmFrames = new Uint8Array(n)
+    this._msdPool = new Float32Array(poolSize * historySize)
+    this._msdSlotIndex = new Uint8Array(poolSize)
+    this._msdSlotFrameCount = new Uint16Array(poolSize)
+    this._msdSlotConfirmFrames = new Uint8Array(poolSize)
+    this._msdSlotAge = new Uint32Array(poolSize)
+    this._msdBinToSlot = new Map()
+    this._msdFreeSlots = Array.from({ length: poolSize }, (_, i) => i)
+    this._msdFrameCounter = 0
 
     // Peak Persistence Scoring - Phase 2
     this.persistenceCount = new Uint16Array(n)
@@ -645,15 +652,17 @@ export class FeedbackDetector {
     if (this.activeBinPos) this.activeBinPos.fill(-1)
     this.activeCount = 0
     
-    // Reset MSD history
-    if (this.msdHistory) {
-      for (let i = 0; i < this.msdHistory.length; i++) {
-        this.msdHistory[i].fill(0)
-      }
+    // Reset MSD pool
+    this._msdPool?.fill(0)
+    this._msdSlotIndex?.fill(0)
+    this._msdSlotFrameCount?.fill(0)
+    this._msdSlotConfirmFrames?.fill(0)
+    this._msdSlotAge?.fill(0)
+    this._msdBinToSlot.clear()
+    if (this._msdPool) {
+      this._msdFreeSlots = Array.from({ length: MSD_SETTINGS.POOL_SIZE }, (_, i) => i)
     }
-    if (this.msdHistoryIndex) this.msdHistoryIndex.fill(0)
-    if (this.msdFrameCount) this.msdFrameCount.fill(0)
-    if (this.msdConfirmFrames) this.msdConfirmFrames.fill(0)
+    this._msdFrameCounter = 0
     
     // Reset persistence scoring
     if (this.persistenceCount) this.persistenceCount.fill(0)
@@ -1446,22 +1455,68 @@ export class FeedbackDetector {
    * Called every analysis frame to track magnitude over time
    */
   private updateMsdHistory(binIndex: number, magnitudeDb: number): void {
-    if (!this.msdHistory || !this.msdHistoryIndex || !this.msdFrameCount) return
-    
-    const historySize = MSD_SETTINGS.HISTORY_SIZE
-    const history = this.msdHistory[binIndex]
-    const idx = this.msdHistoryIndex[binIndex]
-    
-    // Store magnitude in ring buffer
-    history[idx] = magnitudeDb
-    
-    // Update index (wrap around) — bitwise AND since historySize is power of 2
-    this.msdHistoryIndex[binIndex] = (idx + 1) & (historySize - 1)
-    
-    // Track how many frames we have (up to historySize)
-    if (this.msdFrameCount[binIndex] < historySize) {
-      this.msdFrameCount[binIndex]++
+    if (!this._msdPool || !this._msdSlotIndex || !this._msdSlotFrameCount) return
+
+    this._msdFrameCounter++
+
+    let slot = this._msdBinToSlot.get(binIndex)
+    if (slot === undefined) {
+      slot = this._allocateMsdSlot(binIndex)
     }
+
+    const offset = slot * MSD_SETTINGS.HISTORY_SIZE
+    const idx = this._msdSlotIndex[slot]
+
+    // Store magnitude in ring buffer
+    this._msdPool[offset + idx] = magnitudeDb
+
+    // Update index (wrap around) — bitwise AND since HISTORY_SIZE is power of 2
+    this._msdSlotIndex[slot] = (idx + 1) & (MSD_SETTINGS.HISTORY_SIZE - 1)
+
+    // Track how many frames we have (up to HISTORY_SIZE)
+    if (this._msdSlotFrameCount[slot] < MSD_SETTINGS.HISTORY_SIZE) {
+      this._msdSlotFrameCount[slot]++
+    }
+
+    this._msdSlotAge![slot] = this._msdFrameCounter
+  }
+
+  /**
+   * Allocate a pool slot for a bin. If pool is full, evict LRU (oldest) slot.
+   * O(POOL_SIZE) scan for eviction — negligible vs 4096-bin analysis loop.
+   */
+  private _allocateMsdSlot(binIndex: number): number {
+    let slot: number
+
+    if (this._msdFreeSlots.length > 0) {
+      slot = this._msdFreeSlots.pop()!
+    } else {
+      // LRU eviction: find slot with oldest update frame
+      let oldestAge = Infinity
+      let oldestSlot = 0
+      const ages = this._msdSlotAge!
+      for (let i = 0; i < MSD_SETTINGS.POOL_SIZE; i++) {
+        if (ages[i] < oldestAge) {
+          oldestAge = ages[i]
+          oldestSlot = i
+        }
+      }
+      slot = oldestSlot
+
+      // Remove evicted bin's mapping
+      for (const [bin, s] of this._msdBinToSlot) {
+        if (s === slot) { this._msdBinToSlot.delete(bin); break }
+      }
+    }
+
+    // Initialize slot
+    const offset = slot * MSD_SETTINGS.HISTORY_SIZE
+    this._msdPool!.fill(0, offset, offset + MSD_SETTINGS.HISTORY_SIZE)
+    this._msdSlotIndex![slot] = 0
+    this._msdSlotFrameCount![slot] = 0
+    this._msdSlotConfirmFrames![slot] = 0
+    this._msdBinToSlot.set(binIndex, slot)
+    return slot
   }
   
   /**
@@ -1479,21 +1534,23 @@ export class FeedbackDetector {
    *          Returns -1 if not enough history
    */
   private calculateMsd(binIndex: number): { msd: number; growthRate: number; isHowl: boolean; fastConfirm: boolean } {
-    if (!this.msdHistory || !this.msdFrameCount || !this.msdHistoryIndex || !this.msdConfirmFrames) {
+    if (!this._msdPool || !this._msdSlotFrameCount || !this._msdSlotIndex || !this._msdSlotConfirmFrames) {
       return { msd: -1, growthRate: 0, isHowl: false, fastConfirm: false }
     }
 
-    const frameCount = this.msdFrameCount[binIndex]
+    // Slot lookup — no slot means no history for this bin
+    const slot = this._msdBinToSlot.get(binIndex)
+    if (slot === undefined) {
+      return { msd: -1, growthRate: 0, isHowl: false, fastConfirm: false }
+    }
+
+    const frameCount = this._msdSlotFrameCount[slot]
     if (frameCount < this.msdMinFrames) {
       return { msd: -1, growthRate: 0, isHowl: false, fastConfirm: false }
     }
 
     // MINIMUM ENERGY GUARD (DAFx-16 Section 3):
     // Prevent MSD from triggering on quiet noise floor fluctuations.
-    // Only run MSD analysis if the current bin energy is sufficiently
-    // above the noise floor. Without this, random dB-level noise
-    // fluctuations near the noise floor can produce low MSD values
-    // that mimic the linear-in-dB growth pattern of feedback.
     if (this.noiseFloorDb !== null && this.freqDb) {
       const currentDb = this.freqDb[binIndex]
       const energyAboveNoise = currentDb - this.noiseFloorDb
@@ -1503,9 +1560,9 @@ export class FeedbackDetector {
     }
 
     const historySize = MSD_SETTINGS.HISTORY_SIZE
-    const mask = historySize - 1 // Bitwise AND mask (historySize is power of 2)
-    const history = this.msdHistory[binIndex]
-    const currentIdx = this.msdHistoryIndex[binIndex]
+    const mask = historySize - 1
+    const poolOffset = slot * historySize
+    const currentIdx = this._msdSlotIndex[slot]
 
     // Precompute ordered indices into scratch buffer — eliminates per-element modulo
     const ordered = this._msdScratch
@@ -1515,9 +1572,9 @@ export class FeedbackDetector {
 
     // Compute first derivative sum (growth rate) inline — no array allocations
     let sumFirstDeriv = 0
-    let prevVal = history[ordered[0]]
+    let prevVal = this._msdPool[poolOffset + ordered[0]]
     for (let i = 1; i < frameCount; i++) {
-      const val = history[ordered[i]]
+      const val = this._msdPool[poolOffset + ordered[i]]
       sumFirstDeriv += val - prevVal
       prevVal = val
     }
@@ -1533,9 +1590,9 @@ export class FeedbackDetector {
     // See __tests__/msdConsistency.test.ts
     // Second derivative = d1[i] - d1[i-1] where d1[i] = ordered[i+1] - ordered[i]
     let sumSquaredSecondDeriv = 0
-    let prevD1 = history[ordered[1]] - history[ordered[0]]
+    let prevD1 = this._msdPool[poolOffset + ordered[1]] - this._msdPool[poolOffset + ordered[0]]
     for (let i = 2; i < frameCount; i++) {
-      const d1 = history[ordered[i]] - history[ordered[i - 1]]
+      const d1 = this._msdPool[poolOffset + ordered[i]] - this._msdPool[poolOffset + ordered[i - 1]]
       const d2 = d1 - prevD1
       sumSquaredSecondDeriv += d2 * d2
       prevD1 = d1
@@ -1552,12 +1609,12 @@ export class FeedbackDetector {
     // Fast confirmation: if MSD stays below fast threshold for N frames
     let fastConfirm = false
     if (msd < MSD_SETTINGS.FAST_CONFIRM_THRESHOLD) {
-      this.msdConfirmFrames[binIndex]++
-      if (this.msdConfirmFrames[binIndex] >= MSD_SETTINGS.FAST_CONFIRM_FRAMES) {
+      this._msdSlotConfirmFrames[slot]++
+      if (this._msdSlotConfirmFrames[slot] >= MSD_SETTINGS.FAST_CONFIRM_FRAMES) {
         fastConfirm = true
       }
     } else {
-      this.msdConfirmFrames[binIndex] = 0
+      this._msdSlotConfirmFrames[slot] = 0
     }
 
     return { msd, growthRate: avgGrowthRate, isHowl, fastConfirm }
@@ -1567,13 +1624,18 @@ export class FeedbackDetector {
    * Reset MSD history for a specific bin (when peak clears)
    */
   private resetMsdForBin(binIndex: number): void {
-    if (!this.msdHistory || !this.msdHistoryIndex || !this.msdFrameCount || !this.msdConfirmFrames) return
-    
-    this.msdHistory[binIndex].fill(0)
-    this.msdHistoryIndex[binIndex] = 0
-    this.msdFrameCount[binIndex] = 0
-    this.msdConfirmFrames[binIndex] = 0
-    
+    const slot = this._msdBinToSlot.get(binIndex)
+    if (slot !== undefined && this._msdPool) {
+      // Release slot back to pool
+      const offset = slot * MSD_SETTINGS.HISTORY_SIZE
+      this._msdPool.fill(0, offset, offset + MSD_SETTINGS.HISTORY_SIZE)
+      this._msdSlotIndex![slot] = 0
+      this._msdSlotFrameCount![slot] = 0
+      this._msdSlotConfirmFrames![slot] = 0
+      this._msdBinToSlot.delete(binIndex)
+      this._msdFreeSlots.push(slot)
+    }
+
     // Also reset persistence for this bin
     if (this.persistenceCount) this.persistenceCount[binIndex] = 0
     if (this.persistenceLastDb) this.persistenceLastDb[binIndex] = -200

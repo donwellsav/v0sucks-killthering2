@@ -14,7 +14,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LayoutGrid, Maximize2, Mic, Minimize2, Pause, Play } from 'lucide-react'
+import { LayoutGrid, Maximize2, Mic, Minimize2, Pause, Play, Trash2 } from 'lucide-react'
+import { useDetection } from '@/contexts/DetectionContext'
 import type { OperationMode, DetectorSettings } from '@/types/advisory'
 import type { AudioDevice } from '@/hooks/useAudioDevices'
 import type { CalibrationTabProps } from './settings/CalibrationTab'
@@ -46,6 +47,9 @@ export const HeaderBar = memo(function HeaderBar({
   devices, selectedDeviceId, onDeviceChange,
   calibration,
 }: HeaderBarProps) {
+  const { advisories, dismissedIds, onClearAll } = useDetection()
+  const hasAdvisories = isRunning && advisories.some(a => !dismissedIds.has(a.id))
+
   return (
     <header className="relative flex flex-row items-center justify-between gap-2 sm:gap-4 px-3 py-2 border-b border-border bg-card/90 backdrop-blur-sm shadow-[0_1px_12px_rgba(0,0,0,0.5),0_1px_0_rgba(75,146,255,0.08)] sm:px-4 sm:py-2">
 
@@ -178,6 +182,25 @@ export const HeaderBar = memo(function HeaderBar({
             </TooltipTrigger>
             <TooltipContent side="bottom" className="text-sm">
               {isFrozen ? 'Unfreeze (P)' : 'Freeze display (P)'}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {hasAdvisories && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClearAll}
+                className="h-10 w-10 text-muted-foreground hover:text-red-400 transition-all duration-150 active:scale-95"
+                aria-label="Clear all advisories"
+              >
+                <Trash2 className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-sm">
+              Clear all
             </TooltipContent>
           </Tooltip>
         )}

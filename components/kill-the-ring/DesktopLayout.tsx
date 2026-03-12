@@ -143,6 +143,7 @@ export const DesktopLayout = memo(function DesktopLayout({
                       onStart={start}
                       onFalsePositive={onFalsePositive}
                       falsePositiveIds={falsePositiveIds}
+                      isLowSignal={isRunning && inputLevel < -45}
                     />
                     <EarlyWarningPanel earlyWarning={earlyWarning} />
                   </div>
@@ -201,6 +202,7 @@ export const DesktopLayout = memo(function DesktopLayout({
                 onStart={start}
                 onFalsePositive={onFalsePositive}
                 falsePositiveIds={falsePositiveIds}
+                isLowSignal={isRunning && inputLevel < -45}
               />
               <EarlyWarningPanel earlyWarning={earlyWarning} />
             </div>

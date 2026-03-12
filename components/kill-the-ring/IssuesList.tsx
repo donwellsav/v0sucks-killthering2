@@ -25,9 +25,10 @@ interface IssuesListProps {
   onStart?: () => void
   onFalsePositive?: (advisoryId: string) => void
   falsePositiveIds?: ReadonlySet<string>
+  isLowSignal?: boolean
 }
 
-export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10, dismissedIds, onDismiss, onClearAll, onClearResolved, touchFriendly, isRunning, onStart, onFalsePositive, falsePositiveIds }: IssuesListProps) {
+export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10, dismissedIds, onDismiss, onClearAll, onClearResolved, touchFriendly, isRunning, onStart, onFalsePositive, falsePositiveIds, isLowSignal }: IssuesListProps) {
   // Filter dismissed, sort repeat offenders to top by hit count, then slice to max.
   // We attach occurrenceCount here so IssueCard doesn't need to re-query feedbackHistory.
   const sorted = useMemo(() => {
@@ -84,6 +85,12 @@ export const IssuesList = memo(function IssuesList({ advisories, maxIssues = 10,
             <CheckCircle2 className="w-5 h-5 text-primary/30 mb-2" />
             <div className="font-mono text-sm font-bold tracking-[0.15em] uppercase">Standby</div>
             <div className="font-mono text-sm mt-1 text-muted-foreground tracking-wide">Monitoring</div>
+            {isLowSignal && (
+              <div className="flex flex-col items-center gap-1 mt-3 motion-safe:animate-pulse">
+                <span className="text-primary/50 text-lg leading-none">▲</span>
+                <span className="font-mono text-xs text-primary/40 tracking-wide">Increase gain</span>
+              </div>
+            )}
           </div>
         )
       ) : (

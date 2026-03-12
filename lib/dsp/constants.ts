@@ -773,6 +773,10 @@ export const MSD_SETTINGS = {
   MIN_ENERGY_ABOVE_NOISE_DB: 6,
   /** Threshold reduction (dB) when MSD confirms howl pattern — lets quiet feedback through earlier */
   THRESHOLD_REDUCTION_DB: 4,
+  /** Max concurrent bins with MSD history (pool slots).
+   *  256 covers even worst-case dense-harmonic content with margin.
+   *  Memory: 256 × 64 × 4 = 64KB (vs 1MB for dense 4096-bin allocation). */
+  POOL_SIZE: 256,
 } as const
 
 // Peak Persistence Scoring - Phase 2 Enhancement

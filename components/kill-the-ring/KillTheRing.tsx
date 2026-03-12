@@ -249,24 +249,6 @@ export const KillTheRing = memo(function KillTheRingComponent() {
   return (
     <div ref={rootCallbackRef} className="flex flex-col h-screen bg-background">
       <PortalContainerProvider value={isFullscreen ? rootEl : null}>
-      <HeaderBar
-        isRunning={isRunning}
-        start={startWithDevice}
-        stop={stop}
-        settings={settings}
-        onSettingsChange={handleSettingsChange}
-        onModeChange={handleModeChange}
-        onReset={resetSettings}
-        resetLayout={resetLayout}
-        isFullscreen={isFullscreen}
-        toggleFullscreen={toggleFullscreen}
-        isFrozen={isFrozen}
-        toggleFreeze={toggleFreeze}
-        devices={devices}
-        selectedDeviceId={selectedDeviceId}
-        onDeviceChange={handleDeviceChange}
-        calibration={calibrationTabProps}
-      />
 
       {error && !isErrorDismissed && (
         <div role="alert" className="px-3 py-2 sm:px-4 sm:py-2.5 bg-destructive/10 border-b border-destructive/20 max-h-[40vh] overflow-y-auto">
@@ -335,6 +317,24 @@ export const KillTheRing = memo(function KillTheRingComponent() {
           onFalsePositive={calibration.calibrationEnabled ? calibration.onFalsePositive : undefined}
           falsePositiveIds={calibration.calibrationEnabled ? calibration.falsePositiveIds : undefined}
         >
+          <HeaderBar
+            isRunning={isRunning}
+            start={startWithDevice}
+            stop={stop}
+            settings={settings}
+            onSettingsChange={handleSettingsChange}
+            onModeChange={handleModeChange}
+            onReset={resetSettings}
+            resetLayout={resetLayout}
+            isFullscreen={isFullscreen}
+            toggleFullscreen={toggleFullscreen}
+            isFrozen={isFrozen}
+            toggleFreeze={toggleFreeze}
+            devices={devices}
+            selectedDeviceId={selectedDeviceId}
+            onDeviceChange={handleDeviceChange}
+            calibration={calibrationTabProps}
+          />
           <MobileLayout
             mobileTab={mobileTab}
             setMobileTab={setMobileTab}

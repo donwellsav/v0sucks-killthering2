@@ -144,28 +144,84 @@ export const VerticalGainFader = memo(function VerticalGainFader({
       ctx.fillRect(0, h - meterHeight, Math.max(1, w * 0.2), meterHeight)
     }
 
-    // Scale ticks (horizontal lines at dB marks)
-    ctx.strokeStyle = 'rgba(255,255,255,0.10)'
-    ctx.lineWidth = 0.5
-    for (const db of [-30, -20, -10, 10, 20, 30]) {
-      const ratio = (db - min) / (max - min)
-      const y = h * (1 - ratio)
-      ctx.beginPath()
-      ctx.moveTo(w * 0.65, y)
-      ctx.lineTo(w, y)
-      ctx.stroke()
-    }
+    // Scale ticks — console-style etched markings
+    const labelSize = Math.max(7, Math.min(9, w * 0.2))
 
-    // Zero-dB reference line — prominent
-    const zeroRatio = (0 - min) / (max - min)
-    const zeroY = h * (1 - zeroRatio)
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(0, zeroY)
-    ctx.lineTo(w, zeroY)
-    ctx.stroke()
-  }, [min, max])
+    if (isSensitivity) {
+      // Sensitivity mode: inverted scale (top=2 most sensitive, bottom=50 least)
+      for (const db of [10, 20, 30, 40]) {
+        const ratio = (50 - db) / 48 // Inverted: 50 at bottom (0%), 2 at top (100%)
+        const y = h * (1 - ratio)
+
+        ctx.strokeStyle = 'rgba(100,180,255,0.15)'
+        ctx.lineWidth = 0.75
+        ctx.beginPath()
+        ctx.moveTo(w * 0.55, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
+
+        ctx.fillStyle = 'rgba(100,180,255,0.25)'
+        ctx.font = `${labelSize}px monospace`
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`${db}`, w * 0.48, y)
+      }
+      // Default (25dB) reference line
+      const defRatio = (50 - 25) / 48
+      const defY = h * (1 - defRatio)
+      ctx.strokeStyle = 'rgba(100,180,255,0.35)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(0, defY)
+      ctx.lineTo(w, defY)
+      ctx.stroke()
+      ctx.fillStyle = 'rgba(100,180,255,0.45)'
+      ctx.font = `bold ${labelSize + 1}px monospace`
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('25', w * 0.48, defY)
+    } else {
+      // Gain mode: standard dB scale
+      for (const db of [-30, -20, -10, 10, 20, 30]) {
+        const ratio = (db - min) / (max - min)
+        const y = h * (1 - ratio)
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.20)'
+        ctx.lineWidth = 0.75
+        ctx.beginPath()
+        ctx.moveTo(w * 0.55, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
+
+        ctx.fillStyle = 'rgba(255,255,255,0.30)'
+        ctx.font = `${labelSize}px monospace`
+        ctx.textAlign = 'right'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(`${db}`, w * 0.48, y)
+      }
+
+      // Zero-dB (unity) reference — prominent double-line with label
+      const zeroRatio = (0 - min) / (max - min)
+      const zeroY = h * (1 - zeroRatio)
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(0, zeroY)
+      ctx.lineTo(w, zeroY)
+      ctx.stroke()
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.moveTo(0, zeroY + 1.5)
+      ctx.lineTo(w, zeroY + 1.5)
+      ctx.stroke()
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'
+      ctx.font = `bold ${labelSize + 1}px monospace`
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('0', w * 0.48, zeroY)
+    }
+  }, [min, max, isSensitivity])
 
   // Ballistic animation loop
   useEffect(() => {
@@ -415,8 +471,8 @@ export const VerticalGainFader = memo(function VerticalGainFader({
       <div className="relative flex-1 min-h-0 w-full flex flex-col">
         <div
           ref={trackRef}
-          className="relative flex-1 rounded cursor-ns-resize overflow-hidden"
-          style={{ touchAction: 'none' }}
+          className="relative flex-1 rounded-sm cursor-ns-resize overflow-hidden border border-white/[0.04]"
+          style={{ touchAction: 'none', boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.5), inset 0 -1px 2px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.03)' }}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           role="slider"
@@ -431,47 +487,55 @@ export const VerticalGainFader = memo(function VerticalGainFader({
             if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') handleKeyStep(-1)
           }}
         >
-          {/* Fader slot line — subtle center groove behind thumb */}
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-px bg-white/[0.04] pointer-events-none" />
+          {/* Fader slot — recessed groove like a real console fader */}
+          <div className="absolute inset-y-2 left-1/2 -translate-x-1/2 w-[5px] pointer-events-none rounded-full" style={{ background: 'linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.3), rgba(0,0,0,0.6))', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.8), inset 1px 0 1px rgba(0,0,0,0.4), inset -1px 0 1px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.05)' }} />
+          {/* Side rails — thin highlight edges framing the slot */}
+          <div className="absolute inset-y-2 pointer-events-none" style={{ left: 'calc(50% - 5px)', width: '1px', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)' }} />
+          <div className="absolute inset-y-2 pointer-events-none" style={{ left: 'calc(50% + 5px)', width: '1px', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.06) 20%, rgba(255,255,255,0.06) 80%, transparent)' }} />
           <canvas
             ref={canvasRef}
             className="w-full h-full"
           />
-          {/* Fader thumb — console-style capsule knob with ridges */}
+          {/* Fader thumb — console-style wide capsule knob with ridges + bevel */}
           <div
-            className={`absolute left-1/2 -translate-x-1/2 translate-y-1/2 w-11 h-6 rounded-[5px] border-2 pointer-events-none transition-all duration-150 ${
+            className={`absolute left-1/2 -translate-x-1/2 translate-y-1/2 w-[52px] h-7 rounded-[6px] border-2 pointer-events-none transition-all duration-150 ${
               isSensitivity
-                ? 'border-cyan-300/60 bg-gradient-to-b from-blue-800 to-blue-950'
+                ? 'border-cyan-300/60 bg-gradient-to-b from-blue-700 via-blue-800 to-blue-950'
                 : autoGainEnabled
-                  ? 'border-primary bg-gradient-to-b from-primary/90 to-primary'
-                  : 'border-white/80 bg-gradient-to-b from-gray-100 to-gray-300'
+                  ? 'border-primary bg-gradient-to-b from-primary/90 via-primary to-primary/80'
+                  : 'border-white/80 bg-gradient-to-b from-gray-50 via-gray-200 to-gray-400'
             }`}
             style={{
               bottom: `${thumbBottom}%`,
               boxShadow: isSensitivity
-                ? '0 2px 8px rgba(0,210,210,0.3), 0 1px 3px rgba(0,0,0,0.5)'
+                ? '0 3px 10px rgba(0,210,210,0.35), 0 1px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.12)'
                 : autoGainEnabled
-                  ? '0 2px 8px rgba(139,92,246,0.3), 0 1px 3px rgba(0,0,0,0.4)'
-                  : '0 2px 8px rgba(255,255,255,0.15), 0 1px 3px rgba(0,0,0,0.4)',
+                  ? '0 3px 10px rgba(75,146,255,0.35), 0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15)'
+                  : '0 3px 10px rgba(255,255,255,0.2), 0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6)',
             }}
             aria-hidden="true"
           >
+            {/* Top bevel highlight — 3D plastic edge */}
+            <div className={`absolute inset-x-0 top-0 h-[2px] rounded-t-[4px] ${
+              isSensitivity ? 'bg-cyan-200/15' : autoGainEnabled ? 'bg-white/20' : 'bg-white/50'
+            }`} />
             {/* Groove ridges — console fader tactile lines */}
-            <div className={`absolute inset-x-2 top-[5px] h-[1.5px] rounded-full ${isSensitivity ? 'bg-blue-400/25' : autoGainEnabled ? 'bg-white/25' : 'bg-gray-500/40'}`} />
-            <div className={`absolute inset-x-1.5 top-1/2 -translate-y-1/2 h-[2px] rounded-full ${isSensitivity ? 'bg-cyan-300/50' : autoGainEnabled ? 'bg-white/40' : 'bg-gray-500/60'}`} />
-            <div className={`absolute inset-x-2 bottom-[5px] h-[1.5px] rounded-full ${isSensitivity ? 'bg-blue-400/25' : autoGainEnabled ? 'bg-white/25' : 'bg-gray-500/40'}`} />
+            <div className={`absolute inset-x-2.5 top-[6px] h-[1.5px] rounded-full ${isSensitivity ? 'bg-blue-400/30' : autoGainEnabled ? 'bg-white/25' : 'bg-gray-500/40'}`} />
+            <div className={`absolute inset-x-2 top-1/2 -translate-y-1/2 h-[2px] rounded-full ${isSensitivity ? 'bg-cyan-300/50' : autoGainEnabled ? 'bg-white/40' : 'bg-gray-600/60'}`} />
+            <div className={`absolute inset-x-2.5 bottom-[6px] h-[1.5px] rounded-full ${isSensitivity ? 'bg-blue-400/30' : autoGainEnabled ? 'bg-white/25' : 'bg-gray-500/40'}`} />
           </div>
-          {/* Upward arrow hints — guide new engineers to push sensitivity up */}
-          {isSensitivity && sensitivityValue >= 25 && (
+          {/* Upward arrow hints — guide engineers to push sensitivity up */}
+          {isSensitivity && sensitivityValue >= 20 && (
             <div
-              className={`absolute inset-x-0 pointer-events-none flex flex-col items-center gap-2 transition-opacity duration-500 ${
-                sensitivityValue >= 35 ? 'opacity-100' : 'opacity-50'
+              className={`absolute inset-x-0 pointer-events-none flex flex-col items-center gap-1 transition-opacity duration-500 ${
+                sensitivityValue >= 35 ? 'opacity-100' : sensitivityValue >= 25 ? 'opacity-70' : 'opacity-40'
               }`}
               style={{ bottom: `${Math.max(thumbBottom + 8, 15)}%` }}
               aria-hidden="true"
             >
-              <span className="text-white/15 text-[10px] font-mono leading-none">▲</span>
-              <span className="text-white/10 text-[10px] font-mono leading-none">▲</span>
+              <span className="text-primary/50 text-base font-mono leading-none motion-safe:animate-pulse">▲</span>
+              <span className="text-primary/30 text-sm font-mono leading-none">▲</span>
+              <span className="text-primary/15 text-xs font-mono leading-none">▲</span>
             </div>
           )}
           {/* Noise floor overlay — gain mode only */}

@@ -159,6 +159,7 @@ export const MobileLayout = memo(function MobileLayout({
                 onStart={start}
                 onFalsePositive={onFalsePositive}
                 falsePositiveIds={falsePositiveIds}
+                isLowSignal={isRunning && inputLevel < -45}
               />
               <EarlyWarningPanel earlyWarning={earlyWarning} />
             </div>
