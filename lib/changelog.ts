@@ -14,6 +14,22 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.83.0',
+    date: '2026-03-12',
+    changes: [
+      { type: 'feat', description: '**Console-style fader redesign**: Recessed groove with inset shadows, side rails, wider 3D thumb with bevel highlight, mode-aware dB scale markings (gain mode: white labels with prominent 0dB unity line; sensitivity mode: blue-tinted labels with 25dB reference)' },
+      { type: 'feat', description: '**Clear All header button**: Trash2 icon in header bar for quick advisory dismissal (uses `useDetection()` hook directly; moved HeaderBar inside DetectionProvider to fix context crash)' },
+      { type: 'feat', description: '**Signal guidance UX**: Pulsing "Increase gain" hint in IssuesList standby state when input level is below -45dB, helping new engineers understand they need to push the fader up' },
+      { type: 'feat', description: '**MSD memory optimization**: Replace dense 1MB MSD ring buffer (4096 bins × 64 frames) with pooled sparse allocation (256 slots × 64 frames = 64KB) using LRU eviction — 16x memory reduction' },
+      { type: 'feat', description: '[x] `npx tsc --noEmit` — clean' },
+      { type: 'feat', description: '[x] `pnpm test` — 195/195 pass' },
+      { type: 'feat', description: '[x] `pnpm build` — production build succeeds' },
+      { type: 'feat', description: '[x] Visual verification: fader groove, thumb, scale markings in both gain and sensitivity modes' },
+      { type: 'feat', description: '[x] Clear All button appears in header when advisories exist' },
+      { type: 'feat', description: '[x] Low-signal hint renders in standby state' },
+    ],
+  },
+  {
     version: '0.82.0',
     date: '2026-03-12',
     changes: [
