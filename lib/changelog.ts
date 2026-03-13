@@ -14,6 +14,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.86.1',
+    date: '2026-03-13',
+    changes: [
+      { type: 'feat', description: 'feat: remove consent dialog, auto-enable data collection (opt-out model) (#87)' },
+    ],
+  },
+  {
     version: '0.86.0',
     date: '2026-03-13',
     changes: [
