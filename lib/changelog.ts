@@ -14,6 +14,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.95.0',
+    date: '2026-03-13',
+    highlights: 'Sentry error reporting, dead code cleanup, repo rename, docs refresh',
+    changes: [
+      { type: 'feat', description: 'Add Sentry error reporting — browser, server, and edge runtime integration with source maps' },
+      { type: 'feat', description: 'Add `ErrorBoundary` Sentry capture and DSP worker crash reporting' },
+      { type: 'refactor', description: 'Delete 14 unused UI components and `@radix-ui/react-separator` (20 UI components remain)' },
+      { type: 'refactor', description: 'Rename repository from `v0sucks-killthering2` to `killthering`' },
+      { type: 'fix', description: 'Update all documentation to reflect current codebase (326 tests, 4 contexts, Sentry integration)' },
+    ],
+  },
+  {
     version: '0.92.1',
     date: '2026-03-13',
     changes: [

@@ -16,7 +16,8 @@
 - **Audio:** Web Audio API (AnalyserNode, Web Workers for DSP)
 - **Visualization:** HTML5 Canvas
 - **State:** React 19 hooks (no external state library)
-- **Testing:** Vitest (131 DSP unit tests)
+- **Testing:** Vitest (326 DSP unit tests across 14 test files)
+- **Error Reporting:** Sentry (browser + server + edge runtime, source maps)
 - **PWA:** Serwist (service worker, offline caching, installable)
 - **Package Manager:** pnpm
 
@@ -27,7 +28,7 @@ pnpm dev              # Start Next.js dev server on :3000 (Turbopack, no SW)
 pnpm build            # Production build (webpack, generates SW)
 pnpm start            # Start production server
 pnpm lint             # Run ESLint (flat config, eslint.config.mjs)
-pnpm test             # Run Vitest tests (131 DSP unit tests)
+pnpm test             # Run Vitest tests (326 DSP unit tests)
 pnpm test:watch       # Vitest in watch mode
 pnpm test:coverage    # Vitest with V8 coverage
 npx tsc --noEmit      # Type-check without emitting (run before pnpm build)
@@ -38,14 +39,15 @@ npx tsc --noEmit      # Type-check without emitting (run before pnpm build)
 ```
 app/                        # Next.js App Router pages + API routes
 components/
-  kill-the-ring/            # Domain components (21 files + barrel index.ts)
+  kill-the-ring/            # Domain components (23 files + barrel index.ts)
     settings/               # Settings panel tab components (7 files)
-  ui/                       # shadcn/ui primitives (30 files)
-contexts/                   # React context providers:
+  ui/                       # shadcn/ui primitives (20 files)
+contexts/                   # React context providers (4 files):
   PortalContainerContext.tsx #   Portal mount point for mobile overlays
-  DetectionContext.tsx      #   Advisory state, dismiss/clear/false-positive actions
-  AudioStateContext.tsx     #   Audio lifecycle, levels, freeze, spectrum ref
-hooks/                      # Custom React hooks (10 files)
+  AdvisoryContext.tsx       #   Advisory state, dismiss/clear/false-positive actions
+  AudioAnalyzerContext.tsx  #   Audio engine, settings, devices, spectrum, detection
+  UIContext.tsx             #   Mobile tab, freeze, fullscreen, layout reset
+hooks/                      # Custom React hooks (11 files)
 lib/
   audio/                    # AudioAnalyzer factory
   calibration/              # Calibration system (3 files):
@@ -73,11 +75,22 @@ lib/
     decayAnalyzer.ts        #   Frequency decay analysis + recentDecays management
     dspWorker.ts            #   Web Worker thin orchestrator (~200 lines)
     constants.ts            #   All DSP tuning constants + operation mode presets
-    __tests__/              #   Vitest unit tests (131 tests):
+    __tests__/              #   Vitest unit tests (7 files, ~195 tests):
       feedbackDetector.test.ts
       classifier.test.ts
       eqAdvisor.test.ts
       algorithmFusion.test.ts
+      compressionDetection.test.ts
+      phaseCoherence.test.ts
+      msdConsistency.test.ts
+tests/dsp/                  #   Integration/scenario tests (7 files, ~131 tests):
+  algorithmFusion.test.ts
+  algorithmFusion.gpt.test.ts
+  algorithmFusion.chatgpt.test.ts
+  algorithmFusion.chatgpt-context.test.ts
+  compressionDetection.test.ts
+  msdAnalysis.test.ts
+  phaseCoherence.test.ts
   export/                   # Multi-format export (3 files):
     downloadFile.ts         #   Browser download trigger via Blob + <a> element
     exportPdf.ts            #   PDF report generation (jsPDF, dynamic import)
@@ -94,11 +107,12 @@ types/                      # TypeScript interfaces:
 - **Main thread:** AudioContext + AnalyserNode, FFT capture, requestAnimationFrame loop (60fps), React rendering
 - **Web Worker** (`lib/dsp/dspWorker.ts`): Thin orchestrator (~200 lines) importing `workerFft`, `advisoryManager`, `decayAnalyzer` — offloaded to keep UI at 60fps
 - **Data flow:** Mic → GainNode → AnalyserNode → FFT data → Worker (classify) → React state → Canvas render
-- **State management:** `DetectionContext` (advisory state, dismiss/clear actions) + `AudioStateContext` (audio lifecycle, levels, freeze) eliminate 34-40 prop drilling chain through layouts
+- **State management:** Three focused contexts — `AudioAnalyzerContext` (engine, settings, devices, spectrum, detection), `AdvisoryContext` (advisory state, dismiss/clear actions), `UIContext` (mobile tab, freeze, fullscreen, layout) — eliminate prop drilling through layouts
 - Components in `components/kill-the-ring/` use barrel export via `index.ts`
 - `contexts/PortalContainerContext.tsx` provides a portal mount point for mobile overlays
 - **Security headers:** `next.config.mjs` sets `Content-Security-Policy` (strict prod, relaxed dev with `unsafe-inline`/`unsafe-eval`/`ws:`), `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` (microphone only)
-- **No environment variables required** — app is fully client-side with localStorage persistence
+- **Error reporting:** Sentry integration across three runtimes — `instrumentation-client.ts` (browser), `sentry.server.config.ts` (Node.js), `sentry.edge.config.ts` (Edge). `ErrorBoundary` and DSP worker report to Sentry. Source maps uploaded via `@sentry/nextjs` build plugin.
+- **Environment variables:** Optional `NEXT_PUBLIC_SENTRY_DSN` for error reporting (see `.env.example`). App is fully client-side with localStorage persistence — no env vars required to run.
 - **Changelog:** `lib/changelog.ts` is auto-updated by GitHub Actions on PR merge (`auto-version.yml`) and direct push (`patch-on-push.yml`). Rendered in About tab.
 - **Calibration:** `lib/calibration/` collects room profile (dimensions, materials, mics), ambient noise baseline, detection events, missed-feedback annotations, settings changes, and spectrum snapshots — exports as JSON v1.1 with per-event `micCalibrationApplied` flags and `MicCalibrationMetadata` (38-point ECM8000 calibration curve)
 - **Mic Calibration:** ECM8000 frequency response compensation (CSL #746) applied per FFT bin in `feedbackDetector.ts` hot loop alongside A-weighting; toggle in Calibrate tab; curve data in `lib/dsp/constants.ts` (`ECM8000_CALIBRATION`)
@@ -118,7 +132,7 @@ types/                      # TypeScript interfaces:
 - **Code splitting:** Large modules use barrel re-exports (`export * from './subModule'`); dialogs/panels use `React.lazy()` with `.then(m => ({ default: m.X }))` for named exports
 - **Canvas functions:** Pure drawing helpers in `lib/canvas/` — use `{ current: T }` params, not `React.RefObject`
 - **Styling:** Tailwind utility classes + `cn()` from `lib/utils.ts` for conditional classes
-- **Testing:** Vitest for DSP unit tests (`pnpm test`); 131 tests across feedbackDetector, classifier, eqAdvisor, algorithmFusion
+- **Testing:** Vitest for DSP unit tests (`pnpm test`); 326 tests across 14 files (7 unit in `lib/dsp/__tests__/`, 7 integration/scenario in `tests/dsp/`)
 - **ESLint:** Flat config (`eslint.config.mjs`) with `eslint-config-next` core-web-vitals + typescript + `@typescript-eslint/no-explicit-any` error; React 19 experimental rules (`set-state-in-effect`, `refs`, `purity`) downgraded to warn
 - **Build verification:** `npx tsc --noEmit && pnpm test && pnpm build` — must all pass before PRs
 - **Export formats:** PDF uses dynamic `import()` to avoid bundling jsPDF unless needed; CSV/JSON/TXT are synchronous

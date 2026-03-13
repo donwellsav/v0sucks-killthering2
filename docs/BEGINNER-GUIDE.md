@@ -118,7 +118,7 @@ C:\ktr\killthering\
 │       ├── slider.tsx
 │       ├── accordion.tsx
 │       ├── tooltip.tsx
-│       └── ... (48 total)
+│       └── ... (20 total)
 │
 ├── contexts/                     # REACT CONTEXTS
 │   └── PortalContainerContext.tsx #   Portal mount point for mobile overlays
@@ -638,4 +638,4 @@ import { Advisory } from '../../types/advisory'     // ❌
 
 ---
 
-*Last updated: March 2026 — Kill The Ring v0.76.20*
+*Last updated: March 2026 — Kill The Ring v0.95.0*
