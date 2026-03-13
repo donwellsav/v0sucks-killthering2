@@ -331,6 +331,23 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
         else if (smoothedLabel === 'INSTRUMENT') classification.severity = 'INSTRUMENT'
       }
 
+      // ── Mark ALL classified peaks for snapshot collection ──
+      // Collect before the reporting gate — ML model needs ring, feedback,
+      // instruments, and false positives alike to learn the boundaries.
+      if (snapshotCollector) {
+        snapshotCollector.markFeedbackEvent(
+          track.trueFrequencyHz,
+          track.trueAmplitudeDb,
+          classification.severity,
+          classification.confidence,
+          contentType
+        )
+        if (snapshotCollector.hasPendingBatches) {
+          const batch = snapshotCollector.extractBatch()
+          self.postMessage({ type: 'snapshotBatch', batch } satisfies WorkerOutboundMessage)
+        }
+      }
+
       // Gate on reporting threshold
       if (!shouldReportIssue(classification, settings)) {
         const clearedId = advisoryManager.clearForTrack(track.id)
@@ -358,22 +375,6 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       // Post all advisory actions to main thread
       for (const action of actions) {
         self.postMessage(action satisfies WorkerOutboundMessage)
-      }
-
-      // ── Mark feedback event for snapshot collection ──
-      if (snapshotCollector && actions.length > 0) {
-        snapshotCollector.markFeedbackEvent(
-          track.trueFrequencyHz,
-          track.trueAmplitudeDb,
-          classification.severity,
-          classification.confidence,
-          contentType
-        )
-        // Notify main thread that a batch is ready for upload
-        if (snapshotCollector.hasPendingBatches) {
-          const batch = snapshotCollector.extractBatch()
-          self.postMessage({ type: 'snapshotBatch', batch } satisfies WorkerOutboundMessage)
-        }
       }
 
       // Post tracks update if any advisory was created/updated
