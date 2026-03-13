@@ -83,6 +83,9 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
   const totalFramesRef = useRef(0)   // Total frames attempted
   const callbacksRef = useRef(callbacks)
 
+  // Pending collection enable — queued if called before worker is ready
+  const pendingCollectionRef = useRef<{ sessionId: string; fftSize: number; sampleRate: number } | null>(null)
+
   // Buffer pool: reusable Float32Arrays for zero-allocation worker transfer
   const specPoolRef = useRef<Float32Array[]>([])
   const tdPoolRef = useRef<Float32Array[]>([])
@@ -100,6 +103,12 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
       switch (msg.type) {
         case 'ready':
           isReadyRef.current = true
+          // Replay any enableCollection that arrived before the worker was ready
+          if (pendingCollectionRef.current) {
+            const { sessionId, fftSize, sampleRate } = pendingCollectionRef.current
+            pendingCollectionRef.current = null
+            worker.postMessage({ type: 'enableCollection', sessionId, fftSize, sampleRate })
+          }
           callbacksRef.current.onReady?.()
           break
         case 'advisory':
@@ -255,6 +264,11 @@ export function useDSPWorker(callbacks: DSPWorkerCallbacks): DSPWorkerHandle {
 
   const enableCollection = useCallback(
     (sessionId: string, collectionFftSize: number, collectionSampleRate: number) => {
+      if (!isReadyRef.current) {
+        // Worker not ready yet — queue for replay on 'ready'
+        pendingCollectionRef.current = { sessionId, fftSize: collectionFftSize, sampleRate: collectionSampleRate }
+        return
+      }
       postMessage({ type: 'enableCollection', sessionId, fftSize: collectionFftSize, sampleRate: collectionSampleRate })
     },
     [postMessage]
