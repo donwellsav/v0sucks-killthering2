@@ -210,16 +210,30 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
     // ── Snapshot collection (free tier only) ──────────────────────────────
 
     case 'enableCollection': {
-      console.log('[DSP Worker] enableCollection received, creating SnapshotCollector')
-      snapshotCollector = new SnapshotCollector(msg.sessionId, msg.fftSize, msg.sampleRate)
-      console.log('[DSP Worker] SnapshotCollector created successfully')
-      const stats = snapshotCollector.getStats()
-      self.postMessage({
-        type: 'collectionStats',
-        bufferSize: stats.bufferSize,
-        taggedEvents: stats.taggedEvents,
-        bytesCollected: stats.bytesCollected,
-      } satisfies WorkerOutboundMessage)
+      try {
+        // Guard against double-enable (avoids leaking previous instance)
+        if (snapshotCollector) {
+          console.log('[DSP Worker] enableCollection: resetting existing collector')
+          snapshotCollector.reset()
+        } else {
+          snapshotCollector = new SnapshotCollector(msg.sessionId, msg.fftSize, msg.sampleRate)
+        }
+        console.log('[DSP Worker] SnapshotCollector ready')
+        const stats = snapshotCollector.getStats()
+        self.postMessage({
+          type: 'collectionStats',
+          bufferSize: stats.bufferSize,
+          taggedEvents: stats.taggedEvents,
+          bytesCollected: stats.bytesCollected,
+        } satisfies WorkerOutboundMessage)
+      } catch (err) {
+        console.error('[DSP Worker] Failed to create SnapshotCollector:', err)
+        snapshotCollector = null
+        self.postMessage({
+          type: 'error',
+          message: `SnapshotCollector init failed: ${err instanceof Error ? err.message : String(err)}`,
+        } satisfies WorkerOutboundMessage)
+      }
       break
     }
 
