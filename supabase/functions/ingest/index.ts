@@ -80,6 +80,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // Diagnostic: log env var presence (not values) on each request
+    const hasUrl = !!Deno.env.get("SUPABASE_URL")
+    const hasKey = !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+    console.log(`[ingest] env check: SUPABASE_URL=${hasUrl}, SERVICE_ROLE_KEY=${hasKey}`)
+
     const batch: SnapshotBatch = await req.json()
 
     // Validate
@@ -128,8 +133,17 @@ Deno.serve(async (req: Request) => {
     })
 
     if (error) {
-      console.error("Insert error:", error)
-      return new Response(JSON.stringify({ error: "Storage failed" }), {
+      console.error("Insert error:", JSON.stringify({
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      }))
+      return new Response(JSON.stringify({
+        error: "Storage failed",
+        code: error.code,
+        message: error.message,
+      }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
       })

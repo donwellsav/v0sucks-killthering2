@@ -20,7 +20,7 @@ import type { SnapshotBatch } from '@/types/data'
 const SUPABASE_INGEST_URL = process.env.SUPABASE_INGEST_URL ?? ''
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''
 
-/** Max payload size: 512KB (gzipped batch should be well under this) */
+/** Max payload size: 512KB (batches are typically 2-10KB uncompressed) */
 const MAX_PAYLOAD_BYTES = 512 * 1024
 
 /** Rate limit: per session, max requests per window */
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
     }
 
-    // Parse body (handles gzip automatically via Next.js)
+    // Parse body
     let batch: SnapshotBatch
     try {
       batch = await request.json()

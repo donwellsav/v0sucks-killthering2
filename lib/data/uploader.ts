@@ -108,18 +108,14 @@ export class SnapshotUploader {
       return { ok: false, status: 0, error: 'Session bandwidth cap reached' }
     }
 
-    // Try to compress with gzip
-    const { body, contentEncoding } = await compressPayload(payloadBytes)
-
     for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
       try {
         const response = await fetch(INGEST_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(contentEncoding ? { 'Content-Encoding': contentEncoding } : {}),
           },
-          body,
+          body: payload,
         })
 
         if (response.ok) {
@@ -149,48 +145,6 @@ export class SnapshotUploader {
 
     return { ok: false, status: 0, error: 'All retries exhausted' }
   }
-}
-
-// ─── Compression ────────────────────────────────────────────────────────────
-
-async function compressPayload(
-  data: Uint8Array
-): Promise<{ body: Uint8Array | ReadableStream<Uint8Array>; contentEncoding: string | null }> {
-  // Use CompressionStream if available (Chrome 80+, Firefox 113+, Safari 16.4+)
-  if (typeof CompressionStream !== 'undefined') {
-    try {
-      const cs = new CompressionStream('gzip')
-      const writer = cs.writable.getWriter()
-      writer.write(data)
-      writer.close()
-
-      // Read compressed output
-      const reader = cs.readable.getReader()
-      const chunks: Uint8Array[] = []
-      let totalLength = 0
-
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        chunks.push(value)
-        totalLength += value.length
-      }
-
-      const compressed = new Uint8Array(totalLength)
-      let offset = 0
-      for (const chunk of chunks) {
-        compressed.set(chunk, offset)
-        offset += chunk.length
-      }
-
-      return { body: compressed, contentEncoding: 'gzip' }
-    } catch {
-      // Fallback to uncompressed
-    }
-  }
-
-  return { body: data, contentEncoding: null }
 }
 
 // ─── IndexedDB persistence ──────────────────────────────────────────────────
