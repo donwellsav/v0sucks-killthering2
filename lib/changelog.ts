@@ -14,6 +14,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.92.0',
+    date: '2026-03-13',
+    changes: [
+      { type: 'feat', description: '**next.config.mjs**: Add `webpack.output.hashFunction = \'sha256\'` — fixes production build crash on Windows where OpenSSL 3.x disables md4 and webpack\'s WASM fallback crashes' },
+      { type: 'feat', description: '**ci.yml**: Bump CI from Node 20 to Node 22 LTS (supported until April 2027)' },
+      { type: 'feat', description: '**.nvmrc**: Pin local dev to Node 22' },
+      { type: 'feat', description: '**.claude/launch.json**: Fix dev server configuration' },
+      { type: 'feat', description: '[ ] `npx tsc --noEmit` passes' },
+      { type: 'feat', description: '[ ] `pnpm test` — 195 tests pass' },
+      { type: 'feat', description: '[ ] `pnpm build` — production build succeeds with Serwist SW (no more WasmHash crash)' },
+      { type: 'feat', description: '[ ] CI passes on Node 22' },
+      { type: 'feat', description: '[ ] Dev server starts and mic input works in Chrome' },
+    ],
+  },
+  {
     version: '0.91.0',
     date: '2026-03-13',
     changes: [
