@@ -291,7 +291,7 @@ describe('Cross-Model Consensus Vulnerabilities', () => {
       { msd: 0.92, phase: 0.6, spectral: 0.6, comb: 0, ihr: 0.2, ptmr: 0.7 },
       'speech',
       0.8,
-      { customWeights: { msd: 0.40, phase: 0.20, spectral: 0.10, comb: 0.05, ihr: 0.10, ptmr: 0.15, existing: 0.00 } }
+      { customWeights: { msd: 0.40, phase: 0.20, spectral: 0.10, comb: 0.05, ihr: 0.10, ptmr: 0.15, existing: 0.00 } as Record<string, number> }
     )
 
     // Removing existing and boosting IHR/PTMR should lower the score
