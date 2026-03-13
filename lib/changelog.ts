@@ -14,6 +14,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.86.0',
+    date: '2026-03-13',
+    changes: [
+      { type: 'feat', description: 'Consent dialog only showed once — if dismissed without clicking Accept/Decline, localStorage stayed in `\'prompted\'` state and the dialog never appeared again' },
+      { type: 'feat', description: 'Now `\'prompted\'` is treated the same as `\'not_asked\'`: dialog re-appears each time audio starts until user makes an explicit choice' },
+      { type: 'feat', description: 'Only `\'declined\'` (explicit No Thanks click) prevents re-prompting' },
+      { type: 'feat', description: '[ ] Clear localStorage (`localStorage.removeItem(\'ktr-data-consent\')`) and start audio — consent dialog should appear' },
+      { type: 'feat', description: '[ ] Dismiss dialog (if possible) without clicking a button, restart audio — dialog should reappear' },
+      { type: 'feat', description: '[ ] Click "Share Data" — collection should start, dialog should not reappear on next audio start' },
+      { type: 'feat', description: '[ ] Click "No Thanks" — dialog should not reappear on next audio start' },
+      { type: 'feat', description: '[ ] Verify spectral_snapshots table receives rows after accepting consent' },
+    ],
+  },
+  {
     version: '0.85.0',
     date: '2026-03-13',
     changes: [
