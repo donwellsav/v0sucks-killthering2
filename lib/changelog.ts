@@ -14,6 +14,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.88.0',
+    date: '2026-03-13',
+    changes: [
+      { type: 'feat', description: '**Root cause found**: `enableCollection` message was silently dropped by the `postMessage` gate in `useDSPWorker` because the worker hadn\'t posted its `\'ready\'` response yet' },
+      { type: 'feat', description: 'The `isRunning` state update and the `init` message happen in the same render cycle, so the `useEffect` that calls `promptIfNeeded → enableCollection` fires before the worker is ready' },
+      { type: 'feat', description: '**Fix**: Queue the `enableCollection` params in a ref, replay when `\'ready\'` arrives' },
+      { type: 'feat', description: '`hooks/useDSPWorker.ts` — added `pendingCollectionRef`, queue logic in `enableCollection`, replay in `\'ready\'` handler' },
+      { type: 'feat', description: '[ ] Start analysis → detections appear → check Supabase table for rows' },
+      { type: 'feat', description: '[ ] `pnpm test` — 195 pass' },
+      { type: 'feat', description: '[ ] `npx tsc --noEmit` — clean' },
+    ],
+  },
+  {
     version: '0.86.1',
     date: '2026-03-13',
     changes: [
