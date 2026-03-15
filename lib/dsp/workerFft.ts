@@ -9,7 +9,6 @@
  */
 
 import {
-  MSDHistoryBuffer,
   AmplitudeHistoryBuffer,
   PhaseHistoryBuffer,
   detectCombPattern,
@@ -19,7 +18,10 @@ import {
   detectContentType,
   MSD_CONSTANTS,
 } from './advancedDetection'
+import type { MSDResult } from './advancedDetection'
 import type { AlgorithmScores } from './advancedDetection'
+import { MSDPool } from './msdPool'
+import { MSD_SETTINGS } from './constants'
 import type { ContentType, DetectedPeak, Track } from '@/types/advisory'
 
 // ── Extracted magic numbers ─────────────────────────────────────────────────
@@ -232,7 +234,7 @@ export interface AlgorithmResult {
  * Stateful — maintains MSD, phase, and amplitude histories across frames.
  */
 export class AlgorithmEngine {
-  private msdBuffer: MSDHistoryBuffer | null = null
+  private msdPool: MSDPool | null = null
   private phaseBuffer: PhaseHistoryBuffer | null = null
   private ampBuffer = new AmplitudeHistoryBuffer()
   private lastFrameTimestamp: number = -1
@@ -242,7 +244,7 @@ export class AlgorithmEngine {
   /** Allocate buffers for the given FFT size. */
   init(fftSize: number): void {
     const numBins = Math.floor(fftSize / 2)
-    this.msdBuffer = new MSDHistoryBuffer(numBins)
+    this.msdPool = new MSDPool()  // 256 slots × 64 frames = 64KB (was 1MB dense)
     this.phaseBuffer = new PhaseHistoryBuffer(numBins, 12)
     this.ampBuffer.reset()
     ensureFftBuffers(fftSize)
@@ -267,10 +269,8 @@ export class AlgorithmEngine {
     const isNewFrame = timestamp !== this.lastFrameTimestamp
     if (!isNewFrame) return false
 
-    // MSD: feed full-resolution spectrum (must match feedbackDetector.ts per-bin tracking)
-    if (this.msdBuffer) {
-      this.msdBuffer.addFrame(spectrum)
-    }
+    // MSD: no longer fed here — writes happen per-peak in computeScores()
+    // (sparse model: only peak bins accumulate history, matching feedbackDetector.ts)
 
     // Compression: compute frame-level peak and RMS from spectrum
     const startBin = Math.max(1, Math.floor(minFreq * fftSize / sampleRate))
@@ -325,9 +325,28 @@ export class AlgorithmEngine {
     const crestFactor = this.specMax - this.rmsDb
     const contentType = detectContentType(spectrum, crestFactor, spectralResult.flatness)
 
-    // MSD from full-resolution history buffer (matches feedbackDetector.ts per-bin tracking)
+    // MSD: write this peak's magnitude to pool (builds history across frames)
+    this.msdPool?.write(binIndex, spectrum[binIndex])
+
+    // Compute MSD from pooled sparse history (matches feedbackDetector.ts per-bin tracking)
     const msdMinFrames = getMsdMinFrames(contentType)
-    const msdResult = this.msdBuffer?.calculateMSD(binIndex, msdMinFrames, peak.noiseFloorDb) ?? null
+    let msdResult: MSDResult | null = null
+    if (this.msdPool) {
+      const raw = this.msdPool.getMSD(binIndex, msdMinFrames)
+      if (raw.msd >= 0) {
+        // Energy gate (caller responsibility — MSDPool returns raw values)
+        const gated = peak.noiseFloorDb != null
+          && spectrum[binIndex] - peak.noiseFloorDb < MSD_SETTINGS.MIN_ENERGY_ABOVE_NOISE_DB
+        msdResult = {
+          msd: gated ? Infinity : raw.msd,
+          feedbackScore: gated ? 0 : Math.exp(-raw.msd / MSD_CONSTANTS.THRESHOLD),
+          secondDerivative: 0,
+          isFeedbackLikely: !gated && raw.msd < MSD_CONSTANTS.THRESHOLD,
+          framesAnalyzed: raw.frameCount,
+          meanMagnitudeDb: spectrum[binIndex],
+        }
+      }
+    }
 
     // Compression detection
     const compressionResult = this.ampBuffer.detectCompression()
@@ -360,7 +379,7 @@ export class AlgorithmEngine {
   }
 
   reset(): void {
-    this.msdBuffer?.reset()
+    this.msdPool?.reset()
     this.phaseBuffer?.reset()
     this.ampBuffer.reset()
     this.lastFrameTimestamp = -1

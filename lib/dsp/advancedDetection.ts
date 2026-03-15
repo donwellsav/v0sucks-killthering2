@@ -11,6 +11,7 @@
  */
 
 export * from './msdAnalysis'
+export { MSDPool, type MSDRawResult } from './msdPool'
 export * from './phaseCoherence'
 export * from './compressionDetection'
 export * from './algorithmFusion'

@@ -23,7 +23,7 @@
 | DSP Offload | Web Worker (dspWorker.ts, ~430 lines) |
 | Visualization | HTML5 Canvas at 30fps |
 | State | React 19 hooks + 4 context providers (no external state library) |
-| Testing | Vitest (335 tests, 14 suites, under 10s) |
+| Testing | Vitest (368 tests, 15 suites, under 10s) |
 | Error Reporting | Sentry (browser + server + worker runtimes) |
 | PWA | Serwist (service worker, offline caching, installable) |
 | Package Manager | pnpm |
@@ -111,12 +111,12 @@ COMPRESSED: MSD=0.12  Phase=0.30  Spectral=0.18  Comb=0.08  IHR=0.18  PTMR=0.14
 4. **Comb weight doubling dilutes others by 7.4%.** Extra weight added to totalWeight denominator. Fix: add extra only to numerator. File: `algorithmFusion.ts` ~line 470.
 5. **No worker crash recovery.** `onerror` handler logs to Sentry but does not restart. File: `useDSPWorker.ts`.
 6. **SpectrumCanvas missing devicePixelRatio.** Blurry on Retina/high-DPI. File: `SpectrumCanvas.tsx`.
-7. **Zero tests for hooks, components, contexts, exports, storage.** 335 tests cover DSP only.
+7. **Zero tests for hooks, components, contexts, exports, storage.** 368 tests cover DSP only.
 
 ### Medium (P2)
 
 8. `analyze()` is 180+ lines monolith — decompose into 4-5 methods.
-9. Dual MSD implementations (`feedbackDetector.ts` pooled + `msdAnalysis.ts` class) risk divergence.
+9. ~~Dual MSD implementations~~ — **FIXED v0.98.0:** Consolidated into single `MSDPool` class in `msdPool.ts`.
 10. `AudioAnalyzerContext` is god-context mixing engine/settings/detection (25 fields).
 11. Only axial room modes implemented (tangential + oblique missing).
 12. No shelf overlap validation in eqAdvisor.
@@ -167,7 +167,8 @@ lib/
     eqAdvisor.ts (402)        #   GEQ/PEQ/shelf recs, ERB scaling, MINDS depth
     workerFft.ts (369)        #   Radix-2 FFT, AlgorithmEngine, phase extraction
     advisoryManager.ts (292)  #   3-layer dedup, band cooldown, memory bounds (max 200)
-    msdAnalysis.ts (169)      #   Worker-side MSD + AmplitudeHistoryBuffer + PhaseHistoryBuffer
+    msdPool.ts (267)          #   Consolidated MSD pool (sparse, LRU eviction, 64KB)
+    msdAnalysis.ts (170)      #   [DEPRECATED] Worker-side MSD + AmplitudeHistoryBuffer + PhaseHistoryBuffer
     compressionDetection.ts(161)# Spectral flatness, crest factor, kurtosis
     phaseCoherence.ts (129)   #   Phase coherence via circular statistics
     decayAnalyzer.ts (86)     #   RT60 decay comparison for room mode suppression

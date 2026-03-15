@@ -33,6 +33,7 @@ export const MSD_CONSTANTS = {
 
 // ── MSD History Buffer ───────────────────────────────────────────────────────
 
+/** @deprecated Use MSDPool from './msdPool' instead. Kept for one release cycle. */
 export class MSDHistoryBuffer {
   private history: Float32Array[]
   private frameIndex: number = 0

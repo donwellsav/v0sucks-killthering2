@@ -14,6 +14,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.98.0',
+    date: '2026-03-15',
+    highlights: 'MSD consolidation — single source of truth, 16× worker memory reduction',
+    changes: [
+      { type: 'refactor', description: 'Consolidate dual MSD implementations into single MSDPool class — eliminates divergence risk between feedbackDetector.ts and msdAnalysis.ts (P2 bug #9)' },
+      { type: 'perf', description: 'Worker MSD memory reduced from 1MB (dense 4096-bin buffer) to 64KB (256-slot sparse pool with LRU eviction)' },
+      { type: 'refactor', description: 'Remove ~180 lines of inline MSD code from feedbackDetector.ts — replaced by thin wrapper over MSDPool' },
+      { type: 'feat', description: 'Add 35 new MSD tests: 28 MSDPool unit tests + 7 cross-validation tests proving numerical equivalence with deprecated MSDHistoryBuffer' },
+    ],
+  },
+  {
     version: '0.97.0',
     date: '2026-03-15',
     highlights: 'Smartphone mic calibration, autoresearch framework',
