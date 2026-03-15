@@ -203,7 +203,8 @@ kill-the-ring/
 │   ├── dsp/
 │   │   ├── feedbackDetector.ts       # Core FFT analysis engine
 │   │   ├── advancedDetection.ts      # Barrel re-export for MSD, Phase, Compression, Fusion
-│   │   ├── msdAnalysis.ts            # Magnitude Slope Deviation (DAFx-16)
+│   │   ├── msdPool.ts                 # Consolidated MSD pool (sparse, LRU, 64KB)
+│   │   ├── msdAnalysis.ts            # [Deprecated] MSD buffer + constants
 │   │   ├── phaseCoherence.ts         # Phase coherence analysis (KU Leuven 2025)
 │   │   ├── compressionDetection.ts   # Spectral flatness + compression ratio estimation
 │   │   ├── algorithmFusion.ts        # Weighted fusion of all algorithm scores → verdict
@@ -320,7 +321,7 @@ Where:
 | Classical Music | 100% | 13 frames (~300ms) |
 | Rock Music | 22% | 50+ frames (needs compression detection) |
 
-**Implementation:** `lib/dsp/advancedDetection.ts` - `MSDHistoryBuffer` class
+**Implementation:** `lib/dsp/msdPool.ts` - `MSDPool` class (pooled sparse allocation, 256 slots × 64 frames)
 
 ### 2. Phase Coherence Analysis - Nyquist Stability
 
@@ -479,7 +480,7 @@ The core class wrapping `AnalyserNode`. Contains 1800+ lines of DSP code.
 
 | Buffer | Purpose | Size |
 |--------|---------|------|
-| `MSDHistoryBuffer` | Stores dB magnitude for MSD calculation | fftSize × 50 frames |
+| `MSDPool` | Stores dB magnitude for MSD calculation (sparse) | 256 slots × 64 frames (64KB) |
 | `PhaseHistoryBuffer` | Stores phase data for coherence | fftSize × 10 frames |
 | `AmplitudeHistoryBuffer` | Stores peak/RMS for compression detection | 100 samples |
 

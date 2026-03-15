@@ -17,6 +17,7 @@
 
 import { describe, it, expect } from 'vitest'
 import { MSDHistoryBuffer, MSD_CONSTANTS } from '../msdAnalysis'
+import { MSDPool } from '../msdPool'
 import { MSD_SETTINGS } from '../constants'
 import { getMsdMinFrames } from '../workerFft'
 
@@ -375,6 +376,90 @@ describe('MSD Consistency', () => {
       const after = buf.calculateMSD(0, 7)
       expect(after.msd).toBe(Infinity) // not enough frames
       expect(after.framesAnalyzed).toBe(0)
+    })
+  })
+
+  // ── 11. MSDPool cross-validation ────────────────────────────────────────
+  // Verifies MSDPool produces numerically equivalent results to MSDHistoryBuffer
+  // for identical input sequences. This ensures the consolidation is safe.
+
+  describe('MSDPool cross-validation', () => {
+    /** Feed identical data to both MSDHistoryBuffer and MSDPool, compare raw MSD. */
+    function crossValidate(values: number[], minFrames: number = 7) {
+      // MSDHistoryBuffer (dense, 1 bin)
+      const buf = feedSequence(values, 1)
+      const bufResult = buf.calculateMSD(0, minFrames)
+
+      // MSDPool (sparse, bin 0)
+      const pool = new MSDPool(256, 64)
+      for (const v of values) pool.write(0, v)
+      const poolResult = pool.getMSD(0, minFrames)
+
+      return { bufResult, poolResult }
+    }
+
+    it('matches for constant magnitude (MSD ≈ 0)', () => {
+      const values = Array.from({ length: 15 }, () => -30)
+      const { bufResult, poolResult } = crossValidate(values)
+
+      expect(poolResult.msd).toBeCloseTo(bufResult.msd, 5)
+      expect(poolResult.frameCount).toBe(bufResult.framesAnalyzed)
+    })
+
+    it('matches for linear ramp (MSD ≈ 0)', () => {
+      const values = Array.from({ length: 20 }, (_, i) => -40 + i)
+      const { bufResult, poolResult } = crossValidate(values)
+
+      expect(poolResult.msd).toBeCloseTo(bufResult.msd, 5)
+    })
+
+    it('matches for irregular growth pattern', () => {
+      const values = [-50, -48.5, -47.1, -45.3, -44.0, -42.8, -41.2, -40.0, -38.5, -37.3, -36.0, -34.8]
+      const { bufResult, poolResult } = crossValidate(values)
+
+      // Tolerance widened: MSDPool uses Float32 consistently
+      expect(poolResult.msd).toBeCloseTo(bufResult.msd, 4)
+    })
+
+    it('matches for oscillating values (high MSD)', () => {
+      const values: number[] = []
+      for (let i = 0; i < 20; i++) {
+        values.push(-30 + (i % 2 === 0 ? 8 : -8) + (i % 3) * 2)
+      }
+      const { bufResult, poolResult } = crossValidate(values)
+
+      // Both should agree the MSD is well above threshold
+      expect(poolResult.msd).toBeGreaterThan(MSD_SETTINGS.THRESHOLD)
+      expect(bufResult.msd).toBeGreaterThan(MSD_SETTINGS.THRESHOLD)
+      // Tolerance widened: MSDPool uses Float32 consistently
+      expect(poolResult.msd).toBeCloseTo(bufResult.msd, 3)
+    })
+
+    it('matches for sinusoidal modulation', () => {
+      const values = Array.from({ length: 20 }, (_, i) => -30 + 5 * Math.sin(i * 0.5))
+      const { bufResult, poolResult } = crossValidate(values)
+
+      // Tolerance widened: MSDPool uses Float32 consistently
+      expect(poolResult.msd).toBeCloseTo(bufResult.msd, 3)
+    })
+
+    it('both return insufficient-frames sentinel below minFrames', () => {
+      const values = [-30, -29, -28] // 3 frames, need 7
+      const { bufResult, poolResult } = crossValidate(values, 7)
+
+      // MSDHistoryBuffer returns Infinity; MSDPool returns -1 (different sentinel conventions)
+      expect(bufResult.msd).toBe(Infinity)
+      expect(poolResult.msd).toBe(-1)
+      // Both indicate "not enough data" — callers handle accordingly
+    })
+
+    it('feedbackScore derived from MSDPool matches MSDHistoryBuffer', () => {
+      const values = Array.from({ length: 15 }, () => -30)
+      const { bufResult, poolResult } = crossValidate(values)
+
+      // Derive feedbackScore from raw MSD (caller responsibility with MSDPool)
+      const poolFeedbackScore = Math.exp(-poolResult.msd / MSD_CONSTANTS.THRESHOLD)
+      expect(poolFeedbackScore).toBeCloseTo(bufResult.feedbackScore, 5)
     })
   })
 })
